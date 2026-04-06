@@ -4,10 +4,20 @@ export default async function handler(req, res) {
     }
     
     try {
-        const telegramAuth = req.headers['x-telegram-auth'];
+        const origin = req.headers.origin;
+        const allowedOrigins = ['https://your-app.vercel.app', 'https://t.me'];
+        if (!allowedOrigins.includes(origin)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
         
-        if (!telegramAuth) {
-            return res.status(401).json({ error: 'Authentication required' });
+        const userAgent = req.headers['user-agent'] || '';
+        if (!userAgent.includes('TelegramBot') && !userAgent.includes('Mobile')) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const telegramAuth = req.headers['x-telegram-auth'];
+        if (!telegramAuth || !telegramAuth.includes('user=') || !telegramAuth.includes('hash=')) {
+            return res.status(401).json({ error: 'Invalid authentication' });
         }
         
         const firebaseConfig = JSON.parse(process.env.FIREBASE_CONFIG);
