@@ -1095,92 +1095,79 @@ class App {
         }
     }
 
+
+
+
     async initializeFirebase() {
-        try {
-            if (typeof firebase === 'undefined') {
-                throw new Error('Firebase SDK not loaded');
-            }
-            
-            const response = await fetch('/api/firebase-config', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-telegram-user': this.tgUser?.id?.toString() || '',
-                    'x-telegram-auth': this.tg?.initData || ''
-                }
-            });
-            
-            let firebaseConfig;
-            
-            if (response.ok) {
-                const result = await response.json();
-                if (result.encrypted) {
-                    const decoded = atob(result.encrypted);
-                    firebaseConfig = JSON.parse(decoded);
-                } else {
-                    firebaseConfig = result;
-                }
-            } else {
-                this.showNotification("Warning", "Using fallback Firebase config", "warning");
-                firebaseConfig = {
-                    apiKey: "AIzaSyDefaultKey123",
-                    authDomain: "tornado-default.firebaseapp.com",
-                    databaseURL: "https://tornado-default-rtdb.firebaseio.com",
-                    projectId: "tornado-default",
-                    storageBucket: "tornado-default.appspot.com",
-                    messagingSenderId: "987654321098",
-                    appId: "1:987654321098:web:default1234567890",
-                    measurementId: "G-DEFAULT123"
-                };
-            }
-            
-            let firebaseApp;
-            
-            try {
-                firebaseApp = firebase.initializeApp(firebaseConfig);
-            } catch (error) {
-                if (error.code === 'app/duplicate-app') {
-                    firebaseApp = firebase.app();
-                } else {
-                    throw error;
-                }
-            }
-            
-            this.db = firebaseApp.database();
-            this.auth = firebaseApp.auth();
-            
-            try {
-                await this.auth.signInAnonymously();
-            } catch (authError) {
-                const randomEmail = `user_${this.tgUser.id}_${Date.now()}@popbuzz.app`;
-                const randomPassword = Math.random().toString(36).slice(-10) + Date.now().toString(36);
-                
-                await this.auth.createUserWithEmailAndPassword(randomEmail, randomPassword);
-            }
-            
-            await new Promise((resolve, reject) => {
-                const unsubscribe = this.auth.onAuthStateChanged((user) => {
-                    if (user) {
-                        unsubscribe();
-                        this.currentUser = user;
-                        resolve(user);
-                    }
-                });
-                
-                setTimeout(() => {
-                    unsubscribe();
-                    reject(new Error('Authentication timeout'));
-                }, 10000);
-            });
-            
-            this.firebaseInitialized = true;
-            return true;
-            
-        } catch (error) {
-            this.showNotification("Error", "Failed to connect to database", "error");
-            return false;
+    try {
+        if (typeof firebase === 'undefined') {
+            throw new Error('Firebase SDK not loaded');
         }
+        
+        const response = await fetch('/api/firebase-config', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-telegram-user': this.tgUser?.id?.toString() || '',
+                'x-telegram-auth': this.tg?.initData || ''
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch Firebase config');
+        }
+        
+        const result = await response.json();
+        const decoded = atob(result.encrypted);
+        const firebaseConfig = JSON.parse(decoded);
+        
+        let firebaseApp;
+        
+        try {
+            firebaseApp = firebase.initializeApp(firebaseConfig);
+        } catch (error) {
+            if (error.code === 'app/duplicate-app') {
+                firebaseApp = firebase.app();
+            } else {
+                throw error;
+            }
+        }
+        
+        this.db = firebaseApp.database();
+        this.auth = firebaseApp.auth();
+        
+        try {
+            await this.auth.signInAnonymously();
+        } catch (authError) {
+            const randomEmail = `user_${this.tgUser.id}_${Date.now()}@popbuzz.app`;
+            const randomPassword = Math.random().toString(36).slice(-10) + Date.now().toString(36);
+            
+            await this.auth.createUserWithEmailAndPassword(randomEmail, randomPassword);
+        }
+        
+        await new Promise((resolve, reject) => {
+            const unsubscribe = this.auth.onAuthStateChanged((user) => {
+                if (user) {
+                    unsubscribe();
+                    this.currentUser = user;
+                    resolve(user);
+                }
+            });
+            
+            setTimeout(() => {
+                unsubscribe();
+                reject(new Error('Authentication timeout'));
+            }, 10000);
+        });
+        
+        this.firebaseInitialized = true;
+        return true;
+        
+    } catch (error) {
+        this.showNotification("Error", "Failed to connect to database", "error");
+        return false;
     }
+}
 
     setupFirebaseAuth() {
         if (!this.auth) return;
