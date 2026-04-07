@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>POP BUZZ</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -34,170 +34,40 @@
     
     <div class="app-background"></div>
     
-    <div id="app-loader" style="
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: #0a1428;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-    ">
-        <div class="loading-container" style="
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            width: 90%;
-            max-width: 380px;
-        ">
-            <div style="
-                width: 100px;
-                height: 100px;
-                border-radius: 50%;
-                overflow: hidden;
-                margin-bottom: 30px;
-                animation: pulse-scale 2s infinite ease-in-out;
-                border: 2px solid #FFD966;
-                box-shadow: 0 0 20px rgba(255, 217, 102, 0.5);
-            ">
+    <div id="app-loader">
+        <div class="loading-container">
+            <div class="loading-logo">
                 <img src="https://i.ibb.co/gLb6qFhn/file-00000000473871f4b2902b2708daa633.png" 
                      alt="POP BUZZ" 
-                     style="
-                        width: 100%;
-                        height: 100%;
-                        object-fit: cover;
-                        border-radius: 50%;
-                     "
+                     class="loading-logo-img"
                      oncontextmenu="return false;" 
-                     ondragstart="return false;">
+                     ondragstart="return false">
             </div>
             
-            <div class="loading-steps" style="width: 100%; margin-top: 10px; background: rgba(26,38,58,0.9); border-radius: 16px; padding: 15px; border: 1px solid rgba(255,217,102,0.2);">
-                <div class="loading-step" style="color: #FFD966; margin: 8px 0; font-size: 14px; text-align: left; padding: 12px 15px; background: rgba(0,0,0,0.3); border-radius: 12px; border-left: 3px solid #FFD966; display: flex; align-items: center;">
-                    <i class="fas fa-spinner fa-pulse" style="color: #FFD966; margin-right: 12px; width: 20px;"></i>
+            <div class="loading-steps">
+                <div class="loading-step">
+                    <i class="fas fa-spinner fa-pulse"></i>
                     <span>Loading App Data...</span>
                 </div>
-                <div class="loading-step" style="color: #FFD966; margin: 8px 0; font-size: 14px; text-align: left; padding: 12px 15px; background: rgba(0,0,0,0.3); border-radius: 12px; border-left: 3px solid #FFD966; display: flex; align-items: center;">
-                    <i class="fas fa-spinner fa-pulse" style="color: #FFD966; margin-right: 12px; width: 20px;"></i>
+                <div class="loading-step">
+                    <i class="fas fa-spinner fa-pulse"></i>
                     <span>Loading User Data...</span>
                 </div>
-                <div class="loading-step" style="color: #FFD966; margin: 8px 0; font-size: 14px; text-align: left; padding: 12px 15px; background: rgba(0,0,0,0.3); border-radius: 12px; border-left: 3px solid #FFD966; display: flex; align-items: center;">
-                    <i class="fas fa-spinner fa-pulse" style="color: #FFD966; margin-right: 12px; width: 20px;"></i>
+                <div class="loading-step">
+                    <i class="fas fa-spinner fa-pulse"></i>
                     <span>Checking User Status...</span>
                 </div>
-                <div class="loading-step" style="color: #FFD966; margin: 8px 0; font-size: 14px; text-align: left; padding: 12px 15px; background: rgba(0,0,0,0.3); border-radius: 12px; border-left: 3px solid #FFD966; display: flex; align-items: center;">
-                    <i class="fas fa-spinner fa-pulse" style="color: #FFD966; margin-right: 12px; width: 20px;"></i>
+                <div class="loading-step">
+                    <i class="fas fa-spinner fa-pulse"></i>
                     <span>Loading Tasks...</span>
                 </div>
-                <div class="loading-step" style="color: #FFD966; margin: 8px 0; font-size: 14px; text-align: left; padding: 12px 15px; background: rgba(0,0,0,0.3); border-radius: 12px; border-left: 3px solid #FFD966; display: flex; align-items: center;">
-                    <i class="fas fa-spinner fa-pulse" style="color: #FFD966; margin-right: 12px; width: 20px;"></i>
+                <div class="loading-step">
+                    <i class="fas fa-spinner fa-pulse"></i>
                     <span>App Loading...</span>
                 </div>
             </div>
         </div>
     </div>
-
-    <style>
-        .launch-btn {
-            background: linear-gradient(135deg, #FFD966, #FFB347);
-            border: none;
-            border-radius: 50px;
-            padding: 15px 40px;
-            color: #0a1428;
-            font-weight: bold;
-            font-size: 18px;
-            margin-top: 30px;
-            cursor: pointer;
-            box-shadow: 0 10px 30px rgba(255, 217, 102, 0.3);
-            transition: transform 0.3s, box-shadow 0.3s;
-            width: 100%;
-            max-width: 280px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            animation: fadeIn 0.5s ease;
-        }
-        
-        .launch-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 40px rgba(255, 217, 102, 0.4);
-        }
-        
-        @keyframes pulse-scale {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .loading-step {
-            transition: all 0.3s ease;
-        }
-        
-        .loading-step i {
-            transition: color 0.3s ease;
-        }
-        
-        .banned-card {
-            background: linear-gradient(135deg, #1a263a 0%, #0f172a 100%);
-            border-radius: 24px;
-            padding: 32px 24px;
-            text-align: center;
-            border: 1px solid rgba(244, 67, 54, 0.3);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            max-width: 320px;
-            margin: 20px auto;
-        }
-        
-        .banned-icon {
-            font-size: 64px;
-            color: #f44336;
-            margin-bottom: 20px;
-        }
-        
-        .banned-card h2 {
-            color: #f44336;
-            font-size: 24px;
-            margin-bottom: 12px;
-        }
-        
-        .banned-card p {
-            color: #e0e0e0;
-            font-size: 14px;
-            line-height: 1.5;
-            margin-bottom: 24px;
-        }
-        
-        .close-app-btn {
-            background: linear-gradient(135deg, #f44336, #d32f2f);
-            border: none;
-            border-radius: 50px;
-            padding: 12px 24px;
-            color: white;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            transition: transform 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .close-app-btn:hover {
-            transform: translateY(-2px);
-        }
-    </style>
 
     <div id="app" style="display: none;">
         <header class="app-header">
@@ -209,11 +79,11 @@
                                  src="https://cdn-icons-png.flaticon.com/512/9195/9195920.png" 
                                  alt="User" 
                                  oncontextmenu="return false;" 
-                                 ondragstart="return false;">
+                                 ondragstart="return false">
                         </div>
-                         <div class="user-info-left">
+                        <div class="user-info-left">
                             <h2 id="user-name" class="user-name">User</h2>
-                         </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -239,11 +109,87 @@
                      src="https://cdn-icons-png.flaticon.com/512/9195/9195920.png" 
                      alt="Profile"
                      oncontextmenu="return false;" 
-                     ondragstart="return false;">
+                     ondragstart="return false">
                 <span>Profile</span>
             </button>
         </nav>
     </div>
+
+    <style>
+        .loading-logo {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin-bottom: 30px;
+            animation: pulse-scale 2s infinite ease-in-out;
+            border: 2px solid #2ecc71;
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.5);
+        }
+        
+        .loading-logo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        
+        @keyframes pulse-scale {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .error-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a1a0f, #0d2a1a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        
+        .error-content {
+            text-align: center;
+            padding: 30px;
+            background: rgba(30, 50, 35, 0.95);
+            border-radius: 28px;
+            margin: 20px;
+            max-width: 320px;
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+        
+        .error-icon {
+            font-size: 48px;
+            color: #2ecc71;
+            margin-bottom: 15px;
+        }
+        
+        .error-content h2 {
+            color: #2ecc71;
+            margin-bottom: 15px;
+        }
+        
+        .error-content p {
+            color: #d5f5e3;
+            margin: 10px 0;
+        }
+        
+        .reload-btn {
+            background: linear-gradient(135deg, #2ecc71, #1e8449);
+            border: none;
+            border-radius: 50px;
+            padding: 12px 24px;
+            color: white;
+            font-weight: bold;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+    </style>
 
     <script type="module" src="js/app.js"></script>
     
@@ -253,43 +199,19 @@
             
             function showError() {
                 document.body.innerHTML = `
-                    <div class="telegram-error">
+                    <div class="error-container">
                         <div class="error-content">
-                            <div class="error-header">
-                                <div class="error-icon">
-                                    <i class="fab fa-telegram"></i>
-                                </div>
-                                <h2>POP BUZZ</h2>
+                            <div class="error-icon">
+                                <i class="fab fa-telegram"></i>
                             </div>
-                            
-                            <div class="error-message">
-                                <div class="error-icon-wrapper">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                </div>
-                                <h3>Access Denied</h3>
-                                <p>This application works only inside Telegram.</p>
-                            </div>
-                            
-                            <a href="https://t.me/Tornado_Rbot" target="_blank" class="telegram-btn">
-                                <i class="fab fa-telegram"></i> Open in Telegram
-                            </a>
+                            <h2>POP BUZZ</h2>
+                            <p>Please open from Telegram Mini App</p>
+                            <button onclick="window.location.reload()" class="reload-btn">
+                                <i class="fas fa-redo"></i> Reload
+                            </button>
                         </div>
                     </div>
                 `;
-            }
-            
-            function verify() {
-                if (!window.Telegram || !window.Telegram.WebApp) return false;
-                
-                const tg = window.Telegram.WebApp;
-                if (!tg.initDataUnsafe || !tg.initDataUnsafe.user) return false;
-                
-                const user = tg.initDataUnsafe.user;
-                if (!user.id || typeof user.id !== 'number' || user.id <= 0) return false;
-                if (!user.first_name || user.first_name.trim().length === 0) return false;
-                if (!tg.initData || tg.initData.length < 10) return false;
-                
-                return true;
             }
             
             document.addEventListener('DOMContentLoaded', function() {
@@ -298,7 +220,6 @@
                     return;
                 }
             });
-            
         })();
     </script>
 </body>
