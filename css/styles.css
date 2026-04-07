@@ -2012,3 +2012,39 @@ body::before {
 .balance-pop {
     color: #58d68d;
 } 
+
+.user-avatar-container {
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2.5px solid #2ecc71;
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
+    background: var(--card-bg-solid);
+}
+
+.user-name {
+    color: #2ecc71;
+    font-size: 1.25rem;
+    font-weight: 800;
+    margin: 0;
+    text-shadow: 0 0 8px rgba(46, 204, 113, 0.3);
+}
+
+.balance-ton {
+    color: #2ecc71;
+}
+
+.balance-pop {
+    color: #58d68d;
+} 
