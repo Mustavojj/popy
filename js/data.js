@@ -66,7 +66,7 @@ export const THEME_CONFIG = {
         primaryColor: "#2ecc71",
         secondaryColor: "#82e0aa",
         accentColor: "#a9dfbf",
-        tonColor: "#f1c40f",
-        popColor: "#e67e22"
+        tonColor: "#2ecc71",
+        popColor: "#58d68d"
     }
 };
