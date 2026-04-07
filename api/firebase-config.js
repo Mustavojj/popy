@@ -5,7 +5,7 @@ export default async function handler(req, res) {
     
     try {
         const origin = req.headers.origin;
-        const allowedOrigins = ['https://t.me'];
+        const allowedOrigins = ['https://your-app.vercel.app', 'https://t.me'];
         if (!allowedOrigins.includes(origin)) {
             return res.status(403).json({ error: 'Access denied' });
         }
