@@ -74,14 +74,12 @@
             <div class="profile-card">
                 <div class="profile-content">
                     <div class="profile-left">
-                        <div class="user-avatar-wrapper">
-                            <div class="user-avatar-container">
-                                <img id="user-photo" class="user-avatar" 
-                                     src="https://cdn-icons-png.flaticon.com/512/9195/9195920.png" 
-                                     alt="User" 
-                                     oncontextmenu="return false;" 
-                                     ondragstart="return false">
-                            </div>
+                        <div class="user-avatar-container">
+                            <img id="user-photo" class="user-avatar" 
+                                 src="https://cdn-icons-png.flaticon.com/512/9195/9195920.png" 
+                                 alt="User" 
+                                 oncontextmenu="return false;" 
+                                 ondragstart="return false">
                         </div>
                         <div class="user-info-left">
                             <h2 id="user-name" class="user-name">User</h2>
@@ -190,54 +188,6 @@
             font-weight: bold;
             margin-top: 20px;
             cursor: pointer;
-        }
-        
-        .user-avatar-wrapper {
-            position: relative;
-            width: 65px;
-            height: 65px;
-        }
-        
-        .user-avatar-wrapper::before {
-            content: '';
-            position: absolute;
-            top: -3px;
-            left: -3px;
-            right: -3px;
-            bottom: -3px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #2ecc71, #1e8449, #58d68d);
-            animation: rotateGlow 3s linear infinite;
-        }
-        
-        .user-avatar-container {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            overflow: hidden;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .user-avatar {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #1e3223;
-        }
-        
-        @keyframes rotateGlow {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .user-name {
-            color: #2ecc71;
-            font-size: 1.25rem;
-            font-weight: 800;
-            margin: 0;
-            text-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
         }
     </style>
 
