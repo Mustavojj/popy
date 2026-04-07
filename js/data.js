@@ -57,15 +57,15 @@ export const FEATURES_CONFIG = {
 
 export const THEME_CONFIG = {
     GOLDEN_THEME: {
-        background: "#1a0b2e",
-        cardBg: "rgba(46, 25, 70, 0.65)",
-        cardBgSolid: "#2e1a46",
+        background: "#0a1a0f",
+        cardBg: "rgba(30, 50, 35, 0.65)",
+        cardBgSolid: "#1e3223",
         textPrimary: "#ffffff",
-        textSecondary: "#e8d5f5",
-        textLight: "#c9b3dd",
-        primaryColor: "#9b59b6",
-        secondaryColor: "#bb8fce",
-        accentColor: "#c39bd3",
+        textSecondary: "#d5f5e3",
+        textLight: "#a9dfbf",
+        primaryColor: "#2ecc71",
+        secondaryColor: "#82e0aa",
+        accentColor: "#a9dfbf",
         tonColor: "#f1c40f",
         popColor: "#e67e22"
     }
