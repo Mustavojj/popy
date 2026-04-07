@@ -1845,3 +1845,114 @@ body::before {
     color: #58d68d;
     border-color: rgba(46, 204, 113, 0.3);
     }
+
+#tasks-page,
+#referrals-page,
+#profile-page {
+    padding-bottom: 30px;
+}
+
+.page > :last-child {
+    margin-bottom: 20px;
+}
+
+.user-avatar {
+    border: 3px solid #2ecc71;
+    box-shadow: 0 0 15px rgba(46, 204, 113, 0.4);
+}
+
+.user-avatar-container::before {
+    display: none;
+}
+
+.user-name {
+    color: #2ecc71;
+    text-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
+}
+
+.balance-ton {
+    color: #2ecc71;
+}
+
+.balance-pop {
+    color: #58d68d;
+}
+
+.fa-coins,
+.fa-wallet,
+.fa-gem,
+.fa-gift,
+.fa-user-plus,
+.fa-tasks,
+.fa-chart-bar,
+.fa-history,
+.fa-link,
+.fa-handshake {
+    color: #ffffff !important;
+}
+
+.fa-coins:active,
+.fa-wallet:active,
+.fa-gem:active,
+.fa-gift:active,
+.fa-user-plus:active,
+.fa-tasks:active,
+.fa-chart-bar:active,
+.fa-history:active,
+.fa-link:active,
+.fa-handshake:active {
+    color: #2ecc71 !important;
+}
+
+.price-value {
+    color: #2ecc71;
+}
+
+.progress-fill {
+    background: linear-gradient(90deg, #2ecc71, #1e8449);
+}
+
+.requirement-count {
+    color: #2ecc71;
+}
+
+.stat-value {
+    color: #2ecc71;
+}
+
+.history-amount-row .history-amount {
+    color: #2ecc71;
+}
+
+.notification-icon i {
+    color: #2ecc71;
+}
+
+.deposit-copy-btn {
+    background: linear-gradient(135deg, #2ecc71, #1e8449);
+}
+
+.deposit-value {
+    color: #58d68d;
+}
+
+.form-label {
+    color: #58d68d;
+}
+
+.mini-balance-item span {
+    color: #2ecc71;
+}
+
+.exchange-preview {
+    color: #2ecc71;
+}
+
+.reward-badge {
+    color: #58d68d;
+    border-color: rgba(46, 204, 113, 0.3);
+}
+
+.task-modal-tabs-container {
+    margin-top: 20px;
+                                }
