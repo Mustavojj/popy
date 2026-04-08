@@ -7,13 +7,16 @@ class App {
     constructor() {
         this.darkMode = true;
         this.tg = null;
-        this.isInitialized = false;
-        this.isInitializing = false;
+        this.db = null;
+        this.auth = null;
+        this.firebaseInitialized = false;
         this.currentUser = null;
         this.userState = {};
         this.appConfig = APP_CONFIG;
         this.themeConfig = THEME_CONFIG;
         this.userCompletedTasks = new Set();
+        this.isInitialized = false;
+        this.isInitializing = false;
         this.userWithdrawals = [];
         this.appStats = {
             totalUsers: 0,
@@ -137,8 +140,33 @@ class App {
     }
 
     async syncServerTime() {
-        this.serverTimeOffset = 0;
-        return true;
+        try {
+            const startTime = Date.now();
+            const serverTime = await this.getFirebaseServerTime();
+            const endTime = Date.now();
+            const rtt = endTime - startTime;
+            this.serverTimeOffset = serverTime - endTime + (rtt / 2);
+            return true;
+        } catch (error) {
+            this.serverTimeOffset = 0;
+            return false;
+        }
+    }
+
+    async getFirebaseServerTime() {
+        return new Promise((resolve, reject) => {
+            if (!this.db) {
+                reject(new Error('Database not initialized'));
+                return;
+            }
+            const ref = this.db.ref('.info/serverTimeOffset');
+            ref.once('value')
+                .then(snapshot => {
+                    const offset = snapshot.val() || 0;
+                    resolve(Date.now() + offset);
+                })
+                .catch(reject);
+        });
     }
 
     updateLoadingStep(step, text, icon = 'fa-spinner fa-pulse', success = false) {
@@ -163,13 +191,18 @@ class App {
 
     async apiCall(endpoint, data = {}) {
         try {
+            let idToken = null;
+            if (this.auth && this.auth.currentUser) {
+                idToken = await this.auth.currentUser.getIdToken();
+            }
             const response = await fetch(`/api/${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...data,
                     userId: this.tgUser?.id,
-                    initData: this.tg?.initData
+                    initData: this.tg?.initData,
+                    idToken: idToken
                 })
             });
             return await response.json();
@@ -200,17 +233,30 @@ class App {
             this.tgUser = this.tg.initDataUnsafe.user;
             this.updateLoadingStep(0, "App Data Loaded", 'fa-check-circle', true);
             this.updateLoadingStep(1, "Loading User Data...", 'fa-spinner fa-pulse', false);
-            this.telegramVerified = true;
+            this.telegramVerified = await this.verifyTelegramUser();
             this.tg.ready();
             this.tg.expand();
             this.setupTelegramTheme();
             this.notificationManager = new NotificationManager();
+            const firebaseSuccess = await this.initializeFirebase();
+            if (firebaseSuccess) {
+                this.setupFirebaseAuth();
+            }
             await this.syncServerTime();
+            if (this.timeSyncInterval) {
+                clearInterval(this.timeSyncInterval);
+            }
+            this.timeSyncInterval = setInterval(() => this.syncServerTime(), 300000);
             await this.loadUserData();
             this.updateLoadingStep(1, "User Data Loaded", 'fa-check-circle', true);
             this.updateLoadingStep(2, "Checking User Status...", 'fa-spinner fa-pulse', false);
             if (this.userState.status === 'ban') {
                 this.showBannedPage();
+                return;
+            }
+            const deviceCheck = await this.checkDeviceAndRegister();
+            if (!deviceCheck.allowed) {
+                this.showDeviceBanPage();
                 return;
             }
             this.updateLoadingStep(2, "Status Verified", 'fa-check-circle', true);
@@ -374,11 +420,68 @@ class App {
     }
 
     async checkDeviceAndRegister() {
-        return { allowed: true };
+        try {
+            if (!this.db) {
+                return { allowed: true };
+            }
+            const userAgent = navigator.userAgent;
+            const screenRes = `${window.screen.width}x${window.screen.height}`;
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const language = navigator.language;
+            const deviceComponents = [userAgent, screenRes, timezone, language];
+            let deviceString = deviceComponents.join('|');
+            let deviceHash = 0;
+            for (let i = 0; i < deviceString.length; i++) {
+                const char = deviceString.charCodeAt(i);
+                deviceHash = ((deviceHash << 5) - deviceHash) + char;
+                deviceHash = deviceHash & deviceHash;
+            }
+            this.deviceId = 'dev_' + Math.abs(deviceHash).toString(16);
+            const savedDeviceId = localStorage.getItem('device_fingerprint');
+            if (savedDeviceId && savedDeviceId !== this.deviceId) {
+                this.deviceId = savedDeviceId;
+            } else {
+                localStorage.setItem('device_fingerprint', this.deviceId);
+            }
+            const deviceRef = await this.db.ref(`devices/${this.deviceId}`).once('value');
+            if (deviceRef.exists()) {
+                const deviceData = deviceRef.val();
+                this.deviceOwnerId = deviceData.ownerId;
+                if (deviceData.ownerId && deviceData.ownerId !== this.tgUser.id) {
+                    return { allowed: false, message: "This device is already registered with another account." };
+                }
+                await this.db.ref(`devices/${this.deviceId}`).update({ lastSeen: this.getServerTime(), lastUserId: this.tgUser.id });
+            } else {
+                await this.db.ref(`devices/${this.deviceId}`).set({
+                    ownerId: this.tgUser.id,
+                    firstSeen: this.getServerTime(),
+                    lastSeen: this.getServerTime(),
+                    userAgent: navigator.userAgent,
+                    screenResolution: screenRes,
+                    timezone: timezone,
+                    language: language
+                });
+                this.deviceOwnerId = this.tgUser.id;
+            }
+            return { allowed: true };
+        } catch (error) {
+            return { allowed: true };
+        }
     }
 
     async verifyTelegramUser() {
-        return true;
+        try {
+            if (!this.tg?.initData) return false;
+            const params = new URLSearchParams(this.tg.initData);
+            const hash = params.get('hash');
+            if (!hash || hash.length < 10) return false;
+            const user = this.tg.initDataUnsafe.user;
+            if (!user || !user.id || user.id <= 0) return false;
+            return true;
+        } catch (error) {
+            this.showNotification("Error", "Telegram verification failed", "error");
+            return false;
+        }
     }
 
     async loadUserCreatedTasks() {
@@ -618,13 +721,7 @@ class App {
             payBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Creating...';
             payBtn.disabled = true;
             try {
-                const result = await this.apiCall('createTask', {
-                    taskName,
-                    taskLink,
-                    verification,
-                    completions,
-                    price
-                });
+                const result = await this.apiCall('createTask', { taskName, taskLink, verification, completions, price });
                 if (result.success) {
                     await this.loadUserData(true);
                     await this.loadUserCreatedTasks();
@@ -655,30 +752,102 @@ class App {
         return result.isAdmin || false;
     }
 
-    initializeInAppAds() {
-        if (this.inAppAdsInitialized) return;
+    async initializeFirebase() {
         try {
-            if (typeof window.AdBlock1 !== 'undefined') {
-                this.inAppAdsInitialized = true;
-                this.nextAdInterval = 120000;
+            if (typeof firebase === 'undefined') {
+                throw new Error('Firebase SDK not loaded');
+            }
+            const response = await fetch('/api/firebase-config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-telegram-user': this.tgUser?.id?.toString() || '',
+                    'x-telegram-auth': this.tg?.initData || ''
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Failed to fetch Firebase config');
+            }
+            const result = await response.json();
+            const decoded = atob(result.encrypted);
+            const firebaseConfig = JSON.parse(decoded);
+            let firebaseApp;
+            try {
+                firebaseApp = firebase.initializeApp(firebaseConfig);
+            } catch (error) {
+                if (error.code === 'app/duplicate-app') {
+                    firebaseApp = firebase.app();
+                } else {
+                    throw error;
+                }
+            }
+            this.db = firebaseApp.database();
+            this.auth = firebaseApp.auth();
+            try {
+                await this.auth.signInAnonymously();
+            } catch (authError) {
+                const randomEmail = `user_${this.tgUser.id}_${Date.now()}@popbuzz.app`;
+                const randomPassword = Math.random().toString(36).slice(-10) + Date.now().toString(36);
+                await this.auth.createUserWithEmailAndPassword(randomEmail, randomPassword);
+            }
+            await new Promise((resolve, reject) => {
+                const unsubscribe = this.auth.onAuthStateChanged((user) => {
+                    if (user) {
+                        unsubscribe();
+                        this.currentUser = user;
+                        resolve(user);
+                    }
+                });
                 setTimeout(() => {
-                    this.showInAppAd();
-                    if (this.inAppAdsTimer) clearInterval(this.inAppAdsTimer);
-                    const showNextAd = () => {
-                        this.showInAppAd();
-                        this.nextAdInterval *= 2;
-                        setTimeout(showNextAd, this.nextAdInterval);
-                    };
-                    setTimeout(showNextAd, this.nextAdInterval);
-                }, this.appConfig.INITIAL_AD_DELAY);
+                    unsubscribe();
+                    reject(new Error('Authentication timeout'));
+                }, 10000);
+            });
+            this.firebaseInitialized = true;
+            return true;
+        } catch (error) {
+            this.showNotification("Error", "Failed to connect to database", "error");
+            return false;
+        }
+    }
+
+    setupFirebaseAuth() {
+        if (!this.auth) return;
+        this.auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                this.currentUser = user;
+                if (this.userState.firebaseUid !== user.uid) {
+                    this.userState.firebaseUid = user.uid;
+                    await this.syncUserWithFirebase();
+                }
+            } else {
+                try {
+                    await this.auth.signInAnonymously();
+                } catch (error) {}
+            }
+        });
+    }
+
+    async syncUserWithFirebase() {
+        try {
+            if (!this.db || !this.auth.currentUser) return;
+            const firebaseUid = this.auth.currentUser.uid;
+            const telegramId = this.tgUser.id;
+            const userRef = this.db.ref(`users/${telegramId}`);
+            const userSnapshot = await userRef.once('value');
+            if (!userSnapshot.exists()) {
+                const userData = {
+                    ...this.getDefaultUserState(),
+                    firebaseUid: firebaseUid,
+                    deviceId: this.deviceId,
+                    createdAt: this.getServerTime(),
+                    lastSynced: this.getServerTime()
+                };
+                await userRef.set(userData);
+            } else {
+                await userRef.update({ firebaseUid: firebaseUid, deviceId: this.deviceId, lastSynced: this.getServerTime() });
             }
         } catch (error) {}
-    }
-    
-    showInAppAd() {
-        if (typeof window.AdBlock2 !== 'undefined') {
-            window.AdBlock2.show().catch(() => {});
-        }
     }
 
     async loadUserData(forceRefresh = false) {
@@ -699,6 +868,9 @@ class App {
                 this.userState = result;
                 this.userPOP = this.safeNumber(result.pop);
                 this.userCompletedTasks = new Set(result.completedTasks || []);
+                if (this.db && this.auth?.currentUser && this.userState.firebaseUid !== this.auth.currentUser.uid) {
+                    await this.syncUserWithFirebase();
+                }
                 this.cache.set(cacheKey, result, 60000);
                 this.updateHeader();
             } else {
@@ -729,7 +901,8 @@ class App {
             referralEarnings: 0,
             completedTasksCount: 0,
             status: 'free',
-            lastUpdated: Date.now(),
+            lastUpdated: this.getServerTime(),
+            firebaseUid: this.auth?.currentUser?.uid || 'pending',
             totalWithdrawnAmount: 0,
             completedTasks: [],
             deviceId: this.deviceId,
@@ -1290,13 +1463,7 @@ class App {
         this.disableAllTaskButtons();
         this.isProcessingTask = true;
         try {
-            const result = await this.apiCall('completeTask', {
-                taskId,
-                url,
-                verification,
-                reward,
-                popReward
-            });
+            const result = await this.apiCall('completeTask', { taskId, url, verification, reward, popReward });
             if (result.success) {
                 this.userCompletedTasks.add(taskId);
                 this.userState.balance = this.safeNumber(this.userState.balance) + reward;
