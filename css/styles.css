@@ -118,22 +118,26 @@ body::before {
 }
 
 .loading-step {
-    color: #58d68d;
     margin: 8px 0;
     font-size: 14px;
     text-align: left;
     padding: 12px 15px;
     background: rgba(0, 0, 0, 0.3);
     border-radius: 14px;
-    border-left: 3px solid #58d68d;
     display: flex;
     align-items: center;
+    gap: 12px;
     transition: all 0.3s ease;
 }
 
-.loading-step.completed {
-    color: #1e8449;
-    border-left-color: #1e8449;
+.loading-step i {
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.loading-step span {
+    flex: 1;
 }
 
 .launch-btn {
@@ -1014,10 +1018,18 @@ body::before {
 
 .requirements-section {
     margin-bottom: 22px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: var(--border-radius-sm);
+    padding: 18px;
+    border: 1px solid var(--card-border);
 }
 
-.requirement-item {
-    margin-bottom: 14px;
+.requirement-card {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 12px;
+    border-left: 4px solid var(--primary-color);
 }
 
 .requirement-header {
@@ -1025,18 +1037,33 @@ body::before {
     justify-content: space-between;
     color: var(--text-secondary);
     font-size: 0.85rem;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.requirement-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.requirement-title i {
+    color: var(--primary-light);
+    font-size: 0.9rem;
 }
 
 .requirement-count {
     color: var(--primary-light);
     font-weight: 700;
+    background: rgba(46, 204, 113, 0.2);
+    padding: 2px 8px;
+    border-radius: 20px;
 }
 
 .progress-bar {
     width: 100%;
     height: 8px;
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(0, 0, 0, 0.5);
     border-radius: 10px;
     overflow: hidden;
     border: 1px solid var(--card-border);
@@ -1444,6 +1471,7 @@ body::before {
     background: rgba(0, 0, 0, 0.4);
     color: var(--text-light);
     cursor: not-allowed;
+    opacity: 0.6;
 }
 
 .referral-stats-section {
@@ -1832,6 +1860,64 @@ body::before {
     margin-bottom: 4px;
 }
 
+.task-message {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.task-message.error {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.task-message.success {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+    border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.task-message.warning {
+    background: rgba(243, 156, 18, 0.2);
+    color: #f39c12;
+    border: 1px solid rgba(243, 156, 18, 0.3);
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+    20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+
+@keyframes shake-success {
+    0%, 100% { transform: translateY(0); }
+    25% { transform: translateY(-3px); }
+    75% { transform: translateY(3px); }
+}
+
+@keyframes shake-error {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-5px); }
+    40% { transform: translateX(5px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(3px); }
+}
+
+.shake {
+    animation: shake 0.4s ease-in-out;
+}
+
+.shake-success {
+    animation: shake-success 0.4s ease-in-out;
+}
+
+.shake-error {
+    animation: shake-error 0.4s ease-in-out;
+}
+
 @media (max-width: 480px) {
     .stats-grid-two {
         gap: 10px;
@@ -1939,4 +2025,4 @@ body::before {
 
 .task-btn.counting i {
     color: white !important;
-} 
+}
