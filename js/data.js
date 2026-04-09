@@ -1,5 +1,5 @@
 export const APP_CONFIG = {
-    APP_NAME: "STARS BUZZ",
+    APP_NAME: "STAR Z",
     BOT_USERNAME: "Strzzbot",
     BOT_WALLET: "UQCDl6ZDEWWmowrfUUL31Z837jdg3zvGQgTE9djjAcvSXxcg",
     MINIMUM_WITHDRAW: 0.05,
