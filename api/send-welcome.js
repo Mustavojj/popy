@@ -11,6 +11,7 @@ export default async function handler(req, res) {
         }
         
         const BOT_TOKEN = process.env.BOT_TOKEN;
+        const BOT_USERNAME = "Strzzbot";
         
         if (!BOT_TOKEN) {
             return res.status(500).json({ success: false, error: 'BOT_TOKEN not configured' });
@@ -30,7 +31,7 @@ export default async function handler(req, res) {
                 reply_markup: {
                     inline_keyboard: [[{
                         text: "🚀 Start App",
-                        web_app: { url: "https://t.me/Strzzbot/star" }
+                        url: `https://t.me/${BOT_USERNAME}?start=welcome`
                     }]]
                 }
             })
