@@ -45,24 +45,24 @@
             </div>
             
             <div class="loading-steps">
-                <div class="loading-step">
-                    <i class="fas fa-spinner fa-pulse"></i>
+                <div class="loading-step" style="background: rgba(0, 0, 0, 0.3); border-left: 3px solid #58d68d; color: #58d68d;">
+                    <i class="fas fa-spinner fa-pulse" style="color: #58d68d; margin-right: 12px; width: 20px; text-align: center;"></i>
                     <span>Loading App Data...</span>
                 </div>
-                <div class="loading-step">
-                    <i class="fas fa-spinner fa-pulse"></i>
+                <div class="loading-step" style="background: rgba(0, 0, 0, 0.3); border-left: 3px solid #58d68d; color: #58d68d;">
+                    <i class="fas fa-spinner fa-pulse" style="color: #58d68d; margin-right: 12px; width: 20px; text-align: center;"></i>
                     <span>Loading User Data...</span>
                 </div>
-                <div class="loading-step">
-                    <i class="fas fa-spinner fa-pulse"></i>
+                <div class="loading-step" style="background: rgba(0, 0, 0, 0.3); border-left: 3px solid #58d68d; color: #58d68d;">
+                    <i class="fas fa-spinner fa-pulse" style="color: #58d68d; margin-right: 12px; width: 20px; text-align: center;"></i>
                     <span>Checking User Status...</span>
                 </div>
-                <div class="loading-step">
-                    <i class="fas fa-spinner fa-pulse"></i>
+                <div class="loading-step" style="background: rgba(0, 0, 0, 0.3); border-left: 3px solid #58d68d; color: #58d68d;">
+                    <i class="fas fa-spinner fa-pulse" style="color: #58d68d; margin-right: 12px; width: 20px; text-align: center;"></i>
                     <span>Loading Tasks...</span>
                 </div>
-                <div class="loading-step">
-                    <i class="fas fa-spinner fa-pulse"></i>
+                <div class="loading-step" style="background: rgba(0, 0, 0, 0.3); border-left: 3px solid #58d68d; color: #58d68d;">
+                    <i class="fas fa-spinner fa-pulse" style="color: #58d68d; margin-right: 12px; width: 20px; text-align: center;"></i>
                     <span>App Loading...</span>
                 </div>
             </div>
@@ -191,6 +191,38 @@
             font-weight: bold;
             margin-top: 20px;
             cursor: pointer;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+            20%, 40%, 60%, 80% { transform: translateX(2px); }
+        }
+
+        @keyframes shake-success {
+            0%, 100% { transform: translateY(0); }
+            25% { transform: translateY(-3px); }
+            75% { transform: translateY(3px); }
+        }
+
+        @keyframes shake-error {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-5px); }
+            40% { transform: translateX(5px); }
+            60% { transform: translateX(-3px); }
+            80% { transform: translateX(3px); }
+        }
+
+        .shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        .shake-success {
+            animation: shake-success 0.4s ease-in-out;
+        }
+
+        .shake-error {
+            animation: shake-error 0.4s ease-in-out;
         }
     </style>
 
