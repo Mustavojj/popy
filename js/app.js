@@ -2918,7 +2918,7 @@ class App {
         const referralsPage = document.getElementById('referrals-page');
         if (!referralsPage) return;
         
-        const referralLink = `https://t.me/Pobuzzbot/app?startapp=${this.tgUser.id}`;
+        const referralLink = `https://t.me/Strzzbot/app?startapp=${this.tgUser.id}`;
         const totalReferrals = this.safeNumber(this.userState.referrals || 0);
         const referralEarnings = this.safeNumber(this.userState.referralEarnings || 0);
         const referralStarEarnings = this.safeNumber(this.userState.referralStarEarnings || 0);
@@ -3046,7 +3046,7 @@ class App {
         const copyBtn = document.getElementById('copy-referral-link-btn');
         if (copyBtn) {
             copyBtn.addEventListener('click', () => {
-                const referralLink = `https://t.me/Pobuzzbot/app?startapp=${this.tgUser.id}`;
+                const referralLink = `https://t.me/Strzzbot/app?startapp=${this.tgUser.id}`;
                 this.copyToClipboard(referralLink);
                 
                 copyBtn.classList.add('copied');
@@ -3195,55 +3195,79 @@ class App {
                         <div class="card-divider"></div>
                         
                         <div class="requirements-section">
-                            ${!tasksCompleted ? `
-                            <div class="requirement-card">
-                                <div class="requirement-header">
-                                    <div class="requirement-title">
-                                        <i class="fas fa-tasks"></i>
-                                        <span>Complete Tasks</span>
-                                    </div>
-                                    <span class="requirement-count">${tasksProgress}/${tasksRequired}</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: ${(tasksProgress/tasksRequired)*100}%"></div>
-                                </div>
-                            </div>
-                            ` : `
-                            <div class="requirement-card" style="border-left-color: #2ecc71;">
-                                <div class="requirement-header">
-                                    <div class="requirement-title">
-                                        <i class="fas fa-check-circle" style="color: #2ecc71;"></i>
-                                        <span>Tasks Completed</span>
-                                    </div>
-                                    <span class="requirement-count" style="color: #2ecc71;">✓ ${tasksRequired}/${tasksRequired}</span>
-                                </div>
-                            </div>
-                            `}
-                            
-                            ${!referralsCompleted ? `
-                            <div class="requirement-card">
-                                <div class="requirement-header">
-                                    <div class="requirement-title">
-                                        <i class="fas fa-users"></i>
-                                        <span>Invite Friends</span>
-                                    </div>
-                                    <span class="requirement-count">${referralsProgress}/${referralsRequired}</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: ${(referralsProgress/referralsRequired)*100}%"></div>
-                                </div>
-                            </div>
-                            ` : `
-                            <div class="requirement-card" style="border-left-color: #2ecc71;">
-                                <div class="requirement-header">
-                                    <div class="requirement-title">
-                                        <i class="fas fa-check-circle" style="color: #2ecc71;"></i>
-                                        <span>Friends Invited</span>
-                                    </div>
-                                    <span class="requirement-count" style="color: #2ecc71;">✓ ${referralsRequired}/${referralsRequired}</span>
-                                </div>
-                            </div>
-                            `}
+    ${!tasksCompleted ? `
+    <div class="requirement-card">
+        <div class="requirement-header">
+            <div class="requirement-title">
+                <i class="fas fa-tasks"></i>
+                <span>Complete Tasks</span>
+            </div>
+            <span class="requirement-count">${tasksProgress}/${tasksRequired}</span>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: ${(tasksProgress/tasksRequired)*100}%"></div>
+        </div>
+        <div class="requirement-note">
+            <i class="fas fa-info-circle"></i>
+            <span>${tasksRequired - tasksProgress} tasks remaining</span>
+        </div>
+    </div>
+    ` : ''}
+    
+    ${referralsRequired > 0 && !referralsCompleted ? `
+    <div class="requirement-card">
+        <div class="requirement-header">
+            <div class="requirement-title">
+                <i class="fas fa-users"></i>
+                <span>Invite Friends</span>
+            </div>
+            <span class="requirement-count">${referralsProgress}/${referralsRequired}</span>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: ${(referralsProgress/referralsRequired)*100}%"></div>
+        </div>
+        <div class="requirement-note">
+            <i class="fas fa-info-circle"></i>
+            <span>${referralsRequired - referralsProgress} invites remaining</span>
+        </div>
+    </div>
+    ` : ''}
+    
+    ${!starCompleted ? `
+    <div class="requirement-card">
+        <div class="requirement-header">
+            <div class="requirement-title">
+                <i class="fas fa-star"></i>
+                <span>Earn STAR</span>
+            </div>
+            <span class="requirement-count">${starProgress}/${starRequired}</span>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: ${(starProgress/starRequired)*100}%"></div>
+        </div>
+        <div class="requirement-note">
+            <i class="fas fa-info-circle"></i>
+            <span>${starRequired - starProgress} STAR remaining</span>
+        </div>
+    </div>
+    ` : ''}
+    
+    ${tasksCompleted && referralsCompleted && starCompleted ? `
+    <div class="requirement-card all-completed">
+        <div class="requirement-header">
+            <div class="requirement-title">
+                <i class="fas fa-check-circle"></i>
+                <span>All Requirements Completed!</span>
+            </div>
+            <span class="requirement-count">✓ Ready</span>
+        </div>
+        <div class="requirement-note success">
+            <i class="fas fa-gem"></i>
+            <span>You can now withdraw your earnings</span>
+        </div>
+    </div>
+    ` : ''}
+</div>
                             
                             ${!starCompleted ? `
                             <div class="requirement-card">
