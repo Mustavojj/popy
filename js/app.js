@@ -3067,290 +3067,241 @@ class App {
         } catch (error) {}
     }
 
-    async renderProfilePage() {
-        const profilePage = document.getElementById('profile-page');
-        if (!profilePage) return;
+                                    
         
-        const joinDate = new Date(this.userState.createdAt || this.getServerTime());
-        const formattedDate = this.formatDate(joinDate);
-        
-        const totalTasksCompleted = this.safeNumber(this.userState.totalTasksCompleted || 0);
-        const totalReferrals = this.safeNumber(this.userState.referrals || 0);
-        const totalSTAR = this.safeNumber(this.userState.star || 0);
-        
-        const tasksRequired = this.appConfig.REQUIRED_TASKS_FOR_WITHDRAWAL;
-        const referralsRequired = this.appConfig.REQUIRED_REFERRALS_FOR_WITHDRAWAL;
-        const starRequired = this.appConfig.REQUIRED_POP_FOR_WITHDRAWAL;
-        
-        const tasksProgress = Math.min(totalTasksCompleted, tasksRequired);
-        const referralsProgress = Math.min(totalReferrals, referralsRequired);
-        const starProgress = Math.min(totalSTAR, starRequired);
-        
-        const tasksCompleted = totalTasksCompleted >= tasksRequired;
-        const referralsCompleted = totalReferrals >= referralsRequired;
-        const starCompleted = totalSTAR >= starRequired;
-        
-        const canWithdraw = tasksCompleted && referralsCompleted && starCompleted;
-        
-        const maxBalance = this.safeNumber(this.userState.balance);
-        
-        const depositComment = this.tgUser.id.toString(); 
-        const directPayUrl = `https://app.tonkeeper.com/transfer/${this.appConfig.BOT_WALLET}?text=${depositComment}`;
-        
-        profilePage.innerHTML = `
-            <div class="profile-container">
-                <div class="profile-tabs">
-                    <button class="profile-tab active" data-profile-tab="deposit-tab">
-                        <i class="fas fa-arrow-down"></i> Deposit
-                    </button>
-                    <button class="profile-tab" data-profile-tab="exchange-tab">
-                        <i class="fas fa-exchange-alt"></i> Exchange
-                    </button>
-                    <button class="profile-tab" data-profile-tab="withdraw-tab">
-                        <i class="fas fa-wallet"></i> Withdraw
-                    </button>
-                </div>
-                
-                <div id="deposit-tab" class="profile-tab-content active">
-                    <div class="deposit-card">
-                        <div class="card-header">
-                            <div class="card-icon">
-                                <i class="fas fa-arrow-down"></i>
-                            </div>
-                            <div class="card-title">Deposit TON</div>
+async renderProfilePage() {
+    const profilePage = document.getElementById('profile-page');
+    if (!profilePage) return;
+    
+    const joinDate = new Date(this.userState.createdAt || this.getServerTime());
+    const formattedDate = this.formatDate(joinDate);
+    
+    const totalTasksCompleted = this.safeNumber(this.userState.totalTasksCompleted || 0);
+    const totalReferrals = this.safeNumber(this.userState.referrals || 0);
+    const totalSTAR = this.safeNumber(this.userState.star || 0);
+    
+    const tasksRequired = this.appConfig.REQUIRED_TASKS_FOR_WITHDRAWAL;
+    const referralsRequired = this.appConfig.REQUIRED_REFERRALS_FOR_WITHDRAWAL;
+    const starRequired = this.appConfig.REQUIRED_POP_FOR_WITHDRAWAL;
+    
+    const tasksProgress = Math.min(totalTasksCompleted, tasksRequired);
+    const referralsProgress = Math.min(totalReferrals, referralsRequired);
+    const starProgress = Math.min(totalSTAR, starRequired);
+    
+    const tasksCompleted = totalTasksCompleted >= tasksRequired;
+    const referralsCompleted = totalReferrals >= referralsRequired;
+    const starCompleted = totalSTAR >= starRequired;
+    
+    const canWithdraw = tasksCompleted && referralsCompleted && starCompleted;
+    
+    const maxBalance = this.safeNumber(this.userState.balance);
+    
+    const depositComment = this.tgUser.id.toString(); 
+    const directPayUrl = `https://app.tonkeeper.com/transfer/${this.appConfig.BOT_WALLET}?text=${depositComment}`;
+    
+    profilePage.innerHTML = `
+        <div class="profile-container">
+            <div class="profile-tabs">
+                <button class="profile-tab active" data-profile-tab="deposit-tab">
+                    <i class="fas fa-arrow-down"></i> Deposit
+                </button>
+                <button class="profile-tab" data-profile-tab="exchange-tab">
+                    <i class="fas fa-exchange-alt"></i> Exchange
+                </button>
+                <button class="profile-tab" data-profile-tab="withdraw-tab">
+                    <i class="fas fa-wallet"></i> Withdraw
+                </button>
+            </div>
+            
+            <div id="deposit-tab" class="profile-tab-content active">
+                <div class="deposit-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-arrow-down"></i>
                         </div>
-                        <div class="card-divider"></div>
-                        
-                        <div class="deposit-info">
-                            <div class="deposit-row">
-                                <span class="deposit-label">Wallet:</span>
-                                <span class="deposit-value" id="deposit-wallet">${this.truncateAddress(this.appConfig.DEPOSIT_WALLET)}</span>
-                                <button class="deposit-copy-btn" data-copy="wallet">
-                                    <i class="far fa-copy"></i>
-                                </button>
-                            </div>
-                            <div class="deposit-row">
-                                <span class="deposit-label">Comment:</span>
-                                <span class="deposit-value" id="deposit-comment">${depositComment}</span>
-                                <button class="deposit-copy-btn" data-copy="comment">
-                                    <i class="far fa-copy"></i>
-                                </button>
-                            </div>
-                            <div class="deposit-actions">
-                                <a href="${directPayUrl}" target="_blank" class="direct-pay-btn" id="direct-pay-btn">
-                                    <i class="fas fa-bolt"></i> Direct Pay
-                                </a>
-                            </div>
-                            <div class="deposit-note">
-                                <i class="fas fa-info-circle"></i>
-                                <span>Deposits processed within 1-24 hour</span>
-                            </div>
-                        </div>
+                        <div class="card-title">Deposit TON</div>
                     </div>
-                </div>
-                
-                <div id="exchange-tab" class="profile-tab-content">
-                    <div class="exchange-card">
-                        <div class="card-header">
-                            <div class="card-icon">
-                                <i class="fas fa-exchange-alt"></i>
-                            </div>
-                            <div class="card-title">Exchange TON to STAR</div>
-                        </div>
-                        <div class="card-divider"></div>
-                        
-                        <div class="exchange-mini-balance">
-                            <div class="mini-balance-item">
-                                <img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" alt="TON">
-                                <span>${this.safeNumber(this.userState.balance).toFixed(3)} TON</span>
-                            </div>
-                            <div class="mini-balance-item">
-                                <img src="https://cdn-icons-png.flaticon.com/512/15660/15660192.png" alt="STAR">
-                                <span>${Math.floor(this.safeNumber(this.userState.star))} STAR</span>
-                            </div>
-                        </div>
-                        
-                        <div class="exchange-input-group">
-                            <div class="amount-input-container">
-                                <input type="number" id="exchange-input" class="form-input" 
-                                       placeholder="TON amount" step="0.01" min="${this.appConfig.MIN_EXCHANGE_TON}">
-                                <span class="exchange-preview" id="exchange-preview">≈ 0 STAR</span>
-                                <button type="button" class="max-btn" id="exchange-max-btn">MAX</button>
-                            </div>
-                            <button class="exchange-btn" id="exchange-btn">
-                                <i class="fas fa-coins"></i> Exchange
+                    <div class="card-divider"></div>
+                    
+                    <div class="deposit-info">
+                        <div class="deposit-row">
+                            <span class="deposit-label">Wallet:</span>
+                            <span class="deposit-value" id="deposit-wallet">${this.truncateAddress(this.appConfig.DEPOSIT_WALLET)}</span>
+                            <button class="deposit-copy-btn" data-copy="wallet">
+                                <i class="far fa-copy"></i>
                             </button>
                         </div>
+                        <div class="deposit-row">
+                            <span class="deposit-label">Comment:</span>
+                            <span class="deposit-value" id="deposit-comment">${depositComment}</span>
+                            <button class="deposit-copy-btn" data-copy="comment">
+                                <i class="far fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="deposit-actions">
+                            <a href="${directPayUrl}" target="_blank" class="direct-pay-btn" id="direct-pay-btn">
+                                <i class="fas fa-bolt"></i> Direct Pay
+                            </a>
+                        </div>
+                        <div class="deposit-note">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Deposits processed within 1-24 hour</span>
+                        </div>
                     </div>
                 </div>
-                
-                <div id="withdraw-tab" class="profile-tab-content">
-                    <div class="withdraw-card">
-                        <div class="card-header">
-                            <div class="card-icon">
-                                <i class="fas fa-wallet"></i>
-                            </div>
-                            <div class="card-title">Withdraw TON</div>
+            </div>
+            
+            <div id="exchange-tab" class="profile-tab-content">
+                <div class="exchange-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-exchange-alt"></i>
                         </div>
-                        <div class="card-divider"></div>
+                        <div class="card-title">Exchange TON to STAR</div>
+                    </div>
+                    <div class="card-divider"></div>
+                    
+                    <div class="exchange-mini-balance">
+                        <div class="mini-balance-item">
+                            <img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" alt="TON">
+                            <span>${this.safeNumber(this.userState.balance).toFixed(3)} TON</span>
+                        </div>
+                        <div class="mini-balance-item">
+                            <img src="https://cdn-icons-png.flaticon.com/512/15660/15660192.png" alt="STAR">
+                            <span>${Math.floor(this.safeNumber(this.userState.star))} STAR</span>
+                        </div>
+                    </div>
+                    
+                    <div class="exchange-input-group">
+                        <div class="amount-input-container">
+                            <input type="number" id="exchange-input" class="form-input" 
+                                   placeholder="TON amount" step="0.01" min="${this.appConfig.MIN_EXCHANGE_TON}">
+                            <span class="exchange-preview" id="exchange-preview">≈ 0 STAR</span>
+                            <button type="button" class="max-btn" id="exchange-max-btn">MAX</button>
+                        </div>
+                        <button class="exchange-btn" id="exchange-btn">
+                            <i class="fas fa-coins"></i> Exchange
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="withdraw-tab" class="profile-tab-content">
+                <div class="withdraw-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                        <div class="card-title">Withdraw TON</div>
+                    </div>
+                    <div class="card-divider"></div>
+                    
+                    <div class="requirements-wrapper">
+                        ${!tasksCompleted ? `
+                        <div class="requirement-item">
+                            <div class="req-info">
+                                <span><i class="fas fa-tasks"></i> Complete Tasks</span>
+                                <span class="req-count">${tasksProgress}/${tasksRequired}</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${(tasksProgress/tasksRequired)*100}%"></div>
+                            </div>
+                        </div>
+                        ` : ''}
                         
-                        <div class="requirements-section">
-    ${!tasksCompleted ? `
-    <div class="requirement-card">
-        <div class="requirement-header">
-            <div class="requirement-title">
-                <i class="fas fa-tasks"></i>
-                <span>Complete Tasks</span>
-            </div>
-            <span class="requirement-count">${tasksProgress}/${tasksRequired}</span>
-        </div>
-        <div class="progress-bar">
-            <div class="progress-fill" style="width: ${(tasksProgress/tasksRequired)*100}%"></div>
-        </div>
-        <div class="requirement-note">
-            <i class="fas fa-info-circle"></i>
-            <span>${tasksRequired - tasksProgress} tasks remaining</span>
-        </div>
-    </div>
-    ` : ''}
-    
-    ${referralsRequired > 0 && !referralsCompleted ? `
-    <div class="requirement-card">
-        <div class="requirement-header">
-            <div class="requirement-title">
-                <i class="fas fa-users"></i>
-                <span>Invite Friends</span>
-            </div>
-            <span class="requirement-count">${referralsProgress}/${referralsRequired}</span>
-        </div>
-        <div class="progress-bar">
-            <div class="progress-fill" style="width: ${(referralsProgress/referralsRequired)*100}%"></div>
-        </div>
-        <div class="requirement-note">
-            <i class="fas fa-info-circle"></i>
-            <span>${referralsRequired - referralsProgress} invites remaining</span>
-        </div>
-    </div>
-    ` : ''}
-    
-    ${!starCompleted ? `
-    <div class="requirement-card">
-        <div class="requirement-header">
-            <div class="requirement-title">
-                <i class="fas fa-star"></i>
-                <span>Earn STAR</span>
-            </div>
-            <span class="requirement-count">${starProgress}/${starRequired}</span>
-
-                            
-<div id="withdraw-tab" class="profile-tab-content">
-    <div class="withdraw-card">
-        <div class="card-header">
-            <div class="card-icon">
-                <i class="fas fa-wallet"></i>
-            </div>
-            <div class="card-title">Withdraw TON</div>
-        </div>
-        <div class="card-divider"></div>
-        
-        
-        <div class="requirements-wrapper">
-            ${!tasksCompleted ? `
-            <div class="requirement-item">
-                <div class="req-info">
-                    <span><i class="fas fa-tasks"></i> Complete Tasks</span>
-                    <span class="req-count">${tasksProgress}/${tasksRequired}</span>
+                        ${referralsRequired > 0 && !referralsCompleted ? `
+                        <div class="requirement-item">
+                            <div class="req-info">
+                                <span><i class="fas fa-users"></i> Invite Friends</span>
+                                <span class="req-count">${referralsProgress}/${referralsRequired}</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${(referralsProgress/referralsRequired)*100}%"></div>
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        ${!starCompleted ? `
+                        <div class="requirement-item">
+                            <div class="req-info">
+                                <span><i class="fas fa-star"></i> Earn STAR</span>
+                                <span class="req-count">${starProgress}/${starRequired}</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${(starProgress/starRequired)*100}%"></div>
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="profile-wallet-input">
+                            <i class="fas fa-wallet"></i> TON Wallet Address
+                        </label>
+                        <input type="text" id="profile-wallet-input" class="form-input" 
+                               placeholder="Enter your TON wallet address (UQ...)"
+                               required>
+                    </div>
+                    
+                    <div class="form-group amount-group">
+                        <label class="form-label" for="profile-amount-input">
+                            <i class="fas fa-gem"></i> Withdrawal Amount
+                        </label>
+                        <div class="amount-input-container">
+                            <input type="number" id="profile-amount-input" class="form-input" 
+                                   step="0.00001" min="${this.appConfig.MINIMUM_WITHDRAW}" 
+                                   max="${maxBalance}"
+                                   placeholder="Min: ${this.appConfig.MINIMUM_WITHDRAW.toFixed(3)} TON"
+                                   required>
+                            <button type="button" class="max-btn" id="max-btn">MAX</button>
+                        </div>
+                    </div>
+                    
+                    <button id="profile-withdraw-btn" class="withdraw-btn" 
+                            ${!canWithdraw || maxBalance < this.appConfig.MINIMUM_WITHDRAW ? 'disabled' : ''}>
+                        <i class="fas fa-paper-plane"></i> 
+                        ${canWithdraw ? 'WITHDRAW NOW' : this.getWithdrawButtonText(tasksCompleted, referralsCompleted, starCompleted)}
+                    </button>
                 </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: ${(tasksProgress/tasksRequired)*100}%"></div>
-                </div>
-            </div>
-            ` : ''}
-            
-            ${referralsRequired > 0 && !referralsCompleted ? `
-            <div class="requirement-item">
-                <div class="req-info">
-                    <span><i class="fas fa-users"></i> Invite Friends</span>
-                    <span class="req-count">${referralsProgress}/${referralsRequired}</span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: ${(referralsProgress/referralsRequired)*100}%"></div>
-                </div>
-            </div>
-            ` : ''}
-            
-            ${!starCompleted ? `
-            <div class="requirement-item">
-                <div class="req-info">
-                    <span><i class="fas fa-star"></i> Earn STAR</span>
-                    <span class="req-count">${starProgress}/${starRequired}</span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: ${(starProgress/starRequired)*100}%"></div>
-                </div>
-            </div>
-            ` : ''}
-        </div>
-        
-        <div class="form-group">
-            <label class="form-label" for="profile-wallet-input">
-                <i class="fas fa-wallet"></i> TON Wallet Address
-            </label>
-            <input type="text" id="profile-wallet-input" class="form-input" 
-                   placeholder="Enter your TON wallet address (UQ...)" required>
-        </div>
-        
-        <div class="form-group amount-group">
-            <label class="form-label" for="profile-amount-input">
-                <i class="fas fa-gem"></i> Withdrawal Amount
-            </label>
-            <div class="amount-input-container">
-                <input type="number" id="profile-amount-input" class="form-input" 
-                       step="0.00001" min="${this.appConfig.MINIMUM_WITHDRAW}" 
-                       max="${maxBalance}"
-                       placeholder="Min: ${this.appConfig.MINIMUM_WITHDRAW.toFixed(3)} TON" required>
-                <button type="button" class="max-btn" id="max-btn">MAX</button>
-            </div>
-        </div>
-        
-        <button id="profile-withdraw-btn" class="withdraw-btn" 
-                ${!canWithdraw || maxBalance < this.appConfig.MINIMUM_WITHDRAW ? 'disabled' : ''}>
-            <i class="fas fa-paper-plane"></i> 
-            ${canWithdraw ? 'WITHDRAW NOW' : this.getWithdrawButtonText(tasksCompleted, referralsCompleted, starCompleted)}
-        </button>
-    </div>
-    
-    <div class="history-section">
-        <div class="history-list" id="withdrawals-list">
-            ${this.renderWithdrawalsHistory()}
-        </div>
-    </div>
-</div>
-
-            </div>
-        `;
-        
-        this.setupProfilePageEvents();
-        
-        const profileTabs = document.querySelectorAll('.profile-tab');
-        const profileTabContents = document.querySelectorAll('.profile-tab-content');
-        
-        profileTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                const tabId = tab.getAttribute('data-profile-tab');
                 
-                profileTabs.forEach(t => t.classList.remove('active'));
-                profileTabContents.forEach(c => c.classList.remove('active'));
-                
-                tab.classList.add('active');
-                const targetTab = document.getElementById(tabId);
-                if (targetTab) {
-                    targetTab.classList.add('active');
-                }
-            });
+                <div class="history-section">
+                    <div class="history-list" id="withdrawals-list">
+                        ${this.renderWithdrawalsHistory()}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    this.setupProfilePageEvents();
+    
+    const profileTabs = document.querySelectorAll('.profile-tab');
+    const profileTabContents = document.querySelectorAll('.profile-tab-content');
+    
+    profileTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabId = tab.getAttribute('data-profile-tab');
+            
+            profileTabs.forEach(t => t.classList.remove('active'));
+            profileTabContents.forEach(c => c.classList.remove('active'));
+            
+            tab.classList.add('active');
+            const targetTab = document.getElementById(tabId);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
         });
-    }
+    });
+}
 
+
+
+
+
+
+
+
+      
     renderWithdrawalsHistory() {
         if (!this.userWithdrawals || this.userWithdrawals.length === 0) {
             return `
