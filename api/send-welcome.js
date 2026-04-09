@@ -30,8 +30,8 @@ export default async function handler(req, res) {
                 parse_mode: 'HTML',
                 reply_markup: {
                     inline_keyboard: [[{
-                        text: "🚀 Start App",
-                        url: `https://t.me/${BOT_USERNAME}?start=welcome`
+                        text: "GET NEWS 📉",
+                        url: `https://t.me/POP_BUZZ`
                     }]]
                 }
             })
