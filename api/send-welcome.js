@@ -7,47 +7,38 @@ export default async function handler(req, res) {
         const { userId, firstName, username } = req.body;
         
         if (!userId) {
-            return res.status(400).json({ error: 'User ID required' });
+            return res.status(200).json({ success: false });
         }
         
         const BOT_TOKEN = process.env.BOT_TOKEN;
-        const WELCOME_MESSAGE = process.env.WELCOME_MESSAGE || "🎉 *Welcome to STAR BUZZ!* 🎉\n\nEarn TON and STAR by completing tasks and inviting friends!\n\n🌟 Complete tasks to earn rewards\n👥 Invite friends for bonus\n💎 Exchange TON to STAR\n\nStart your journey now!";
-        const WELCOME_BUTTON_TEXT = process.env.WELCOME_BUTTON_TEXT || "🚀 Start App";
-        const WELCOME_BUTTON_URL = process.env.WELCOME_BUTTON_URL || "https://t.me/Strzzbot/star";
         
-        const personalizedMessage = WELCOME_MESSAGE.replace('{firstName}', firstName || 'User').replace('{username}', username || '');
+        if (!BOT_TOKEN) {
+            return res.status(200).json({ success: false });
+        }
         
-        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        const message = `🎉 *Welcome to STAR BUZZ!* 🎉\n\nEarn TON and STAR by completing tasks and inviting friends!\n\n🌟 Start your journey now!`;
+        
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
                 chat_id: userId,
-                text: personalizedMessage,
+                text: message,
                 parse_mode: 'Markdown',
                 reply_markup: {
-                    inline_keyboard: [
-                        [
-                            {
-                                text: WELCOME_BUTTON_TEXT,
-                                web_app: { url: WELCOME_BUTTON_URL }
-                            }
-                        ]
-                    ]
+                    inline_keyboard: [[{
+                        text: "🚀 Start App",
+                        web_app: { url: "https://t.me/Strzzbot/star" }
+                    }]]
                 }
             })
         });
         
-        const data = await response.json();
-        
-        if (data.ok) {
-            res.status(200).json({ success: true, message: 'Welcome message sent' });
-        } else {
-            res.status(200).json({ success: false, error: data.description });
-        }
+        res.status(200).json({ success: true });
         
     } catch (error) {
-        res.status(200).json({ success: false, error: error.message });
+        res.status(200).json({ success: false });
     }
 }
