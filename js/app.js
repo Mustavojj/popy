@@ -641,6 +641,8 @@ class App {
         }
     }
 
+
+
 async sendWelcomeMessage() {
     try {
         const response = await fetch('/api/send-welcome', {
@@ -655,11 +657,22 @@ async sendWelcomeMessage() {
             })
         });
         
-        return true;
+        const result = await response.json();
+        
+        if (!result.success) {
+            console.error('Welcome message error:', result.error);
+            this.showNotification("Welcome Message", `Failed to send: ${result.error}`, "error");
+        }
+        
+        return result.success;
     } catch (error) {
+        console.error('Welcome message fetch error:', error);
+        this.showNotification("Welcome Message", `Error: ${error.message}`, "error");
         return false;
     }
-}
+        }
+    
+
     async loadUserCreatedTasks() {
         try {
             if (!this.db) return;
