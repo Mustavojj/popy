@@ -44,10 +44,10 @@ export default async function handler(req, res) {
         if (data.ok) {
             res.status(200).json({ success: true, message: 'Welcome message sent' });
         } else {
-            res.status(500).json({ success: false, error: data.description });
+            res.status(200).json({ success: false, error: data.description });
         }
         
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        res.status(200).json({ success: false, error: error.message });
     }
 }
