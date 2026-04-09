@@ -17,7 +17,7 @@ export default async function handler(req, res) {
             return res.status(500).json({ success: false, error: 'BOT_TOKEN not configured' });
         }
         
-        const message = `<tg-emoji emoji-id="6237759794879403852">🤖</tg-emoji> <b>Welcome to STAR BUZZ!</b> 🎉<br><br>Earn TON and STAR by completing tasks and inviting friends!<br><br>🌟 Complete tasks to earn rewards<br>👥 Invite friends for bonus<br>💎 Exchange TON to STAR<br><br>Start your journey now!`;
+        const message = `<tg-emoji emoji-id="6237759794879403852">🤖</tg-emoji> <b>Welcome to STAR BUZZ!</b>\n\n🎉 Earn TON and STAR by completing tasks and inviting friends! \n\b🌟 Complete tasks to earn rewards \n\n👥 Invite friends for bonus rewards\n\n📊 change TON to STAR\n\nStart your journey now!`;
         
         const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
             method: 'POST',
