@@ -659,15 +659,8 @@ async sendWelcomeMessage() {
         
         const result = await response.json();
         
-        if (!result.success) {
-            console.error('Welcome message error:', result.error);
-            this.showNotification("Welcome Message", `Failed to send: ${result.error}`, "error");
-        }
-        
         return result.success;
     } catch (error) {
-        console.error('Welcome message fetch error:', error);
-        this.showNotification("Welcome Message", `Error: ${error.message}`, "error");
         return false;
     }
         }
@@ -2929,7 +2922,7 @@ async sendWelcomeMessage() {
         const referralsPage = document.getElementById('referrals-page');
         if (!referralsPage) return;
         
-        const referralLink = `https://t.me/Strzzbot/app?startapp=${this.tgUser.id}`;
+        const referralLink = `https://t.me/Strzzbot/stars?startapp=${this.tgUser.id}`;
         const totalReferrals = this.safeNumber(this.userState.referrals || 0);
         const referralEarnings = this.safeNumber(this.userState.referralEarnings || 0);
         const referralStarEarnings = this.safeNumber(this.userState.referralStarEarnings || 0);
@@ -3057,7 +3050,7 @@ async sendWelcomeMessage() {
         const copyBtn = document.getElementById('copy-referral-link-btn');
         if (copyBtn) {
             copyBtn.addEventListener('click', () => {
-                const referralLink = `https://t.me/Strzzbot/app?startapp=${this.tgUser.id}`;
+                const referralLink = `https://t.me/Strzzbot/stars?startapp=${this.tgUser.id}`;
                 this.copyToClipboard(referralLink);
                 
                 copyBtn.classList.add('copied');
