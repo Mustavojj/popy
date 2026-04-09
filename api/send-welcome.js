@@ -7,18 +7,18 @@ export default async function handler(req, res) {
         const { userId, firstName, username } = req.body;
         
         if (!userId) {
-            return res.status(200).json({ success: false });
+            return res.status(400).json({ success: false, error: 'User ID required' });
         }
         
         const BOT_TOKEN = process.env.BOT_TOKEN;
         
         if (!BOT_TOKEN) {
-            return res.status(200).json({ success: false });
+            return res.status(500).json({ success: false, error: 'BOT_TOKEN not configured' });
         }
         
         const message = `🎉 *Welcome to STAR BUZZ!* 🎉\n\nEarn TON and STAR by completing tasks and inviting friends!\n\n🌟 Start your journey now!`;
         
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -36,9 +36,15 @@ export default async function handler(req, res) {
             })
         });
         
-        res.status(200).json({ success: true });
+        const data = await response.json();
+        
+        if (data.ok) {
+            res.status(200).json({ success: true });
+        } else {
+            res.status(200).json({ success: false, error: data.description });
+        }
         
     } catch (error) {
-        res.status(200).json({ success: false });
+        res.status(500).json({ success: false, error: error.message });
     }
 }
