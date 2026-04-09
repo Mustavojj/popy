@@ -641,27 +641,25 @@ class App {
         }
     }
 
-    async sendWelcomeMessage() {
-        try {
-            const response = await fetch('/api/send-welcome', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    userId: this.tgUser.id,
-                    firstName: this.tgUser.first_name,
-                    username: this.tgUser.username
-                })
-            });
-            
-            const result = await response.json();
-            return result.success;
-        } catch (error) {
-            return false;
-        }
+async sendWelcomeMessage() {
+    try {
+        const response = await fetch('/api/send-welcome', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                userId: this.tgUser.id,
+                firstName: this.tgUser.first_name,
+                username: this.tgUser.username
+            })
+        });
+        
+        return true;
+    } catch (error) {
+        return false;
     }
-
+}
     async loadUserCreatedTasks() {
         try {
             if (!this.db) return;
