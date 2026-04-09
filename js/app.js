@@ -3241,101 +3241,92 @@ class App {
                 <span>Earn STAR</span>
             </div>
             <span class="requirement-count">${starProgress}/${starRequired}</span>
-        </div>
-        <div class="progress-bar">
-            <div class="progress-fill" style="width: ${(starProgress/starRequired)*100}%"></div>
-        </div>
-        <div class="requirement-note">
-            <i class="fas fa-info-circle"></i>
-            <span>${starRequired - starProgress} STAR remaining</span>
-        </div>
-    </div>
-    ` : ''}
-    
-    ${tasksCompleted && referralsCompleted && starCompleted ? `
-    <div class="requirement-card all-completed">
-        <div class="requirement-header">
-            <div class="requirement-title">
-                <i class="fas fa-check-circle"></i>
-                <span>All Requirements Completed!</span>
-            </div>
-            <span class="requirement-count">✓ Ready</span>
-        </div>
-        <div class="requirement-note success">
-            <i class="fas fa-gem"></i>
-            <span>You can now withdraw your earnings</span>
-        </div>
-    </div>
-    ` : ''}
-</div>
+
                             
-                            ${!starCompleted ? `
-                            <div class="requirement-card">
-                                <div class="requirement-header">
-                                    <div class="requirement-title">
-                                        <i class="fas fa-star"></i>
-                                        <span>Earn STAR</span>
-                                    </div>
-                                    <span class="requirement-count">${starProgress}/${starRequired}</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: ${(starProgress/starRequired)*100}%"></div>
-                                </div>
-                            </div>
-                            ` : `
-                            <div class="requirement-card" style="border-left-color: #2ecc71;">
-                                <div class="requirement-header">
-                                    <div class="requirement-title">
-                                        <i class="fas fa-check-circle" style="color: #2ecc71;"></i>
-                                        <span>STAR Earned</span>
-                                    </div>
-                                    <span class="requirement-count" style="color: #2ecc71;">✓ ${starRequired}/${starRequired}</span>
-                                </div>
-                            </div>
-                            `}
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label" for="profile-wallet-input">
-                                <i class="fas fa-wallet"></i> TON Wallet Address
-                            </label>
-                            <input type="text" id="profile-wallet-input" class="form-input" 
-                                   placeholder="Enter your TON wallet address (UQ...)"
-                                   required>
-                        </div>
-                        
-                        <div class="form-group amount-group">
-                            <label class="form-label" for="profile-amount-input">
-                                <i class="fas fa-gem"></i> Withdrawal Amount
-                            </label>
-                            <div class="amount-input-container">
-                                <input type="number" id="profile-amount-input" class="form-input" 
-                                       step="0.00001" min="${this.appConfig.MINIMUM_WITHDRAW}" 
-                                       max="${maxBalance}"
-                                       placeholder="Min: ${this.appConfig.MINIMUM_WITHDRAW.toFixed(3)} TON"
-                                       required>
-                                <button type="button" class="max-btn" id="max-btn">MAX</button>
-                            </div>
-                        </div>
-                        
-                        <div class="withdraw-minimum-info">
-                            <i class="fas fa-info-circle"></i>
-                            <span>Minimum Withdrawal: <strong>${this.appConfig.MINIMUM_WITHDRAW.toFixed(3)} TON</strong></span>
-                        </div>
-                        
-                        <button id="profile-withdraw-btn" class="withdraw-btn" 
-                                ${!canWithdraw || maxBalance < this.appConfig.MINIMUM_WITHDRAW ? 'disabled' : ''}>
-                            <i class="fas fa-paper-plane"></i> 
-                            ${canWithdraw ? 'WITHDRAW NOW' : this.getWithdrawButtonText(tasksCompleted, referralsCompleted, starCompleted)}
-                        </button>
-                    </div>
-                    
-                    <div class="history-section">
-                        <div class="history-list" id="withdrawals-list">
-                            ${this.renderWithdrawalsHistory()}
-                        </div>
-                    </div>
+<div id="withdraw-tab" class="profile-tab-content">
+    <div class="withdraw-card">
+        <div class="card-header">
+            <div class="card-icon">
+                <i class="fas fa-wallet"></i>
+            </div>
+            <div class="card-title">Withdraw TON</div>
+        </div>
+        <div class="card-divider"></div>
+        
+        
+        <div class="requirements-wrapper">
+            ${!tasksCompleted ? `
+            <div class="requirement-item">
+                <div class="req-info">
+                    <span><i class="fas fa-tasks"></i> Complete Tasks</span>
+                    <span class="req-count">${tasksProgress}/${tasksRequired}</span>
                 </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${(tasksProgress/tasksRequired)*100}%"></div>
+                </div>
+            </div>
+            ` : ''}
+            
+            ${referralsRequired > 0 && !referralsCompleted ? `
+            <div class="requirement-item">
+                <div class="req-info">
+                    <span><i class="fas fa-users"></i> Invite Friends</span>
+                    <span class="req-count">${referralsProgress}/${referralsRequired}</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${(referralsProgress/referralsRequired)*100}%"></div>
+                </div>
+            </div>
+            ` : ''}
+            
+            ${!starCompleted ? `
+            <div class="requirement-item">
+                <div class="req-info">
+                    <span><i class="fas fa-star"></i> Earn STAR</span>
+                    <span class="req-count">${starProgress}/${starRequired}</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${(starProgress/starRequired)*100}%"></div>
+                </div>
+            </div>
+            ` : ''}
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label" for="profile-wallet-input">
+                <i class="fas fa-wallet"></i> TON Wallet Address
+            </label>
+            <input type="text" id="profile-wallet-input" class="form-input" 
+                   placeholder="Enter your TON wallet address (UQ...)" required>
+        </div>
+        
+        <div class="form-group amount-group">
+            <label class="form-label" for="profile-amount-input">
+                <i class="fas fa-gem"></i> Withdrawal Amount
+            </label>
+            <div class="amount-input-container">
+                <input type="number" id="profile-amount-input" class="form-input" 
+                       step="0.00001" min="${this.appConfig.MINIMUM_WITHDRAW}" 
+                       max="${maxBalance}"
+                       placeholder="Min: ${this.appConfig.MINIMUM_WITHDRAW.toFixed(3)} TON" required>
+                <button type="button" class="max-btn" id="max-btn">MAX</button>
+            </div>
+        </div>
+        
+        <button id="profile-withdraw-btn" class="withdraw-btn" 
+                ${!canWithdraw || maxBalance < this.appConfig.MINIMUM_WITHDRAW ? 'disabled' : ''}>
+            <i class="fas fa-paper-plane"></i> 
+            ${canWithdraw ? 'WITHDRAW NOW' : this.getWithdrawButtonText(tasksCompleted, referralsCompleted, starCompleted)}
+        </button>
+    </div>
+    
+    <div class="history-section">
+        <div class="history-list" id="withdrawals-list">
+            ${this.renderWithdrawalsHistory()}
+        </div>
+    </div>
+</div>
+
             </div>
         `;
         
