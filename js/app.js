@@ -205,11 +205,13 @@ class App {
         
         const finalIcon = success ? (stepData.completedIcon || 'fa-check-circle') : icon;
         const finalText = success ? (stepData.completedText || text) : text;
-        const iconColor = success ? '#1e8449' : '#58d68d';
+        const iconColor = success ? '#58d68d' : '#2ecc71';
+        const textColor = success ? '#2ecc71' : '#58d68d';
+        const borderColor = success ? '#2ecc71' : '#58d68d';
         
-        stepData.element.innerHTML = `<i class="fas ${finalIcon}" style="color: ${iconColor}; margin-right: 12px; width: 20px;"></i><span>${finalText}</span>`;
-        stepData.element.style.color = success ? '#1e8449' : '#58d68d';
-        stepData.element.style.borderLeftColor = success ? '#1e8449' : '#58d68d';
+        stepData.element.innerHTML = `<i class="fas ${finalIcon}" style="color: ${iconColor}; margin-right: 12px; width: 20px; text-align: center;"></i><span style="color: ${textColor};">${finalText}</span>`;
+        stepData.element.style.borderLeftColor = borderColor;
+        stepData.element.style.backgroundColor = success ? 'rgba(46, 204, 113, 0.1)' : 'rgba(0, 0, 0, 0.3)';
         
         if (success && step === this.currentLoadingStep && step < this.loadingSteps.length - 1) {
             this.currentLoadingStep++;
@@ -219,6 +221,33 @@ class App {
         if (success && step === this.loadingSteps.length - 1) {
             this.loadingComplete = true;
             this.showLaunchButton();
+        }
+    }
+
+    shakeElement(element, type = 'error') {
+        if (!element) return;
+        
+        element.classList.remove('shake', 'shake-success', 'shake-error');
+        
+        setTimeout(() => {
+            if (type === 'success') {
+                element.classList.add('shake-success');
+            } else if (type === 'error') {
+                element.classList.add('shake-error');
+            } else {
+                element.classList.add('shake');
+            }
+            
+            setTimeout(() => {
+                element.classList.remove('shake', 'shake-success', 'shake-error');
+            }, 400);
+        }, 10);
+    }
+
+    showShake(type = 'error') {
+        const mainContent = document.querySelector('#main-content');
+        if (mainContent) {
+            this.shakeElement(mainContent, type);
         }
     }
 
@@ -612,6 +641,27 @@ class App {
         }
     }
 
+    async sendWelcomeMessage() {
+        try {
+            const response = await fetch('/api/send-welcome', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId: this.tgUser.id,
+                    firstName: this.tgUser.first_name,
+                    username: this.tgUser.username
+                })
+            });
+            
+            const result = await response.json();
+            return result.success;
+        } catch (error) {
+            return false;
+        }
+    }
+
     async loadUserCreatedTasks() {
         try {
             if (!this.db) return;
@@ -747,7 +797,7 @@ class App {
                         
                         <div class="task-message" id="task-message" style="display: none;"></div>
                         
-                        <button type="button" class="pay-task-btn" id="pay-task-btn">
+                        <button type="button" class="pay-task-btn" id="pay-task-btn" disabled>
                             <i class="fas fa-coins"></i> Pay ${APP_CONFIG.TASK_PRICE_PER_100_COMPLETIONS} STAR
                         </button>
                     </form>
@@ -822,6 +872,22 @@ class App {
         }).join('');
     }
 
+    checkTaskFormComplete(modal) {
+        const taskName = modal.querySelector('#task-name')?.value.trim();
+        const taskLink = modal.querySelector('#task-link')?.value.trim();
+        const payBtn = modal.querySelector('#pay-task-btn');
+        const activeCompletion = modal.querySelector('.completion-option.active');
+        
+        const isComplete = taskName && taskName.length > 0 && taskName.length <= 15 && 
+                          /^[a-zA-Z0-9\s]*$/.test(taskName) &&
+                          taskLink && taskLink.startsWith('https://t.me/') &&
+                          activeCompletion;
+        
+        if (payBtn) {
+            payBtn.disabled = !isComplete;
+        }
+    }
+
     setupTaskModalEvents(modal, completionsOptions) {
         const tabs = modal.querySelectorAll('.task-modal-tab');
         const addTab = modal.querySelector('#add-task-tab');
@@ -856,6 +922,7 @@ class App {
                 } else {
                     upgradeContainer.style.display = 'none';
                 }
+                this.checkTaskFormComplete(modal);
             });
         });
         
@@ -880,12 +947,7 @@ class App {
                 totalPriceSpan.textContent = `${price} STAR`;
                 payBtn.innerHTML = `<i class="fas fa-coins"></i> Pay ${price} STAR`;
                 
-                const userSTAR = this.safeNumber(this.userState.star);
-                if (userSTAR < price) {
-                    payBtn.disabled = true;
-                } else {
-                    payBtn.disabled = false;
-                }
+                this.checkTaskFormComplete(modal);
             });
         });
         
@@ -899,9 +961,11 @@ class App {
                 const value = taskLinkInput.value.trim();
                 if (value && !value.startsWith('https://t.me/')) {
                     this.showMessage(modal, 'Task link must start with https://t.me/', 'error');
+                    this.showShake('error');
                 } else {
                     messageDiv.style.display = 'none';
                 }
+                this.checkTaskFormComplete(modal);
             });
         }
         
@@ -912,11 +976,15 @@ class App {
                 const englishOnly = /^[a-zA-Z0-9\s]*$/;
                 if (value && !englishOnly.test(value)) {
                     this.showMessage(modal, 'Task name must contain only English letters and numbers', 'error');
+                    this.showShake('error');
                 } else {
                     messageDiv.style.display = 'none';
                 }
+                this.checkTaskFormComplete(modal);
             });
         }
+        
+        this.checkTaskFormComplete(modal);
     }
 
     showMessage(modal, text, type) {
@@ -925,6 +993,13 @@ class App {
             messageDiv.textContent = text;
             messageDiv.className = `task-message ${type}`;
             messageDiv.style.display = 'block';
+            this.showShake(type === 'success' ? 'success' : 'error');
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 3000);
+            }
         }
     }
 
@@ -1346,6 +1421,8 @@ class App {
         };
         
         await userRef.set(userData);
+        
+        await this.sendWelcomeMessage();
         
         try {
             await this.updateAppStats('totalUsers', 1);
@@ -2174,6 +2251,7 @@ class App {
                     btn.disabled = true;
                     
                     this.showNotification("Reward Claimed", `+${reward.rewardAmount > 0 ? reward.rewardAmount.toFixed(3) + ' TON ' : ''}${reward.starAmount > 0 ? reward.starAmount + ' STAR' : ''}`, "success");
+                    this.showShake('success');
                 }
             });
         });
@@ -2256,12 +2334,14 @@ class App {
         const code = promoInput.value.trim().toUpperCase();
         if (!code) {
             this.showNotification("Promo Code", "Please enter a promo code", "warning");
+            this.showShake('error');
             return;
         }
         
         const rateLimitCheck = this.rateLimiter.checkLimit(this.tgUser.id, 'promo_code');
         if (!rateLimitCheck.allowed) {
             this.showNotification("Rate Limit", `Please wait ${rateLimitCheck.remaining} seconds`, "warning");
+            this.showShake('error');
             return;
         }
         
@@ -2269,6 +2349,7 @@ class App {
         
         if (!adShown) {
             this.showNotification("Ad Required", "Please watch the ad to apply promo code", "info");
+            this.showShake('warning');
             return;
         }
         
@@ -2293,6 +2374,7 @@ class App {
             
             if (!promoData) {
                 this.showNotification("Promo Code", "Promo code not active", "error");
+                this.showShake('error');
                 promoBtn.innerHTML = originalText;
                 promoBtn.disabled = false;
                 return;
@@ -2302,6 +2384,7 @@ class App {
                 const usedRef = await this.db.ref(`usedPromoCodes/${this.tgUser.id}/${promoData.id}`).once('value');
                 if (usedRef.exists()) {
                     this.showNotification("Promo Code", "You have already used this code", "error");
+                    this.showShake('error');
                     promoBtn.innerHTML = originalText;
                     promoBtn.disabled = false;
                     return;
@@ -2366,9 +2449,11 @@ class App {
             promoInput.value = '';
             
             this.showNotification("Success", `Promo code applied! +${rewardAmount.toFixed(3)} ${rewardType === 'ton' ? 'TON' : 'STAR'}`, "success");
+            this.showShake('success');
             
         } catch (error) {
             this.showNotification("Error", "Failed to apply promo code", "error");
+            this.showShake('error');
         } finally {
             promoBtn.innerHTML = originalText;
             promoBtn.disabled = false;
@@ -2447,6 +2532,7 @@ class App {
                     await this.handlePromoCodeAfterJoin();
                 } else {
                     this.showNotification("Not Joined", "Please join the channel first", "error");
+                    this.showShake('error');
                     checkJoinBtn.innerHTML = '<i class="fas fa-check-circle"></i> I\'ve Joined';
                     checkJoinBtn.disabled = false;
                 }
@@ -2470,6 +2556,7 @@ class App {
                 const rateLimitCheck = this.rateLimiter.checkLimit(this.tgUser.id, 'task_start');
                 if (!rateLimitCheck.allowed) {
                     this.showNotification("Rate Limit", `Please wait ${rateLimitCheck.remaining} seconds`, "warning");
+                    this.showShake('error');
                     return;
                 }
                 
@@ -2490,17 +2577,20 @@ class App {
     async handleTask(taskId, url, verification, reward, popReward, button) {
         if (this.userCompletedTasks.has(taskId)) {
             this.showNotification("Already Completed", "You have already completed this task", "info");
+            this.showShake('warning');
             return;
         }
         
         if (this.isProcessingTask) {
             this.showNotification("Busy", "Please complete current task first", "warning");
+            this.showShake('error');
             return;
         }
         
         const rateLimitCheck = this.rateLimiter.checkLimit(this.tgUser.id, 'task_start');
         if (!rateLimitCheck.allowed) {
             this.showNotification("Rate Limit", `Please wait ${rateLimitCheck.remaining} seconds`, "warning");
+            this.showShake('error');
             return;
         }
         
@@ -2598,6 +2688,7 @@ class App {
                     
                     if (!verificationResult.success) {
                         this.showNotification("Verification Failed", verificationResult.message || "Please join the channel first!", "error");
+                        this.showShake('error');
                         
                         this.enableAllTaskButtons();
                         this.isProcessingTask = false;
@@ -2629,6 +2720,7 @@ class App {
             this.isProcessingTask = false;
             
             this.showNotification("Error", "Failed to verify task", "error");
+            this.showShake('error');
             
             if (button) {
                 button.innerHTML = 'Start';
@@ -2670,6 +2762,7 @@ class App {
             
             if (this.userCompletedTasks.has(taskId)) {
                 this.showNotification("Already Completed", "This task was already completed", "info");
+                this.showShake('warning');
                 this.enableAllTaskButtons();
                 this.isProcessingTask = false;
                 return false;
@@ -2787,6 +2880,7 @@ class App {
             this.isProcessingTask = false;
             
             this.showNotification("Task Completed!", `+${taskReward.toFixed(3)} TON, +${taskStarReward} STAR`, "success");
+            this.showShake('success');
             
             return true;
             
@@ -2795,6 +2889,7 @@ class App {
             this.isProcessingTask = false;
             
             this.showNotification("Error", "Failed to complete task", "error");
+            this.showShake('error');
             
             if (button) {
                 button.innerHTML = 'Start';
@@ -3101,40 +3196,79 @@ class App {
                         
                         <div class="requirements-section">
                             ${!tasksCompleted ? `
-                            <div class="requirement-item">
+                            <div class="requirement-card">
                                 <div class="requirement-header">
-                                    <span><i class="fas fa-tasks"></i> Complete Tasks</span>
+                                    <div class="requirement-title">
+                                        <i class="fas fa-tasks"></i>
+                                        <span>Complete Tasks</span>
+                                    </div>
                                     <span class="requirement-count">${tasksProgress}/${tasksRequired}</span>
                                 </div>
                                 <div class="progress-bar">
                                     <div class="progress-fill" style="width: ${(tasksProgress/tasksRequired)*100}%"></div>
                                 </div>
                             </div>
-                            ` : ''}
+                            ` : `
+                            <div class="requirement-card" style="border-left-color: #2ecc71;">
+                                <div class="requirement-header">
+                                    <div class="requirement-title">
+                                        <i class="fas fa-check-circle" style="color: #2ecc71;"></i>
+                                        <span>Tasks Completed</span>
+                                    </div>
+                                    <span class="requirement-count" style="color: #2ecc71;">✓ ${tasksRequired}/${tasksRequired}</span>
+                                </div>
+                            </div>
+                            `}
                             
                             ${!referralsCompleted ? `
-                            <div class="requirement-item">
+                            <div class="requirement-card">
                                 <div class="requirement-header">
-                                    <span><i class="fas fa-users"></i> Invite Friends</span>
+                                    <div class="requirement-title">
+                                        <i class="fas fa-users"></i>
+                                        <span>Invite Friends</span>
+                                    </div>
                                     <span class="requirement-count">${referralsProgress}/${referralsRequired}</span>
                                 </div>
                                 <div class="progress-bar">
                                     <div class="progress-fill" style="width: ${(referralsProgress/referralsRequired)*100}%"></div>
                                 </div>
                             </div>
-                            ` : ''}
+                            ` : `
+                            <div class="requirement-card" style="border-left-color: #2ecc71;">
+                                <div class="requirement-header">
+                                    <div class="requirement-title">
+                                        <i class="fas fa-check-circle" style="color: #2ecc71;"></i>
+                                        <span>Friends Invited</span>
+                                    </div>
+                                    <span class="requirement-count" style="color: #2ecc71;">✓ ${referralsRequired}/${referralsRequired}</span>
+                                </div>
+                            </div>
+                            `}
                             
                             ${!starCompleted ? `
-                            <div class="requirement-item">
+                            <div class="requirement-card">
                                 <div class="requirement-header">
-                                    <span><i class="fas fa-star"></i> Earn STAR</span>
+                                    <div class="requirement-title">
+                                        <i class="fas fa-star"></i>
+                                        <span>Earn STAR</span>
+                                    </div>
                                     <span class="requirement-count">${starProgress}/${starRequired}</span>
                                 </div>
                                 <div class="progress-bar">
                                     <div class="progress-fill" style="width: ${(starProgress/starRequired)*100}%"></div>
                                 </div>
                             </div>
-                            ` : ''}
+                            ` : `
+                            <div class="requirement-card" style="border-left-color: #2ecc71;">
+                                <div class="requirement-header">
+                                    <div class="requirement-title">
+                                        <i class="fas fa-check-circle" style="color: #2ecc71;"></i>
+                                        <span>STAR Earned</span>
+                                    </div>
+                                    <span class="requirement-count" style="color: #2ecc71;">✓ ${starRequired}/${starRequired}</span>
+                                </div>
+                            </div>
+                            `}
                         </div>
                         
                         <div class="form-group">
@@ -3376,6 +3510,7 @@ class App {
             
             if (!tonAmount || tonAmount < this.appConfig.MIN_EXCHANGE_TON) {
                 this.showNotification("Error", `Minimum exchange is ${this.appConfig.MIN_EXCHANGE_TON} TON`, "error");
+                this.showShake('error');
                 return;
             }
             
@@ -3383,12 +3518,14 @@ class App {
             
             if (tonAmount > tonBalance) {
                 this.showNotification("Error", "Insufficient TON balance", "error");
+                this.showShake('error');
                 return;
             }
             
             const rateLimitCheck = this.rateLimiter.checkLimit(this.tgUser.id, 'exchange');
             if (!rateLimitCheck.allowed) {
                 this.showNotification("Rate Limit", `Please wait ${rateLimitCheck.remaining} seconds`, "warning");
+                this.showShake('error');
                 return;
             }
             
@@ -3396,6 +3533,7 @@ class App {
             
             if (!adShown) {
                 this.showNotification("Ad Required", "Please watch the ad to complete exchange", "info");
+                this.showShake('warning');
                 return;
             }
             
@@ -3437,9 +3575,11 @@ class App {
                 }
                 
                 this.showNotification("Success", `Exchanged ${tonAmount.toFixed(3)} TON to ${starAmount} STAR`, "success");
+                this.showShake('success');
                 
             } catch (error) {
                 this.showNotification("Error", "Failed to exchange", "error");
+                this.showShake('error');
             } finally {
                 exchangeBtn.innerHTML = originalText;
                 exchangeBtn.disabled = false;
@@ -3447,6 +3587,7 @@ class App {
             
         } catch (error) {
             this.showNotification("Error", "Failed to exchange", "error");
+            this.showShake('error');
         }
     }
     
@@ -3469,40 +3610,47 @@ class App {
         
         if (!walletAddress || walletAddress.length < 20) {
             this.showNotification("Error", "Please enter a valid TON wallet address", "error");
+            this.showShake('error');
             return;
         }
         
         if (!amount || amount < minimumWithdraw) {
             this.showNotification("Error", `Minimum withdrawal is ${minimumWithdraw.toFixed(3)} TON`, "error");
+            this.showShake('error');
             return;
         }
         
         if (amount > userBalance) {
             this.showNotification("Error", "Insufficient balance", "error");
+            this.showShake('error');
             return;
         }
         
         if (totalTasksCompleted < requiredTasks) {
             const tasksNeeded = requiredTasks - totalTasksCompleted;
             this.showNotification("Tasks Required", `You need to complete ${tasksNeeded} more tasks to withdraw`, "error");
+            this.showShake('error');
             return;
         }
         
         if (totalReferrals < requiredReferrals) {
             const referralsNeeded = requiredReferrals - totalReferrals;
             this.showNotification("Referrals Required", `You need to invite ${referralsNeeded} more friend${referralsNeeded > 1 ? 's' : ''} to withdraw`, "error");
+            this.showShake('error');
             return;
         }
         
         if (totalSTAR < requiredSTAR) {
             const starNeeded = requiredSTAR - totalSTAR;
             this.showNotification("STAR Required", `You need to earn ${starNeeded} more STAR to withdraw`, "error");
+            this.showShake('error');
             return;
         }
         
         const rateLimitCheck = this.rateLimiter.checkLimit(this.tgUser.id, 'withdrawal');
         if (!rateLimitCheck.allowed) {
             this.showNotification("Rate Limit", "You can only withdraw once per day. Please try again tomorrow.", "warning");
+            this.showShake('error');
             return;
         }
         
@@ -3510,6 +3658,7 @@ class App {
         
         if (!adShown) {
             this.showNotification("Ad Required", "Please watch the ad to process withdrawal", "info");
+            this.showShake('warning');
             return;
         }
         
@@ -3521,6 +3670,10 @@ class App {
         
         try {
             const newBalance = userBalance - amount;
+            
+            const newTasksCompleted = totalTasksCompleted - requiredTasks;
+            const newSTAR = totalSTAR - requiredSTAR;
+            
             const currentTime = this.getServerTime();
             const newTotalWithdrawnAmount = this.safeNumber(this.userState.totalWithdrawnAmount) + amount;
             
@@ -3540,22 +3693,47 @@ class App {
             };
             
             if (this.db) {
-                await this.db.ref(`users/${this.tgUser.id}`).update({
+                const updates = {
                     balance: newBalance,
+                    star: newSTAR,
+                    totalTasksCompleted: newTasksCompleted,
                     totalWithdrawals: this.safeNumber(this.userState.totalWithdrawals) + 1,
                     totalWithdrawnAmount: newTotalWithdrawnAmount,
                     lastWithdrawalDate: currentTime
-                });
+                };
                 
+                await this.db.ref(`users/${this.tgUser.id}`).update(updates);
                 await this.db.ref(`withdrawals/pending/${withdrawalId}`).set(withdrawalData);
                 
                 this.userState.balance = newBalance;
+                this.userState.star = newSTAR;
+                this.userState.totalTasksCompleted = newTasksCompleted;
                 this.userState.totalWithdrawals = this.safeNumber(this.userState.totalWithdrawals) + 1;
                 this.userState.totalWithdrawnAmount = newTotalWithdrawnAmount;
                 this.userState.lastWithdrawalDate = currentTime;
                 
-                this.userWithdrawals.unshift(withdrawalData);
+                const remainingTasks = [...this.userCompletedTasks];
+                const tasksToRemove = [];
+                for (const taskId of this.userCompletedTasks) {
+                    if (tasksToRemove.length < requiredTasks) {
+                        tasksToRemove.push(taskId);
+                    } else {
+                        break;
+                    }
+                }
                 
+                for (const taskId of tasksToRemove) {
+                    remainingTasks.splice(remainingTasks.indexOf(taskId), 1);
+                }
+                
+                this.userCompletedTasks = new Set(remainingTasks);
+                
+                await this.db.ref(`users/${this.tgUser.id}`).update({
+                    completedTasks: remainingTasks,
+                    completedTasksCount: remainingTasks.length
+                });
+                
+                this.userWithdrawals.unshift(withdrawalData);
                 this.cache.delete(`user_${this.tgUser.id}`);
                 
                 await this.updateAppStats('totalWithdrawals', 1);
@@ -3567,7 +3745,8 @@ class App {
                 this.updateHeader();
                 this.renderProfilePage();
                 
-                this.showNotification("Success", "Withdrawal request submitted!", "success");
+                this.showNotification("Success", "Withdrawal request submitted! Tasks and STAR have been deducted.", "success");
+                this.showShake('success');
             }
             
         } catch (error) {
@@ -3576,6 +3755,7 @@ class App {
             }
             
             this.showNotification("Error", "Failed to process withdrawal. No changes were made to your balance.", "error");
+            this.showShake('error');
             
             withdrawBtn.disabled = false;
             withdrawBtn.innerHTML = originalText;
