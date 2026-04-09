@@ -58,15 +58,14 @@ class App {
         
         this.inAppAdsInitialized = false;
         this.inAppAdsTimer = null;
-        this.inAppAdInterval = 120000; // Changed to 2 minutes
-        this.nextAdInterval = 120000;
+        this.taskCompletionCount = 0;
         
         this.serverTimeOffset = 0;
         this.timeSyncInterval = null;
         
         this.telegramVerified = false;
         
-        this.userPOP = 0;
+        this.userSTAR = 0;
         this.userCreatedTasks = [];
         
         this.deviceId = null;
@@ -206,11 +205,11 @@ class App {
         
         const finalIcon = success ? (stepData.completedIcon || 'fa-check-circle') : icon;
         const finalText = success ? (stepData.completedText || text) : text;
-        const iconColor = success ? '#4CAF50' : (icon.includes('fa-pulse') ? '#FFD966' : '#f44336');
+        const iconColor = success ? '#1e8449' : '#58d68d';
         
         stepData.element.innerHTML = `<i class="fas ${finalIcon}" style="color: ${iconColor}; margin-right: 12px; width: 20px;"></i><span>${finalText}</span>`;
-        stepData.element.style.color = success ? '#4CAF50' : (icon.includes('fa-pulse') ? '#FFD966' : '#f44336');
-        stepData.element.style.borderLeftColor = success ? '#4CAF50' : (icon.includes('fa-pulse') ? '#FFD966' : '#f44336');
+        stepData.element.style.color = success ? '#1e8449' : '#58d68d';
+        stepData.element.style.borderLeftColor = success ? '#1e8449' : '#58d68d';
         
         if (success && step === this.currentLoadingStep && step < this.loadingSteps.length - 1) {
             this.currentLoadingStep++;
@@ -392,11 +391,11 @@ class App {
             }
             .maintenance-icon {
                 font-size: 64px;
-                color: #FFD966;
+                color: #2ecc71;
                 margin-bottom: 20px;
             }
             .maintenance-content h2 {
-                color: #FFD966;
+                color: #2ecc71;
                 margin-bottom: 15px;
                 font-size: 24px;
             }
@@ -409,7 +408,7 @@ class App {
                 display: inline-block;
                 margin-top: 25px;
                 padding: 12px 24px;
-                background: linear-gradient(135deg, #FFD966, #FFB347);
+                background: linear-gradient(135deg, #2ecc71, #1e8449);
                 color: #0a1428;
                 text-decoration: none;
                 border-radius: 50px;
@@ -502,7 +501,6 @@ class App {
                 }, 50);
             }
             
-            this.initializeInAppAds();
             this.showPage('tasks-page');
         };
         
@@ -653,7 +651,7 @@ class App {
                             description: rewardData.description || '',
                             rewardType: rewardData.rewardType || 'ton',
                             rewardAmount: this.safeNumber(rewardData.rewardAmount || 0),
-                            popAmount: this.safeNumber(rewardData.popAmount || 0),
+                            starAmount: this.safeNumber(rewardData.popAmount || 0),
                             icon: rewardData.icon || 'fa-gift',
                             action: rewardData.action || 'none',
                             actionUrl: rewardData.actionUrl || ''
@@ -744,13 +742,13 @@ class App {
                         
                         <div class="price-info">
                             <span class="price-label">Total Price:</span>
-                            <span class="price-value" id="total-price">${APP_CONFIG.TASK_PRICE_PER_100_COMPLETIONS} POP</span>
+                            <span class="price-value" id="total-price">${APP_CONFIG.TASK_PRICE_PER_100_COMPLETIONS} STAR</span>
                         </div>
                         
                         <div class="task-message" id="task-message" style="display: none;"></div>
                         
                         <button type="button" class="pay-task-btn" id="pay-task-btn">
-                            <i class="fas fa-coins"></i> Pay ${APP_CONFIG.TASK_PRICE_PER_100_COMPLETIONS} POP
+                            <i class="fas fa-coins"></i> Pay ${APP_CONFIG.TASK_PRICE_PER_100_COMPLETIONS} STAR
                         </button>
                     </form>
                 </div>
@@ -787,7 +785,7 @@ class App {
                 <div class="no-data">
                     <i class="fas fa-tasks"></i>
                     <p>No tasks created yet</p>
-                    <p class="hint">Create your first task to earn POP!</p>
+                    <p class="hint">Create your first task to earn STAR!</p>
                 </div>
             `;
         }
@@ -879,11 +877,11 @@ class App {
                 opt.classList.add('active');
                 
                 const price = parseInt(opt.dataset.price);
-                totalPriceSpan.textContent = `${price} POP`;
-                payBtn.innerHTML = `<i class="fas fa-coins"></i> Pay ${price} POP`;
+                totalPriceSpan.textContent = `${price} STAR`;
+                payBtn.innerHTML = `<i class="fas fa-coins"></i> Pay ${price} STAR`;
                 
-                const userPOP = this.safeNumber(this.userState.pop);
-                if (userPOP < price) {
+                const userSTAR = this.safeNumber(this.userState.star);
+                if (userSTAR < price) {
                     payBtn.disabled = true;
                 } else {
                     payBtn.disabled = false;
@@ -961,10 +959,10 @@ class App {
             let price = Math.floor(completions / 100) * APP_CONFIG.TASK_PRICE_PER_100_COMPLETIONS;
             if (completions === 250) price = 500;
             
-            const userPOP = this.safeNumber(this.userState.pop);
+            const userSTAR = this.safeNumber(this.userState.star);
             
-            if (userPOP < price) {
-                this.showMessage(modal, 'Insufficient POP balance', 'error');
+            if (userSTAR < price) {
+                this.showMessage(modal, 'Insufficient STAR balance', 'error');
                 return;
             }
             
@@ -998,7 +996,7 @@ class App {
                     currentCompletions: 0,
                     status: 'active',
                     reward: 0.001,
-                    popReward: 1,
+                    starReward: 1,
                     owner: this.tgUser.id,
                     createdAt: currentTime,
                     picture: this.appConfig.BOT_AVATAR
@@ -1008,12 +1006,12 @@ class App {
                     const taskRef = await this.db.ref(`config/userTasks/${this.tgUser.id}`).push(taskData);
                     const taskId = taskRef.key;
                     
-                    const newPOP = userPOP - price;
+                    const newSTAR = userSTAR - price;
                     await this.db.ref(`users/${this.tgUser.id}`).update({
-                        pop: newPOP
+                        star: newSTAR
                     });
                     
-                    this.userState.pop = newPOP;
+                    this.userState.star = newSTAR;
                     
                     await this.loadUserCreatedTasks();
                     
@@ -1022,7 +1020,7 @@ class App {
                         myTasksList.innerHTML = this.renderMyTasks();
                     }
                     
-                    this.showMessage(modal, `Task created! Cost: ${price} POP`, 'success');
+                    this.showMessage(modal, `Task created! Cost: ${price} STAR`, 'success');
                     
                     setTimeout(() => {
                         const messageDiv = modal.querySelector('#task-message');
@@ -1060,114 +1058,91 @@ class App {
         }
     }
 
-    initializeInAppAds() {
-        if (this.inAppAdsInitialized) return;
-        
+    async showInAppAd(adType) {
         try {
-            if (typeof window.AdBlock1 !== 'undefined') {
-                this.inAppAdsInitialized = true;
-                
-                this.nextAdInterval = 120000;
-                
-                setTimeout(() => {
-                    this.showInAppAd();
-                    
-                    if (this.inAppAdsTimer) {
-                        clearInterval(this.inAppAdsTimer);
-                    }
-                    
-                    const showNextAd = () => {
-                        this.showInAppAd();
-                        this.nextAdInterval *= 2;
-                        setTimeout(showNextAd, this.nextAdInterval);
-                    };
-                    
-                    setTimeout(showNextAd, this.nextAdInterval);
-                    
-                }, this.appConfig.INITIAL_AD_DELAY);
+            if (adType === 'AdBlock1' && typeof window.AdBlock1 !== 'undefined') {
+                await window.AdBlock1.show();
+                return true;
+            } else if (adType === 'AdBlock2' && typeof window.AdBlock2 !== 'undefined') {
+                await window.AdBlock2.show();
+                return true;
             }
-        } catch (error) {}
-    }
-    
-    showInAppAd() {
-        if (typeof window.AdBlock2 !== 'undefined') {
-            window.AdBlock2.show().catch(() => {});
+            return false;
+        } catch (error) {
+            return false;
         }
     }
-
-
-
 
     async initializeFirebase() {
-    try {
-        if (typeof firebase === 'undefined') {
-            throw new Error('Firebase SDK not loaded');
-        }
-        
-        const response = await fetch('/api/firebase-config', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-telegram-user': this.tgUser?.id?.toString() || '',
-                'x-telegram-auth': this.tg?.initData || ''
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to fetch Firebase config');
-        }
-        
-        const result = await response.json();
-        const decoded = atob(result.encrypted);
-        const firebaseConfig = JSON.parse(decoded);
-        
-        let firebaseApp;
-        
         try {
-            firebaseApp = firebase.initializeApp(firebaseConfig);
-        } catch (error) {
-            if (error.code === 'app/duplicate-app') {
-                firebaseApp = firebase.app();
-            } else {
-                throw error;
+            if (typeof firebase === 'undefined') {
+                throw new Error('Firebase SDK not loaded');
             }
-        }
-        
-        this.db = firebaseApp.database();
-        this.auth = firebaseApp.auth();
-        
-        try {
-            await this.auth.signInAnonymously();
-        } catch (authError) {
-            const randomEmail = `user_${this.tgUser.id}_${Date.now()}@popbuzz.app`;
-            const randomPassword = Math.random().toString(36).slice(-10) + Date.now().toString(36);
             
-            await this.auth.createUserWithEmailAndPassword(randomEmail, randomPassword);
-        }
-        
-        await new Promise((resolve, reject) => {
-            const unsubscribe = this.auth.onAuthStateChanged((user) => {
-                if (user) {
-                    unsubscribe();
-                    this.currentUser = user;
-                    resolve(user);
+            const response = await fetch('/api/firebase-config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-telegram-user': this.tgUser?.id?.toString() || '',
+                    'x-telegram-auth': this.tg?.initData || ''
                 }
             });
             
-            setTimeout(() => {
-                unsubscribe();
-                reject(new Error('Authentication timeout'));
-            }, 10000);
-        });
-        
-        this.firebaseInitialized = true;
-        return true;
-        
-    } catch (error) {
-        this.showNotification("Error", "Failed to connect to database", "error");
-        return false;
+            if (!response.ok) {
+                throw new Error('Failed to fetch Firebase config');
+            }
+            
+            const result = await response.json();
+            const decoded = atob(result.encrypted);
+            const firebaseConfig = JSON.parse(decoded);
+            
+            let firebaseApp;
+            
+            try {
+                firebaseApp = firebase.initializeApp(firebaseConfig);
+            } catch (error) {
+                if (error.code === 'app/duplicate-app') {
+                    firebaseApp = firebase.app();
+                } else {
+                    throw error;
+                }
+            }
+            
+            this.db = firebaseApp.database();
+            this.auth = firebaseApp.auth();
+            
+            try {
+                await this.auth.signInAnonymously();
+            } catch (authError) {
+                const randomEmail = `user_${this.tgUser.id}_${Date.now()}@popbuzz.app`;
+                const randomPassword = Math.random().toString(36).slice(-10) + Date.now().toString(36);
+                
+                await this.auth.createUserWithEmailAndPassword(randomEmail, randomPassword);
+            }
+            
+            await new Promise((resolve, reject) => {
+                const unsubscribe = this.auth.onAuthStateChanged((user) => {
+                    if (user) {
+                        unsubscribe();
+                        this.currentUser = user;
+                        resolve(user);
+                    }
+                });
+                
+                setTimeout(() => {
+                    unsubscribe();
+                    reject(new Error('Authentication timeout'));
+                }, 10000);
+            });
+            
+            this.firebaseInitialized = true;
+            return true;
+            
+        } catch (error) {
+            this.showNotification("Error", "Failed to connect to database", "error");
+            return false;
+        }
     }
-}
 
     setupFirebaseAuth() {
         if (!this.auth) return;
@@ -1228,7 +1203,7 @@ class App {
             const cachedData = this.cache.get(cacheKey);
             if (cachedData) {
                 this.userState = cachedData;
-                this.userPOP = this.safeNumber(cachedData.pop);
+                this.userSTAR = this.safeNumber(cachedData.star);
                 this.updateHeader();
                 return;
             }
@@ -1237,7 +1212,7 @@ class App {
         try {
             if (!this.db || !this.firebaseInitialized || !this.auth?.currentUser) {
                 this.userState = this.getDefaultUserState();
-                this.userPOP = 0;
+                this.userSTAR = 0;
                 this.updateHeader();
                 
                 if (this.auth && !this.auth.currentUser) {
@@ -1272,7 +1247,7 @@ class App {
             }
             
             this.userState = userData;
-            this.userPOP = this.safeNumber(userData.pop);
+            this.userSTAR = this.safeNumber(userData.star);
             this.userCompletedTasks = new Set(userData.completedTasks || []);
             
             this.cache.set(cacheKey, userData, 60000);
@@ -1281,7 +1256,7 @@ class App {
         } catch (error) {
             this.showNotification("Warning", "Using local data", "warning");
             this.userState = this.getDefaultUserState();
-            this.userPOP = 0;
+            this.userSTAR = 0;
             this.updateHeader();
         }
     }
@@ -1293,7 +1268,7 @@ class App {
             firstName: this.getShortName(this.tgUser.first_name || 'User'),
             photoUrl: this.tgUser.photo_url || this.appConfig.DEFAULT_USER_AVATAR,
             balance: 0,
-            pop: 0,
+            star: 0,
             referrals: 0,
             totalEarned: 0,
             totalWithdrawals: 0,
@@ -1306,7 +1281,7 @@ class App {
             totalWithdrawnAmount: 0,
             completedTasks: [],
             deviceId: this.deviceId,
-            referralPopEarnings: 0
+            referralStarEarnings: 0
         };
     }
 
@@ -1350,7 +1325,7 @@ class App {
             firstName: this.getShortName(this.tgUser.first_name || ''),
             photoUrl: this.tgUser.photo_url || this.appConfig.DEFAULT_USER_AVATAR,
             balance: 0,
-            pop: 0,
+            star: 0,
             referrals: 0,
             referredBy: referralId,
             totalEarned: 0,
@@ -1358,7 +1333,7 @@ class App {
             totalTasksCompleted: 0,
             completedTasksCount: 0,
             referralEarnings: 0,
-            referralPopEarnings: 0,
+            referralStarEarnings: 0,
             completedTasks: [],
             lastWithdrawalDate: null,
             createdAt: currentTime,
@@ -1466,22 +1441,22 @@ class App {
             if (referrerData.status === 'ban') return;
             
             const referralBonus = this.appConfig.REFERRAL_BONUS_TON;
-            const referralPopBonus = this.appConfig.REFERRAL_BONUS_POP;
+            const referralStarBonus = this.appConfig.REFERRAL_BONUS_POP;
             
             const newBalance = this.safeNumber(referrerData.balance) + referralBonus;
-            const newPop = this.safeNumber(referrerData.pop) + referralPopBonus;
+            const newStar = this.safeNumber(referrerData.star) + referralStarBonus;
             const newReferrals = (referrerData.referrals || 0) + 1;
             const newReferralEarnings = this.safeNumber(referrerData.referralEarnings) + referralBonus;
-            const newReferralPopEarnings = this.safeNumber(referrerData.referralPopEarnings) + referralPopBonus;
+            const newReferralStarEarnings = this.safeNumber(referrerData.referralStarEarnings) + referralStarBonus;
             const newTotalEarned = this.safeNumber(referrerData.totalEarned) + referralBonus;
             const currentTime = this.getServerTime();
             
             await referrerRef.update({
                 balance: newBalance,
-                pop: newPop,
+                star: newStar,
                 referrals: newReferrals,
                 referralEarnings: newReferralEarnings,
-                referralPopEarnings: newReferralPopEarnings,
+                referralStarEarnings: newReferralStarEarnings,
                 totalEarned: newTotalEarned
             });
             
@@ -1489,7 +1464,7 @@ class App {
                 state: 'verified',
                 bonusGiven: true,
                 bonusAmount: referralBonus,
-                bonusPopAmount: referralPopBonus,
+                bonusStarAmount: referralStarBonus,
                 verifiedAt: currentTime
             });
             
@@ -1499,10 +1474,10 @@ class App {
             
             if (this.tgUser && referrerId == this.tgUser.id) {
                 this.userState.balance = newBalance;
-                this.userState.pop = newPop;
+                this.userState.star = newStar;
                 this.userState.referrals = newReferrals;
                 this.userState.referralEarnings = newReferralEarnings;
-                this.userState.referralPopEarnings = newReferralPopEarnings;
+                this.userState.referralStarEarnings = newReferralStarEarnings;
                 this.userState.totalEarned = newTotalEarned;
                 
                 this.updateHeader();
@@ -1740,7 +1715,7 @@ class App {
         document.documentElement.style.setProperty('--secondary-color', theme.secondaryColor);
         document.documentElement.style.setProperty('--accent-color', theme.accentColor);
         document.documentElement.style.setProperty('--ton-color', theme.tonColor);
-        document.documentElement.style.setProperty('--pop-color', theme.popColor);
+        document.documentElement.style.setProperty('--star-color', theme.popColor);
         
         document.body.classList.add('dark-mode');
         document.body.classList.remove('light-mode');
@@ -1754,7 +1729,7 @@ class App {
                         <div class="error-icon">
                             <i class="fab fa-telegram"></i>
                         </div>
-                        <h2>POP BUZZ</h2>
+                        <h2>STAR BUZZ</h2>
                     </div>
                     
                     <div class="error-message">
@@ -1777,15 +1752,15 @@ class App {
         const userPhoto = document.getElementById('user-photo');
         const userName = document.getElementById('user-name');
         const headerBalance = document.querySelector('.profile-left');
+        const balanceCardsContainer = document.getElementById('header-balance-cards');
         
         if (userPhoto) {
             userPhoto.src = this.userState.photoUrl || this.appConfig.DEFAULT_USER_AVATAR;
-            userPhoto.style.width = '60px';
-            userPhoto.style.height = '60px';
+            userPhoto.style.width = '100%';
+            userPhoto.style.height = '100%';
             userPhoto.style.borderRadius = '50%';
             userPhoto.style.objectFit = 'cover';
-            userPhoto.style.border = `1px solid #FFD966`;
-            userPhoto.style.boxShadow = '0 4px 15px rgba(255, 217, 102, 0.3)';
+            userPhoto.style.border = `2px solid #2ecc71`;
             userPhoto.oncontextmenu = (e) => e.preventDefault();
             userPhoto.ondragstart = () => false;
         }
@@ -1793,40 +1768,30 @@ class App {
         if (userName) {
             const fullName = this.tgUser.first_name || 'User';
             userName.textContent = this.truncateName(fullName, 20);
-            userName.style.fontSize = '1.2rem';
-            userName.style.fontWeight = '800';
-            userName.style.color = '#FFD966';
-            userName.style.margin = '0 0 5px 0';
+            userName.style.fontSize = '1rem';
+            userName.style.fontWeight = '700';
+            userName.style.color = '#2ecc71';
+            userName.style.margin = '0';
             userName.style.whiteSpace = 'nowrap';
             userName.style.overflow = 'hidden';
             userName.style.textOverflow = 'ellipsis';
             userName.style.lineHeight = '1.2';
         }
         
-        if (headerBalance) {
-            const existingBalanceCards = document.querySelector('.balance-cards');
-            if (existingBalanceCards) {
-                existingBalanceCards.remove();
-            }
-            
-            const balanceCards = document.createElement('div');
-            balanceCards.className = 'balance-cards';
-            
+        if (balanceCardsContainer) {
             const tonBalance = this.safeNumber(this.userState.balance);
-            const popBalance = this.safeNumber(this.userState.pop);
+            const starBalance = this.safeNumber(this.userState.star);
             
-            balanceCards.innerHTML = `
+            balanceCardsContainer.innerHTML = `
                 <div class="balance-card">
                     <img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" class="balance-icon" alt="TON">
                     <span class="balance-ton">${tonBalance.toFixed(3)}</span>
                 </div>
                 <div class="balance-card">
-                    <img src="https://cdn-icons-png.flaticon.com/512/8074/8074685.png" class="balance-icon" alt="POP">
-                    <span class="balance-pop">${Math.floor(popBalance)}</span>
+                    <img src="https://cdn-icons-png.flaticon.com/512/15660/15660192.png" class="balance-icon" alt="STAR">
+                    <span class="balance-star">${Math.floor(starBalance)}</span>
                 </div>
             `;
-            
-            headerBalance.appendChild(balanceCards);
         }
         
         const bottomNavPhoto = document.getElementById('bottom-nav-user-photo');
@@ -2161,7 +2126,7 @@ class App {
                     <p class="reward-description" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">${reward.description}</p>
                     <div class="reward-rewards" style="display: flex; gap: 10px; margin-bottom: 12px;">
                         ${reward.rewardAmount > 0 ? `<span class="reward-badge"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" class="reward-icon">+${reward.rewardAmount.toFixed(3)} TON</span>` : ''}
-                        ${reward.popAmount > 0 ? `<span class="reward-badge"><img src="https://cdn-icons-png.flaticon.com/512/8074/8074685.png" class="reward-icon">+${reward.popAmount} POP</span>` : ''}
+                        ${reward.starAmount > 0 ? `<span class="reward-badge"><img src="https://cdn-icons-png.flaticon.com/512/15660/15660192.png" class="reward-icon">+${reward.starAmount} STAR</span>` : ''}
                     </div>
                     <button class="reward-btn promo-btn" data-reward-id="${reward.id}" data-reward-action="${reward.action}" data-reward-url="${reward.actionUrl}">
                         <i class="fas fa-arrow-right"></i> Claim
@@ -2188,11 +2153,11 @@ class App {
                     window.open(actionUrl, '_blank');
                     
                     const currentBalance = this.safeNumber(this.userState.balance);
-                    const currentPOP = this.safeNumber(this.userState.pop);
+                    const currentSTAR = this.safeNumber(this.userState.star);
                     
                     const updates = {};
                     if (reward.rewardAmount > 0) updates.balance = currentBalance + reward.rewardAmount;
-                    if (reward.popAmount > 0) updates.pop = currentPOP + reward.popAmount;
+                    if (reward.starAmount > 0) updates.star = currentSTAR + reward.starAmount;
                     updates.totalEarned = this.safeNumber(this.userState.totalEarned) + reward.rewardAmount;
                     
                     if (this.db && Object.keys(updates).length > 0) {
@@ -2200,7 +2165,7 @@ class App {
                     }
                     
                     if (reward.rewardAmount > 0) this.userState.balance = currentBalance + reward.rewardAmount;
-                    if (reward.popAmount > 0) this.userState.pop = currentPOP + reward.popAmount;
+                    if (reward.starAmount > 0) this.userState.star = currentSTAR + reward.starAmount;
                     this.userState.totalEarned = this.safeNumber(this.userState.totalEarned) + reward.rewardAmount;
                     
                     this.updateHeader();
@@ -2208,7 +2173,7 @@ class App {
                     btn.innerHTML = '<i class="fas fa-check"></i> Claimed';
                     btn.disabled = true;
                     
-                    this.showNotification("Reward Claimed", `+${reward.rewardAmount > 0 ? reward.rewardAmount.toFixed(3) + ' TON ' : ''}${reward.popAmount > 0 ? reward.popAmount + ' POP' : ''}`, "success");
+                    this.showNotification("Reward Claimed", `+${reward.rewardAmount > 0 ? reward.rewardAmount.toFixed(3) + ' TON ' : ''}${reward.starAmount > 0 ? reward.starAmount + ' STAR' : ''}`, "success");
                 }
             });
         });
@@ -2223,8 +2188,8 @@ class App {
         let isDisabled = isCompleted || this.isProcessingTask;
         
         if (isCompleted) {
-            buttonText = 'Check';
-            buttonClass = 'completed';
+            buttonText = 'Done';
+            buttonClass = 'done';
             isDisabled = true;
         }
         
@@ -2233,18 +2198,17 @@ class App {
                 <div class="referral-row-avatar">
                     <img src="${task.picture || defaultIcon}" alt="Task" 
                          oncontextmenu="return false;" 
-                         ondragstart="return false;">
+                         ondragstart="return false">
                 </div>
                 <div class="referral-row-info">
                     <p class="referral-row-username">${task.name}</p>
-                    <p class="task-description">Complete & Earn TON</p>
                     <div class="task-rewards">
                         <span class="reward-badge">
                             <img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" class="reward-icon" alt="TON">
                             ${task.reward.toFixed(3)}
                         </span>
                         <span class="reward-badge">
-                            <img src="https://cdn-icons-png.flaticon.com/512/8074/8074685.png" class="reward-icon" alt="POP">
+                            <img src="https://cdn-icons-png.flaticon.com/512/15660/15660192.png" class="reward-icon" alt="STAR">
                             ${task.popReward || 1}
                         </span>
                     </div>
@@ -2301,6 +2265,13 @@ class App {
             return;
         }
         
+        const adShown = await this.showInAppAd('AdBlock1');
+        
+        if (!adShown) {
+            this.showNotification("Ad Required", "Please watch the ad to apply promo code", "info");
+            return;
+        }
+        
         const originalText = promoBtn.innerHTML;
         promoBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Checking...';
         promoBtn.disabled = true;
@@ -2350,22 +2321,6 @@ class App {
                 }
             }
             
-            let adShown = false;
-            
-            if (typeof window.AdBlock2 !== 'undefined') {
-                try {
-                    await window.AdBlock2.show();
-                    adShown = true;
-                } catch (error) {}
-            }
-            
-            if (!adShown) {
-                this.showNotification("Ad Required", "Please watch the ad to apply promo code", "info");
-                promoBtn.innerHTML = originalText;
-                promoBtn.disabled = false;
-                return;
-            }
-            
             this.rateLimiter.addRequest(this.tgUser.id, 'promo_code');
             
             let rewardType = promoData.rewardType || 'ton';
@@ -2378,8 +2333,8 @@ class App {
                 userUpdates.balance = currentBalance + rewardAmount;
                 userUpdates.totalEarned = this.safeNumber(this.userState.totalEarned) + rewardAmount;
             } else if (rewardType === 'pop') {
-                const currentPOP = this.safeNumber(this.userState.pop);
-                userUpdates.pop = currentPOP + rewardAmount;
+                const currentSTAR = this.safeNumber(this.userState.star);
+                userUpdates.star = currentSTAR + rewardAmount;
             }
             
             userUpdates.totalPromoCodes = this.safeNumber(this.userState.totalPromoCodes) + 1;
@@ -2401,7 +2356,7 @@ class App {
                 this.userState.balance = userUpdates.balance;
                 this.userState.totalEarned = userUpdates.totalEarned;
             } else if (rewardType === 'pop') {
-                this.userState.pop = userUpdates.pop;
+                this.userState.star = userUpdates.star;
             }
             this.userState.totalPromoCodes = userUpdates.totalPromoCodes;
             
@@ -2410,7 +2365,7 @@ class App {
             this.updateHeader();
             promoInput.value = '';
             
-            this.showNotification("Success", `Promo code applied! +${rewardAmount.toFixed(3)} ${rewardType === 'ton' ? 'TON' : 'POP'}`, "success");
+            this.showNotification("Success", `Promo code applied! +${rewardAmount.toFixed(3)} ${rewardType === 'ton' ? 'TON' : 'STAR'}`, "success");
             
         } catch (error) {
             this.showNotification("Error", "Failed to apply promo code", "error");
@@ -2721,17 +2676,17 @@ class App {
             }
             
             const taskReward = this.safeNumber(task.reward);
-            const taskPopReward = this.safeNumber(task.popReward || 1);
+            const taskStarReward = this.safeNumber(task.popReward || 1);
             
             const currentBalance = this.safeNumber(this.userState.balance);
-            const currentPOP = this.safeNumber(this.userState.pop);
+            const currentSTAR = this.safeNumber(this.userState.star);
             const totalEarned = this.safeNumber(this.userState.totalEarned);
             const totalTasksCompleted = this.safeNumber(this.userState.totalTasksCompleted);
             const completedTasksCount = this.safeNumber(this.userState.completedTasksCount);
             
             const updates = {
                 balance: currentBalance + taskReward,
-                pop: currentPOP + taskPopReward,
+                star: currentSTAR + taskStarReward,
                 totalEarned: totalEarned + taskReward,
                 totalTasksCompleted: totalTasksCompleted + 1,
                 completedTasksCount: completedTasksCount + 1
@@ -2783,7 +2738,7 @@ class App {
             }
             
             this.userState.balance = currentBalance + taskReward;
-            this.userState.pop = currentPOP + taskPopReward;
+            this.userState.star = currentSTAR + taskStarReward;
             this.userState.totalEarned = totalEarned + taskReward;
             this.userState.totalTasksCompleted = totalTasksCompleted + 1;
             this.userState.completedTasksCount = completedTasksCount + 1;
@@ -2794,8 +2749,8 @@ class App {
                 if (taskCard) {
                     const taskBtn = taskCard.querySelector('.task-btn');
                     if (taskBtn) {
-                        taskBtn.innerHTML = 'Check';
-                        taskBtn.className = 'task-btn completed';
+                        taskBtn.innerHTML = 'Done';
+                        taskBtn.className = 'task-btn done';
                         taskBtn.disabled = true;
                         taskCard.classList.add('task-completed');
                     }
@@ -2821,10 +2776,17 @@ class App {
                 await this.referralManager.checkUserCompletedTasksForReferral(this.tgUser.id);
             }
             
+            this.taskCompletionCount++;
+            
+            if (this.taskCompletionCount >= 5) {
+                this.taskCompletionCount = 0;
+                await this.showInAppAd('AdBlock1');
+            }
+            
             this.enableAllTaskButtons();
             this.isProcessingTask = false;
             
-            this.showNotification("Task Completed!", `+${taskReward.toFixed(3)} TON, +${taskPopReward} POP`, "success");
+            this.showNotification("Task Completed!", `+${taskReward.toFixed(3)} TON, +${taskStarReward} STAR`, "success");
             
             return true;
             
@@ -2846,13 +2808,13 @@ class App {
     }
 
     disableAllTaskButtons() {
-        document.querySelectorAll('.task-btn:not(.completed):not(.counting):not(:disabled)').forEach(btn => {
+        document.querySelectorAll('.task-btn:not(.done):not(.counting):not(:disabled)').forEach(btn => {
             btn.disabled = true;
         });
     }
 
     enableAllTaskButtons() {
-        document.querySelectorAll('.task-btn:not(.completed):not(.counting)').forEach(btn => {
+        document.querySelectorAll('.task-btn:not(.done):not(.counting)').forEach(btn => {
             btn.disabled = false;
         });
     }
@@ -2864,7 +2826,7 @@ class App {
         const referralLink = `https://t.me/Pobuzzbot/app?startapp=${this.tgUser.id}`;
         const totalReferrals = this.safeNumber(this.userState.referrals || 0);
         const referralEarnings = this.safeNumber(this.userState.referralEarnings || 0);
-        const referralPopEarnings = this.safeNumber(this.userState.referralPopEarnings || 0);
+        const referralStarEarnings = this.safeNumber(this.userState.referralStarEarnings || 0);
         
         let activeReferrals = 0;
         if (this.db) {
@@ -2900,7 +2862,7 @@ class App {
                                 <i class="fas fa-gift"></i>
                             </div>
                             <div class="info-content">
-                                <h4>EARN ${this.appConfig.REFERRAL_BONUS_TON} TON & ${this.appConfig.REFERRAL_BONUS_POP} POP</h4>
+                                <h4>EARN ${this.appConfig.REFERRAL_BONUS_TON} TON & ${this.appConfig.REFERRAL_BONUS_POP} STAR</h4>
                                 <p>For Every Verified Referral</p>
                             </div>
                         </div>
@@ -2942,8 +2904,8 @@ class App {
                                 <i class="fas fa-star"></i>
                             </div>
                             <div class="stat-info">
-                                <h4>POP Earnings</h4>
-                                <p class="stat-value">${Math.floor(referralPopEarnings)} POP</p>
+                                <h4>STAR Earnings</h4>
+                                <p class="stat-value">${Math.floor(referralStarEarnings)} STAR</p>
                             </div>
                         </div>
                     </div>
@@ -2973,7 +2935,7 @@ class App {
                 <div class="referral-row-avatar">
                     <img src="${referral.photoUrl}" alt="${referral.firstName}" 
                          oncontextmenu="return false;" 
-                         ondragstart="return false;">
+                         ondragstart="return false">
                 </div>
                 <div class="referral-row-info">
                     <p class="referral-row-username">${referral.username}</p>
@@ -3019,21 +2981,21 @@ class App {
         
         const totalTasksCompleted = this.safeNumber(this.userState.totalTasksCompleted || 0);
         const totalReferrals = this.safeNumber(this.userState.referrals || 0);
-        const totalPOP = this.safeNumber(this.userState.pop || 0);
+        const totalSTAR = this.safeNumber(this.userState.star || 0);
         
         const tasksRequired = this.appConfig.REQUIRED_TASKS_FOR_WITHDRAWAL;
         const referralsRequired = this.appConfig.REQUIRED_REFERRALS_FOR_WITHDRAWAL;
-        const popRequired = this.appConfig.REQUIRED_POP_FOR_WITHDRAWAL;
+        const starRequired = this.appConfig.REQUIRED_POP_FOR_WITHDRAWAL;
         
         const tasksProgress = Math.min(totalTasksCompleted, tasksRequired);
         const referralsProgress = Math.min(totalReferrals, referralsRequired);
-        const popProgress = Math.min(totalPOP, popRequired);
+        const starProgress = Math.min(totalSTAR, starRequired);
         
         const tasksCompleted = totalTasksCompleted >= tasksRequired;
         const referralsCompleted = totalReferrals >= referralsRequired;
-        const popCompleted = totalPOP >= popRequired;
+        const starCompleted = totalSTAR >= starRequired;
         
-        const canWithdraw = tasksCompleted && referralsCompleted && popCompleted;
+        const canWithdraw = tasksCompleted && referralsCompleted && starCompleted;
         
         const maxBalance = this.safeNumber(this.userState.balance);
         
@@ -3098,7 +3060,7 @@ class App {
                             <div class="card-icon">
                                 <i class="fas fa-exchange-alt"></i>
                             </div>
-                            <div class="card-title">Exchange TON to POP</div>
+                            <div class="card-title">Exchange TON to STAR</div>
                         </div>
                         <div class="card-divider"></div>
                         
@@ -3108,8 +3070,8 @@ class App {
                                 <span>${this.safeNumber(this.userState.balance).toFixed(3)} TON</span>
                             </div>
                             <div class="mini-balance-item">
-                                <img src="https://cdn-icons-png.flaticon.com/512/8074/8074685.png" alt="POP">
-                                <span>${Math.floor(this.safeNumber(this.userState.pop))} POP</span>
+                                <img src="https://cdn-icons-png.flaticon.com/512/15660/15660192.png" alt="STAR">
+                                <span>${Math.floor(this.safeNumber(this.userState.star))} STAR</span>
                             </div>
                         </div>
                         
@@ -3117,7 +3079,7 @@ class App {
                             <div class="amount-input-container">
                                 <input type="number" id="exchange-input" class="form-input" 
                                        placeholder="TON amount" step="0.01" min="${this.appConfig.MIN_EXCHANGE_TON}">
-                                <span class="exchange-preview" id="exchange-preview">≈ 0 POP</span>
+                                <span class="exchange-preview" id="exchange-preview">≈ 0 STAR</span>
                                 <button type="button" class="max-btn" id="exchange-max-btn">MAX</button>
                             </div>
                             <button class="exchange-btn" id="exchange-btn">
@@ -3162,14 +3124,14 @@ class App {
                             </div>
                             ` : ''}
                             
-                            ${!popCompleted ? `
+                            ${!starCompleted ? `
                             <div class="requirement-item">
                                 <div class="requirement-header">
-                                    <span><i class="fas fa-star"></i> Earn POP</span>
-                                    <span class="requirement-count">${popProgress}/${popRequired}</span>
+                                    <span><i class="fas fa-star"></i> Earn STAR</span>
+                                    <span class="requirement-count">${starProgress}/${starRequired}</span>
                                 </div>
                                 <div class="progress-bar">
-                                    <div class="progress-fill" style="width: ${(popProgress/popRequired)*100}%"></div>
+                                    <div class="progress-fill" style="width: ${(starProgress/starRequired)*100}%"></div>
                                 </div>
                             </div>
                             ` : ''}
@@ -3206,7 +3168,7 @@ class App {
                         <button id="profile-withdraw-btn" class="withdraw-btn" 
                                 ${!canWithdraw || maxBalance < this.appConfig.MINIMUM_WITHDRAW ? 'disabled' : ''}>
                             <i class="fas fa-paper-plane"></i> 
-                            ${canWithdraw ? 'WITHDRAW NOW' : this.getWithdrawButtonText(tasksCompleted, referralsCompleted, popCompleted)}
+                            ${canWithdraw ? 'WITHDRAW NOW' : this.getWithdrawButtonText(tasksCompleted, referralsCompleted, starCompleted)}
                         </button>
                     </div>
                     
@@ -3283,15 +3245,15 @@ class App {
         return str.substring(0, length) + '...';
     }
 
-    getWithdrawButtonText(tasksCompleted, referralsCompleted, popCompleted) {
+    getWithdrawButtonText(tasksCompleted, referralsCompleted, starCompleted) {
         if (!tasksCompleted) {
             return `COMPLETE ${this.appConfig.REQUIRED_TASKS_FOR_WITHDRAWAL} TASKS`;
         }
         if (!referralsCompleted) {
             return `INVITE ${this.appConfig.REQUIRED_REFERRALS_FOR_WITHDRAWAL} FRIEND`;
         }
-        if (!popCompleted) {
-            return `EARN ${this.appConfig.REQUIRED_POP_FOR_WITHDRAWAL} POP`;
+        if (!starCompleted) {
+            return `EARN ${this.appConfig.REQUIRED_POP_FOR_WITHDRAWAL} STAR`;
         }
         return 'WITHDRAW NOW';
     }
@@ -3345,7 +3307,7 @@ class App {
         
         const exchangeBtn = document.getElementById('exchange-btn');
         if (exchangeBtn) {
-            exchangeBtn.addEventListener('click', () => this.exchangeTonToPop());
+            exchangeBtn.addEventListener('click', () => this.exchangeTonToStar());
         }
         
         const exchangeInput = document.getElementById('exchange-input');
@@ -3355,8 +3317,8 @@ class App {
         if (exchangeInput && exchangePreview) {
             exchangeInput.addEventListener('input', () => {
                 const value = parseFloat(exchangeInput.value) || 0;
-                const popAmount = Math.floor(value * this.appConfig.POP_PER_TON);
-                exchangePreview.textContent = `≈ ${popAmount} POP`;
+                const starAmount = Math.floor(value * this.appConfig.POP_PER_TON);
+                exchangePreview.textContent = `≈ ${starAmount} STAR`;
                 
                 if (value > 0) {
                     exchangePreview.style.opacity = '1';
@@ -3370,9 +3332,9 @@ class App {
             exchangeMaxBtn.addEventListener('click', () => {
                 const max = this.safeNumber(this.userState.balance);
                 exchangeInput.value = max.toFixed(3);
-                const popAmount = Math.floor(max * this.appConfig.POP_PER_TON);
+                const starAmount = Math.floor(max * this.appConfig.POP_PER_TON);
                 if (exchangePreview) {
-                    exchangePreview.textContent = `≈ ${popAmount} POP`;
+                    exchangePreview.textContent = `≈ ${starAmount} STAR`;
                 }
             });
         }
@@ -3402,7 +3364,7 @@ class App {
         }
     }
     
-    async exchangeTonToPop() {
+    async exchangeTonToStar() {
         try {
             const exchangeBtn = document.getElementById('exchange-btn');
             const exchangeInput = document.getElementById('exchange-input');
@@ -3430,6 +3392,13 @@ class App {
                 return;
             }
             
+            const adShown = await this.showInAppAd('AdBlock1');
+            
+            if (!adShown) {
+                this.showNotification("Ad Required", "Please watch the ad to complete exchange", "info");
+                return;
+            }
+            
             this.rateLimiter.addRequest(this.tgUser.id, 'exchange');
             
             const originalText = exchangeBtn.innerHTML;
@@ -3437,13 +3406,13 @@ class App {
             exchangeBtn.disabled = true;
             
             try {
-                const popAmount = Math.floor(tonAmount * this.appConfig.POP_PER_TON);
+                const starAmount = Math.floor(tonAmount * this.appConfig.POP_PER_TON);
                 const newTonBalance = tonBalance - tonAmount;
-                const newPopBalance = this.safeNumber(this.userState.pop) + popAmount;
+                const newStarBalance = this.safeNumber(this.userState.star) + starAmount;
                 
                 const updates = {
                     balance: newTonBalance,
-                    pop: newPopBalance
+                    star: newStarBalance
                 };
                 
                 if (this.db) {
@@ -3451,23 +3420,23 @@ class App {
                 }
                 
                 this.userState.balance = newTonBalance;
-                this.userState.pop = newPopBalance;
+                this.userState.star = newStarBalance;
                 
                 this.cache.delete(`user_${this.tgUser.id}`);
                 
                 exchangeInput.value = '';
                 if (exchangePreview) {
-                    exchangePreview.textContent = '≈ 0 POP';
+                    exchangePreview.textContent = '≈ 0 STAR';
                 }
                 this.updateHeader();
                 
                 const miniBalanceItems = document.querySelectorAll('.mini-balance-item');
                 if (miniBalanceItems.length >= 2) {
                     miniBalanceItems[0].querySelector('span').textContent = `${newTonBalance.toFixed(3)} TON`;
-                    miniBalanceItems[1].querySelector('span').textContent = `${Math.floor(newPopBalance)} POP`;
+                    miniBalanceItems[1].querySelector('span').textContent = `${Math.floor(newStarBalance)} STAR`;
                 }
                 
-                this.showNotification("Success", `Exchanged ${tonAmount.toFixed(3)} TON to ${popAmount} POP`, "success");
+                this.showNotification("Success", `Exchanged ${tonAmount.toFixed(3)} TON to ${starAmount} STAR`, "success");
                 
             } catch (error) {
                 this.showNotification("Error", "Failed to exchange", "error");
@@ -3495,8 +3464,8 @@ class App {
         const requiredTasks = this.appConfig.REQUIRED_TASKS_FOR_WITHDRAWAL;
         const totalReferrals = this.safeNumber(this.userState.referrals || 0);
         const requiredReferrals = this.appConfig.REQUIRED_REFERRALS_FOR_WITHDRAWAL;
-        const totalPOP = this.safeNumber(this.userState.pop || 0);
-        const requiredPOP = this.appConfig.REQUIRED_POP_FOR_WITHDRAWAL;
+        const totalSTAR = this.safeNumber(this.userState.star || 0);
+        const requiredSTAR = this.appConfig.REQUIRED_POP_FOR_WITHDRAWAL;
         
         if (!walletAddress || walletAddress.length < 20) {
             this.showNotification("Error", "Please enter a valid TON wallet address", "error");
@@ -3525,29 +3494,22 @@ class App {
             return;
         }
         
-        if (totalPOP < requiredPOP) {
-            const popNeeded = requiredPOP - totalPOP;
-            this.showNotification("POP Required", `You need to earn ${popNeeded} more POP to withdraw`, "error");
-            return;
-        }
-        
-        let adShown = false;
-        
-        if (typeof window.AdBlock2 !== 'undefined') {
-            try {
-                await window.AdBlock2.show();
-                adShown = true;
-            } catch (error) {}
-        }
-        
-        if (!adShown) {
-            this.showNotification("Ad Required", "Please watch the ad to process withdrawal", "info");
+        if (totalSTAR < requiredSTAR) {
+            const starNeeded = requiredSTAR - totalSTAR;
+            this.showNotification("STAR Required", `You need to earn ${starNeeded} more STAR to withdraw`, "error");
             return;
         }
         
         const rateLimitCheck = this.rateLimiter.checkLimit(this.tgUser.id, 'withdrawal');
         if (!rateLimitCheck.allowed) {
             this.showNotification("Rate Limit", "You can only withdraw once per day. Please try again tomorrow.", "warning");
+            return;
+        }
+        
+        const adShown = await this.showInAppAd('AdBlock2');
+        
+        if (!adShown) {
+            this.showNotification("Ad Required", "Please watch the ad to process withdrawal", "info");
             return;
         }
         
@@ -3563,7 +3525,7 @@ class App {
             const newTotalWithdrawnAmount = this.safeNumber(this.userState.totalWithdrawnAmount) + amount;
             
             const randomId = Math.random().toString(36).substring(2, 7).toUpperCase();
-            const withdrawalId = `POP_${randomId}`;
+            const withdrawalId = `STAR_${randomId}`;
             
             const withdrawalData = {
                 id: withdrawalId,
@@ -3722,13 +3684,13 @@ class App {
             status: userData.status || 'free',
             referralState: userData.referralState || 'verified',
             referralEarnings: userData.referralEarnings || 0,
-            referralPopEarnings: userData.referralPopEarnings || 0,
+            referralStarEarnings: userData.referralStarEarnings || 0,
             totalEarned: userData.totalEarned || 0,
             totalWithdrawals: userData.totalWithdrawals || 0,
             totalTasksCompleted: userData.totalTasksCompleted || 0,
             completedTasksCount: userData.completedTasksCount || 0,
             balance: userData.balance || 0,
-            pop: userData.pop || 0,
+            star: userData.star || 0,
             referrals: userData.referrals || 0,
             firebaseUid: this.auth?.currentUser?.uid || userData.firebaseUid || 'pending',
             totalWithdrawnAmount: userData.totalWithdrawnAmount || 0,
@@ -3759,7 +3721,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="error-icon">
                         <i class="fab fa-telegram"></i>
                     </div>
-                    <h2>POP BUZZ</h2>
+                    <h2>STAR BUZZ</h2>
                     <p>Please open from Telegram Mini App</p>
                 </div>
             </div>
