@@ -31,7 +31,7 @@ export default async function handler(req, res) {
                 reply_markup: {
                     inline_keyboard: [[{
                         text: "GET NEWS 📉",
-                        url: `https://t.me/POP_BUZZ`
+                        url: `https://t.me/STARZ_NEW`
                     }]]
                 }
             })
