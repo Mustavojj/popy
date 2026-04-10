@@ -28,11 +28,8 @@ export const APP_CONFIG = {
     NEWS_TASK_REWARD: 0.002,
     DAILY_CHECKIN_REWARD: 0.002,
     REQUIRED_PROMO_CODE_CHANNEL: "https://t.me/POP_BUZZ",
-    PROMO_CODE_REQUIRED_CHECK: true,
+    PROMO_CODE_REQUIRED_CHECK: false,
     MAINTENANCE_MODE: false,
-    WELCOME_MESSAGE: "🎉 *Welcome to STAR BUZZ!* 🎉\n\nEarn TON and STAR by completing tasks and inviting friends!\n\n🌟 Complete tasks to earn rewards\n👥 Invite friends for bonus\n💎 Exchange TON to STAR\n\nStart your journey now!",
-    WELCOME_BUTTON_TEXT: "🚀 Start App",
-    WELCOME_BUTTON_URL: "https://t.me/Strzzbot/star"
 };
 
 export const CORE_CONFIG = {
