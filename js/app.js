@@ -2,8 +2,7 @@ import { APP_CONFIG, THEME_CONFIG, FEATURES_CONFIG } from './data.js';
 import { CacheManager, NotificationManager, SecurityManager } from './modules/core.js';
 import { TaskManager, ReferralManager } from './modules/features.js';
 
-class App {
-    
+class App { 
     constructor() {
         this.darkMode = true;
         this.tg = null;
@@ -1434,6 +1433,15 @@ async addReferralWithPendingBonus(referrerId, newUserId, firebaseUid) {
             joinedAt: currentTime
         });
         
+        const referrerRef = this.db.ref(`users/${referrerId}`);
+        const referrerSnapshot = await referrerRef.once('value');
+        if (referrerSnapshot.exists()) {
+            const currentReferrals = referrerSnapshot.val().referrals || 0;
+            await referrerRef.update({
+                referrals: currentReferrals + 1
+            });
+        }
+        
     } catch (error) {
         console.error("Error adding pending referral:", error);
     }
@@ -1517,7 +1525,6 @@ async giveReferralBonus(referrerId, referralId) {
         await referrerRef.update({
             balance: newBalance,
             star: newStar,
-            referrals: newReferrals,
             referralEarnings: newReferralEarnings,
             referralStarEarnings: newReferralStarEarnings,
             totalEarned: newTotalEarned
