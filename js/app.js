@@ -1414,26 +1414,31 @@ async sendWelcomeMessage() {
         return userData;
     }
 
-async addReferralWithPendingBonus(referrerId, newUserId, firebaseUid) {
+
+    
+    async addReferralWithPendingBonus(referrerId, newUserId, firebaseUid) {
     try {
         if (!this.db) return;
         
         const currentTime = this.getServerTime();
+        
+        const existingRef = await this.db.ref(`referrals/${referrerId}/${newUserId}`).once('value');
+        if (existingRef.exists()) {
+            return;
+        }
         
         await this.db.ref(`referrals/${referrerId}/${newUserId}`).set({
             userId: newUserId,
             username: this.tgUser.username ? `@${this.tgUser.username}` : 'No Username',
             firstName: this.getShortName(this.tgUser.first_name || ''),
             photoUrl: this.tgUser.photo_url || this.appConfig.DEFAULT_USER_AVATAR,
-            joinedAt: currentTime,
-            state: 'pending',
-            bonusGiven: false
+            joinedAt: currentTime
         });
         
     } catch (error) {
         console.error("Error adding pending referral:", error);
     }
-                }
+}
 
 async processPendingReferralsForReferrer(referrerId) {
     try {
@@ -1449,27 +1454,22 @@ async processPendingReferralsForReferrer(referrerId) {
         for (const referralId in referrals) {
             const referral = referrals[referralId];
             
-            if (referral.state === 'pending' && !referral.bonusGiven) {
-                const userRef = await this.db.ref(`users/${referralId}`).once('value');
-                if (userRef.exists()) {
-                    const userData = userRef.val();
-                    const completedTasks = userData.completedTasksCount || 0;
-                    
-                    if (userData && userData.status !== 'ban' && completedTasks >= requiredTasks) {
-                        await this.db.ref(`referrals/${referrerId}/${referralId}`).update({
-                            state: 'verified',
-                            bonusGiven: true,
-                            verifiedAt: this.getServerTime()
-                        });
-                        
-                        await this.db.ref(`users/${referralId}`).update({
-                            referralState: 'verified'
-                        });
-                        
-                        await this.giveReferralBonus(referrerId, referralId, referral);
-                        updated = true;
-                    }
-                }
+            const userRef = await this.db.ref(`users/${referralId}`).once('value');
+            if (!userRef.exists()) continue;
+            
+            const userData = userRef.val();
+            const completedTasks = userData.completedTasksCount || 0;
+            const referralState = userData.referralState;
+            
+            if (referralState === 'verified') continue;
+            
+            if (userData && userData.status !== 'ban' && completedTasks >= requiredTasks) {
+                await this.db.ref(`users/${referralId}`).update({
+                    referralState: 'verified'
+                });
+                
+                await this.giveReferralBonus(referrerId, referralId);
+                updated = true;
             }
         }
         
@@ -1489,14 +1489,12 @@ async processPendingReferralsForReferrer(referrerId) {
     } catch (error) {}
 }
 
-    
-async giveReferralBonus(referrerId, referralId, referralData) {
+async giveReferralBonus(referrerId, referralId) {
     try {
         if (!this.db) return;
         
-        if (referralData.bonusGiven === true) {
-            return;
-        }
+        const checkRef = await this.db.ref(`referrals/${referrerId}/${referralId}/bonusGiven`).once('value');
+        if (checkRef.val() === true) return;
         
         const referrerRef = this.db.ref(`users/${referrerId}`);
         const referrerSnapshot = await referrerRef.once('value');
@@ -1526,6 +1524,11 @@ async giveReferralBonus(referrerId, referralId, referralData) {
             totalEarned: newTotalEarned
         });
         
+        await this.db.ref(`referrals/${referrerId}/${referralId}`).update({
+            bonusGiven: true,
+            verifiedAt: this.getServerTime()
+        });
+        
         if (this.tgUser && referrerId == this.tgUser.id) {
             this.userState.balance = newBalance;
             this.userState.star = newStar;
@@ -1546,47 +1549,7 @@ async giveReferralBonus(referrerId, referralId, referralData) {
         
     } catch (error) {}
 }
-
-async processReferralTaskBonus(referrerId, taskReward) {
-        try {
-            if (!this.db) return;
-            if (!referrerId || referrerId == this.tgUser.id) return;
-            if (this.appConfig.REFERRAL_PERCENTAGE <= 0) return;
-            
-            const referrerRef = this.db.ref(`users/${referrerId}`);
-            const referrerSnapshot = await referrerRef.once('value');
-            
-            if (!referrerSnapshot.exists()) return;
-            
-            const referrerData = referrerSnapshot.val();
-            
-            if (referrerData.status === 'ban') return;
-            
-            const referralPercentage = this.appConfig.REFERRAL_PERCENTAGE;
-            const referralBonus = (taskReward * referralPercentage) / 100;
-            
-            if (referralBonus <= 0) return;
-            
-            const newBalance = this.safeNumber(referrerData.balance) + referralBonus;
-            const newReferralEarnings = this.safeNumber(referrerData.referralEarnings) + referralBonus;
-            const newTotalEarned = this.safeNumber(referrerData.totalEarned) + referralBonus;
-            
-            await referrerRef.update({
-                balance: newBalance,
-                referralEarnings: newReferralEarnings,
-                totalEarned: newTotalEarned
-            });
-            
-            if (referrerId == this.tgUser.id) {
-                this.userState.balance = newBalance;
-                this.userState.referralEarnings = newReferralEarnings;
-                this.userState.totalEarned = newTotalEarned;
-                
-                this.updateHeader();
-            }
-            
-        } catch (error) {}
-    }
+    
 
     async loadTasksData() {
         try {
