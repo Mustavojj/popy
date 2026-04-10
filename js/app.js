@@ -1415,143 +1415,140 @@ async sendWelcomeMessage() {
         return userData;
     }
 
-    async addReferralWithPendingBonus(referrerId, newUserId, firebaseUid) {
-        try {
-            if (!this.db) return;
-            
-            const currentTime = this.getServerTime();
-            
-            await this.db.ref(`referrals/${referrerId}/${newUserId}`).set({
-                userId: newUserId,
-                username: this.tgUser.username ? `@${this.tgUser.username}` : 'No Username',
-                firstName: this.getShortName(this.tgUser.first_name || ''),
-                photoUrl: this.tgUser.photo_url || this.appConfig.DEFAULT_USER_AVATAR,
-                joinedAt: currentTime,
-                state: 'pending',
-                bonusGiven: false
-            });
-            
-            await this.db.ref(`users/${newUserId}`).update({
-                referralState: 'pending'
-            });
-            
-        } catch (error) {
-            console.error("Error adding pending referral:", error);
-        }
+async addReferralWithPendingBonus(referrerId, newUserId, firebaseUid) {
+    try {
+        if (!this.db) return;
+        
+        const currentTime = this.getServerTime();
+        
+        await this.db.ref(`referrals/${referrerId}/${newUserId}`).set({
+            userId: newUserId,
+            username: this.tgUser.username ? `@${this.tgUser.username}` : 'No Username',
+            firstName: this.getShortName(this.tgUser.first_name || ''),
+            photoUrl: this.tgUser.photo_url || this.appConfig.DEFAULT_USER_AVATAR,
+            joinedAt: currentTime,
+            state: 'pending',
+            bonusGiven: false
+        });
+        
+    } catch (error) {
+        console.error("Error adding pending referral:", error);
     }
+                }
 
-    async processPendingReferralsForReferrer(referrerId) {
-        try {
-            if (!this.db) return;
-
-            const referralsRef = await this.db.ref(`referrals/${referrerId}`).once('value');
-            if (!referralsRef.exists()) return;
+async processPendingReferralsForReferrer(referrerId) {
+    try {
+        if (!this.db) return;
+        
+        const referralsRef = await this.db.ref(`referrals/${referrerId}`).once('value');
+        if (!referralsRef.exists()) return;
+        
+        const referrals = referralsRef.val();
+        let updated = false;
+        const requiredTasks = APP_CONFIG.REFERRAL_REQUIRED_TASKS || 1;
+        
+        for (const referralId in referrals) {
+            const referral = referrals[referralId];
             
-            const referrals = referralsRef.val();
-            let updated = false;
-            const requiredTasks = APP_CONFIG.REFERRAL_REQUIRED_TASKS || 1;
-            
-            for (const referralId in referrals) {
-                const referral = referrals[referralId];
-                
-                if (referral.state === 'pending' && !referral.bonusGiven) {
-                    const userRef = await this.db.ref(`users/${referralId}`).once('value');
-                    if (userRef.exists()) {
-                        const userData = userRef.val();
-                        const completedTasks = userData.completedTasksCount || 0;
+            if (referral.state === 'pending' && !referral.bonusGiven) {
+                const userRef = await this.db.ref(`users/${referralId}`).once('value');
+                if (userRef.exists()) {
+                    const userData = userRef.val();
+                    const completedTasks = userData.completedTasksCount || 0;
+                    
+                    if (userData && userData.status !== 'ban' && completedTasks >= requiredTasks) {
+                        await this.db.ref(`referrals/${referrerId}/${referralId}`).update({
+                            state: 'verified',
+                            bonusGiven: true,
+                            verifiedAt: this.getServerTime()
+                        });
                         
-                        if (userData && userData.status !== 'ban' && completedTasks >= requiredTasks) {
-                            await this.giveReferralBonus(referrerId, referralId, referral);
-                            updated = true;
-                        }
+                        await this.db.ref(`users/${referralId}`).update({
+                            referralState: 'verified'
+                        });
+                        
+                        await this.giveReferralBonus(referrerId, referralId, referral);
+                        updated = true;
                     }
                 }
             }
-            
-            if (updated) {
-                this.cache.delete(`user_${referrerId}`);
-                this.cache.delete(`referrals_${referrerId}`);
-                
-                if (this.tgUser && referrerId == this.tgUser.id) {
-                    await this.loadUserData(true);
-                    if (document.getElementById('referrals-page')?.classList.contains('active')) {
-                        this.renderReferralsPage();
-                    }
-                    this.updateHeader();
-                }
-            }
-            
-        } catch (error) {}
-    }
-
-    async giveReferralBonus(referrerId, referralId, referralData) {
-        try {
-            if (!this.db) return;
-
-            if (referralData.bonusGiven === true) {
-            return;
-            }
-            
-            const referrerRef = this.db.ref(`users/${referrerId}`);
-            const referrerSnapshot = await referrerRef.once('value');
-            
-            if (!referrerSnapshot.exists()) return;
-            
-            const referrerData = referrerSnapshot.val();
-            
-            if (referrerData.status === 'ban') return;
-            
-            const referralBonus = this.appConfig.REFERRAL_BONUS_TON;
-            const referralStarBonus = this.appConfig.REFERRAL_BONUS_POP;
-            
-            const newBalance = this.safeNumber(referrerData.balance) + referralBonus;
-            const newStar = this.safeNumber(referrerData.star) + referralStarBonus;
-            const newReferrals = (referrerData.referrals || 0) + 1;
-            const newReferralEarnings = this.safeNumber(referrerData.referralEarnings) + referralBonus;
-            const newReferralStarEarnings = this.safeNumber(referrerData.referralStarEarnings) + referralStarBonus;
-            const newTotalEarned = this.safeNumber(referrerData.totalEarned) + referralBonus;
-            const currentTime = this.getServerTime();
-            
-            await referrerRef.update({
-                balance: newBalance,
-                star: newStar,
-                referrals: newReferrals,
-                referralEarnings: newReferralEarnings,
-                referralStarEarnings: newReferralStarEarnings,
-                totalEarned: newTotalEarned
-            });
-            
-            await this.db.ref(`referrals/${referrerId}/${referralId}`).update({
-                state: 'verified',
-                bonusGiven: true,
-                bonusAmount: referralBonus,
-                bonusStarAmount: referralStarBonus,
-                verifiedAt: currentTime
-            });
-            
-            
-            if (this.tgUser && referrerId == this.tgUser.id) {
-                this.userState.balance = newBalance;
-                this.userState.star = newStar;
-                this.userState.referrals = newReferrals;
-                this.userState.referralEarnings = newReferralEarnings;
-                this.userState.referralStarEarnings = newReferralStarEarnings;
-                this.userState.totalEarned = newTotalEarned;
-                
-                this.updateHeader();
-            }
-            
+        }
+        
+        if (updated) {
             this.cache.delete(`user_${referrerId}`);
             this.cache.delete(`referrals_${referrerId}`);
             
-            if (this.referralManager) {
-                await this.referralManager.refreshReferralsList();
+            if (this.tgUser && referrerId == this.tgUser.id) {
+                await this.loadUserData(true);
+                if (document.getElementById('referrals-page')?.classList.contains('active')) {
+                    this.renderReferralsPage();
+                }
+                this.updateHeader();
             }
-            
-        } catch (error) {}
-    }
+        }
+        
+    } catch (error) {}
+}
 
-    async processReferralTaskBonus(referrerId, taskReward) {
+    
+async giveReferralBonus(referrerId, referralId, referralData) {
+    try {
+        if (!this.db) return;
+        
+        if (referralData.bonusGiven === true) {
+            return;
+        }
+        
+        const referrerRef = this.db.ref(`users/${referrerId}`);
+        const referrerSnapshot = await referrerRef.once('value');
+        
+        if (!referrerSnapshot.exists()) return;
+        
+        const referrerData = referrerSnapshot.val();
+        
+        if (referrerData.status === 'ban') return;
+        
+        const referralBonus = this.appConfig.REFERRAL_BONUS_TON;
+        const referralStarBonus = this.appConfig.REFERRAL_BONUS_POP;
+        
+        const newBalance = this.safeNumber(referrerData.balance) + referralBonus;
+        const newStar = this.safeNumber(referrerData.star) + referralStarBonus;
+        const newReferrals = (referrerData.referrals || 0) + 1;
+        const newReferralEarnings = this.safeNumber(referrerData.referralEarnings) + referralBonus;
+        const newReferralStarEarnings = this.safeNumber(referrerData.referralStarEarnings) + referralStarBonus;
+        const newTotalEarned = this.safeNumber(referrerData.totalEarned) + referralBonus;
+        
+        await referrerRef.update({
+            balance: newBalance,
+            star: newStar,
+            referrals: newReferrals,
+            referralEarnings: newReferralEarnings,
+            referralStarEarnings: newReferralStarEarnings,
+            totalEarned: newTotalEarned
+        });
+        
+        if (this.tgUser && referrerId == this.tgUser.id) {
+            this.userState.balance = newBalance;
+            this.userState.star = newStar;
+            this.userState.referrals = newReferrals;
+            this.userState.referralEarnings = newReferralEarnings;
+            this.userState.referralStarEarnings = newReferralStarEarnings;
+            this.userState.totalEarned = newTotalEarned;
+            
+            this.updateHeader();
+        }
+        
+        this.cache.delete(`user_${referrerId}`);
+        this.cache.delete(`referrals_${referrerId}`);
+        
+        if (this.referralManager) {
+            await this.referralManager.refreshReferralsList();
+        }
+        
+    } catch (error) {}
+}
+
+async processReferralTaskBonus(referrerId, taskReward) {
         try {
             if (!this.db) return;
             if (!referrerId || referrerId == this.tgUser.id) return;
