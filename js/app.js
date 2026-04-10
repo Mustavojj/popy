@@ -2999,10 +2999,37 @@ renderReferralRow(referral) {
     }
 
     async refreshReferralsList() {
-        try {
-            await this.referralManager.refreshReferralsList();
-        } catch (error) {}
-    }
+    try {
+        if (!this.app.db || !this.app.tgUser) return;
+        
+        const referralsRef = await this.app.db.ref(`referrals/${this.app.tgUser.id}`).once('value');
+        if (!referralsRef.exists()) return;
+        
+        const referrals = referralsRef.val();
+        const verifiedReferrals = [];
+        
+        for (const referralId in referrals) {
+            const referral = referrals[referralId];
+            if (referral.bonusGiven === true) {
+                verifiedReferrals.push({
+                    id: referralId,
+                    ...referral
+                });
+            }
+        }
+        
+        this.app.userState.referrals = verifiedReferrals.length;
+        
+        await this.app.loadUserData(true);
+        
+        if (document.getElementById('referrals-page')?.classList.contains('active')) {
+            this.app.renderReferralsPage();
+        }
+        
+        this.app.updateHeader();
+        
+    } catch (error) {}
+                                     }
 
                                     
         
