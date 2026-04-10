@@ -2868,7 +2868,7 @@ async giveReferralBonus(referrerId, referralId) {
             if (referralsRef.exists()) {
                 const referrals = referralsRef.val();
                 for (const referralId in referrals) {
-                    if (referrals[referralId].state === 'verified') {
+                    if (referrals[referralId].bonusGiven === true) {
                         activeReferrals++;
                     }
                 }
@@ -2998,7 +2998,7 @@ renderReferralRow(referral) {
         }
     }
 
-    async refreshReferralsList() {
+async refreshReferralsList() {
     try {
         if (!this.app.db || !this.app.tgUser) return;
         
