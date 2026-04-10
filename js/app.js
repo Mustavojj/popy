@@ -2420,72 +2420,68 @@ async giveReferralBonus(referrerId, referralId) {
         }
     }
 
+
+
+
     showJoinRequiredModal(channelUsername) {
-        const modal = document.createElement('div');
-        modal.className = 'task-modal';
-        
-        modal.innerHTML = `
-            <div class="task-modal-content">
-                <button class="task-modal-close" id="modal-close">
-                    <i class="fas fa-times"></i>
-                </button>
-                
-                <div class="task-modal-body">
-                    <div class="join-required-content">
-                        <div class="join-icon">
-                            <i class="fab fa-telegram"></i>
-                        </div>
-                        <h3>Join Required</h3>
-                        <p>You need to join the channel to use this promo code:</p>
-                        <div class="channel-link">
-                            <a href="https://t.me/${channelUsername.replace('@', '')}" target="_blank" class="join-channel-btn">
-                                <i class="fab fa-telegram"></i> ${channelUsername}
-                            </a>
-                        </div>
-                        <button class="check-join-btn" id="check-join-btn">
-                            <i class="fas fa-check-circle"></i> I've Joined
-                        </button>
-                    </div>
-                </div>
+    const modal = document.createElement('div');
+    modal.className = 'task-modal';
+    
+    modal.innerHTML = `
+        <div class="task-modal-content" style="text-align: center;">
+            <button class="task-modal-close" id="modal-close">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="join-icon" style="font-size: 50px; color: #2ecc71; margin-bottom: 15px;">
+                <i class="fab fa-telegram"></i>
             </div>
-        `;
-        
-        document.body.appendChild(modal);
-        
-        const closeBtn = document.getElementById('modal-close');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
+            <h3 style="color: var(--text-primary); margin-bottom: 10px;">Join Required</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">You need to join the channel to use this promo code:</p>
+            
+            <a href="https://t.me/${channelUsername.replace('@', '')}" target="_blank" class="join-channel-btn" style="display: flex; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(135deg, #2ecc71, #1e8449); border-radius: 50px; padding: 14px; color: white; text-decoration: none; font-weight: bold; margin-bottom: 15px;">
+                <i class="fab fa-telegram"></i> Join ${channelUsername}
+            </a>
+            
+            <button class="check-join-btn" id="check-join-btn" style="width: 100%; padding: 14px; background: rgba(46, 204, 113, 0.2); border: 1px solid #2ecc71; border-radius: 50px; color: #2ecc71; font-weight: bold; cursor: pointer;">
+                <i class="fas fa-check-circle"></i> I've Joined
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    const closeBtn = document.getElementById('modal-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => modal.remove());
+    }
+    
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+    });
+    
+    const checkJoinBtn = document.getElementById('check-join-btn');
+    if (checkJoinBtn) {
+        checkJoinBtn.addEventListener('click', async () => {
+            checkJoinBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Checking...';
+            checkJoinBtn.disabled = true;
+            
+            const isMember = await this.checkChannelMembership(channelUsername);
+            
+            if (isMember) {
                 modal.remove();
-            });
-        }
-        
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.remove();
+                await this.handlePromoCodeAfterJoin();
+            } else {
+                this.showNotification("Not Joined", "Please join the channel first", "error");
+                checkJoinBtn.innerHTML = '<i class="fas fa-check-circle"></i> I\'ve Joined';
+                checkJoinBtn.disabled = false;
             }
         });
-        
-        const checkJoinBtn = document.getElementById('check-join-btn');
-        if (checkJoinBtn) {
-            checkJoinBtn.addEventListener('click', async () => {
-                checkJoinBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Checking...';
-                checkJoinBtn.disabled = true;
-                
-                const isMember = await this.checkChannelMembership(channelUsername);
-                
-                if (isMember) {
-                    modal.remove();
-                    await this.handlePromoCodeAfterJoin();
-                } else {
-                    this.showNotification("Not Joined", "Please join the channel first", "error");
-                    this.showShake('error');
-                    checkJoinBtn.innerHTML = '<i class="fas fa-check-circle"></i> I\'ve Joined';
-                    checkJoinBtn.disabled = false;
-                }
-            });
-        }
     }
+}
 
+
+    
     async handlePromoCodeAfterJoin() {
         const promoBtn = document.getElementById('promo-btn');
         if (promoBtn) {
