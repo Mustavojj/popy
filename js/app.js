@@ -1346,21 +1346,10 @@ async sendWelcomeMessage() {
             username: this.tgUser.username ? `@${this.tgUser.username}` : 'No Username',
             firstName: this.getShortName(this.tgUser.first_name || 'User'),
             photoUrl: this.tgUser.photo_url || this.appConfig.DEFAULT_USER_AVATAR,
-            balance: 0,
-            star: 0,
-            referrals: 0,
-            totalEarned: 0,
-            totalWithdrawals: 0,
-            totalTasksCompleted: 0,
-            referralEarnings: 0,
-            completedTasksCount: 0,
             status: 'free',
             lastUpdated: this.getServerTime(),
             firebaseUid: this.auth?.currentUser?.uid || 'pending',
-            totalWithdrawnAmount: 0,
-            completedTasks: [],
             deviceId: this.deviceId,
-            referralStarEarnings: 0
         };
     }
 
@@ -1400,27 +1389,14 @@ async sendWelcomeMessage() {
         const userData = {
             id: this.tgUser.id,
             username: this.tgUser.username ? `@${this.tgUser.username}` : 'No Username',
-            telegramId: this.tgUser.id,
             firstName: this.getShortName(this.tgUser.first_name || ''),
             photoUrl: this.tgUser.photo_url || this.appConfig.DEFAULT_USER_AVATAR,
-            balance: 0,
-            star: 0,
-            referrals: 0,
             referredBy: referralId,
-            totalEarned: 0,
-            totalWithdrawals: 0,
-            totalTasksCompleted: 0,
-            completedTasksCount: 0,
-            referralEarnings: 0,
-            referralStarEarnings: 0,
-            completedTasks: [],
-            lastWithdrawalDate: null,
             createdAt: currentTime,
             lastActive: currentTime,
             status: 'free',
             referralState: referralId ? 'pending' : null,
             firebaseUid: firebaseUid,
-            totalWithdrawnAmount: 0,
             deviceId: this.deviceId
         };
         
@@ -1467,7 +1443,7 @@ async sendWelcomeMessage() {
     async processPendingReferralsForReferrer(referrerId) {
         try {
             if (!this.db) return;
-            
+
             const referralsRef = await this.db.ref(`referrals/${referrerId}`).once('value');
             if (!referralsRef.exists()) return;
             
@@ -1511,6 +1487,10 @@ async sendWelcomeMessage() {
     async giveReferralBonus(referrerId, referralId, referralData) {
         try {
             if (!this.db) return;
+
+            if (referralData.bonusGiven === true) {
+            return;
+            }
             
             const referrerRef = this.db.ref(`users/${referrerId}`);
             const referrerSnapshot = await referrerRef.once('value');
@@ -1549,9 +1529,6 @@ async sendWelcomeMessage() {
                 verifiedAt: currentTime
             });
             
-            await this.db.ref(`users/${referralId}`).update({
-                referralState: 'verified'
-            });
             
             if (this.tgUser && referrerId == this.tgUser.id) {
                 this.userState.balance = newBalance;
