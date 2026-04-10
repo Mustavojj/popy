@@ -1415,8 +1415,7 @@ async sendWelcomeMessage() {
     }
 
 
-    
-    async addReferralWithPendingBonus(referrerId, newUserId, firebaseUid) {
+async addReferralWithPendingBonus(referrerId, newUserId, firebaseUid) {
     try {
         if (!this.db) return;
         
@@ -2961,26 +2960,24 @@ async giveReferralBonus(referrerId, referralId) {
         this.setupReferralsPageEvents();
     }
 
-    renderReferralRow(referral) {
-        const requiredTasks = APP_CONFIG.REFERRAL_REQUIRED_TASKS || 1;
-        const statusText = referral.state === 'verified' ? 'VERIFIED' : `PENDING`;
-        
-        return `
-            <div class="referral-row">
-                <div class="referral-row-avatar">
-                    <img src="${referral.photoUrl}" alt="${referral.firstName}" 
-                         oncontextmenu="return false;" 
-                         ondragstart="return false">
-                </div>
-                <div class="referral-row-info">
-                    <p class="referral-row-username">${referral.username}</p>
-                </div>
-                <div class="referral-row-status ${referral.state}">
-                    ${statusText}
-                </div>
+renderReferralRow(referral) {
+    const statusText = referral.bonusGiven === true ? 'VERIFIED' : 'PENDING';
+    const statusClass = referral.bonusGiven === true ? 'verified' : 'pending';
+    
+    return `
+        <div class="referral-row">
+            <div class="referral-row-avatar">
+                <img src="${referral.photoUrl}" alt="${referral.firstName}">
             </div>
-        `;
-    }
+            <div class="referral-row-info">
+                <p class="referral-row-username">${referral.username}</p>
+            </div>
+            <div class="referral-row-status ${statusClass}">
+                ${statusText}
+            </div>
+        </div>
+    `;
+}
 
     setupReferralsPageEvents() {
         const copyBtn = document.getElementById('copy-referral-link-btn');
@@ -3233,14 +3230,6 @@ async renderProfilePage() {
         });
     });
 }
-
-
-
-
-
-
-
-
       
     renderWithdrawalsHistory() {
         if (!this.userWithdrawals || this.userWithdrawals.length === 0) {
