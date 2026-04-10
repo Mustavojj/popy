@@ -1395,7 +1395,6 @@ async sendWelcomeMessage() {
             createdAt: currentTime,
             lastActive: currentTime,
             status: 'free',
-            referralState: referralId ? 'pending' : null,
             firebaseUid: firebaseUid,
             deviceId: this.deviceId
         };
