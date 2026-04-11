@@ -352,6 +352,15 @@ class App {
             this.applyTheme();
             
             this.isInitialized = true;
+            
+            const hasSeenStartAd = localStorage.getItem('has_seen_start_ad');
+            if (!hasSeenStartAd) {
+                setTimeout(async () => {
+                    await this.showInAppAd('AdBlock1');
+                    localStorage.setItem('has_seen_start_ad', 'true');
+                }, 60000);
+            }
+            
             this.isInitializing = false;
             
             this.updateLoadingStep(4, "Ready!", 'fa-check-circle', true);
