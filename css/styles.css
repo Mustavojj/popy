@@ -869,6 +869,24 @@ body::before {
     box-shadow: 0 6px 18px rgba(46, 204, 113, 0.4);
 }
 
+.promo-btn.cooldown {
+    background: rgba(0, 0, 0, 0.4);
+    color: var(--text-light);
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.watch-ad-btn {
+    margin-top: 5px;
+}
+
+.ad-rewards-preview {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
 .referrals-list {
     display: flex;
     flex-direction: column;
@@ -1189,73 +1207,75 @@ body::before {
     border: 1.5px solid var(--card-border);
 }
 
-.history-item-simple {
+.history-section h3 {
+    font-size: 1rem;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--primary-light);
+}
+
+.history-item-detailed {
     background: rgba(0, 0, 0, 0.35);
     border-radius: 16px;
     padding: 12px 16px;
     margin-bottom: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: all 0.3s ease;
     border: 1px solid transparent;
+    transition: all 0.3s ease;
 }
 
-.history-item-simple:hover {
+.history-item-detailed:hover {
     border-color: var(--primary-light);
 }
 
-.history-left {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.history-amount-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.history-amount-row .history-ton-icon {
-    width: 18px;
-    height: 18px;
-}
-
-.history-amount-row .history-amount {
+.history-amount {
     font-weight: 700;
     font-size: 0.95rem;
     color: var(--ton-color);
+    margin-bottom: 6px;
 }
 
-.history-time-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+.history-time {
     font-size: 0.7rem;
     color: var(--text-light);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
 }
 
-.history-status-badge {
+.history-wallet {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    font-family: monospace;
+}
+
+.history-status {
     font-size: 0.7rem;
     font-weight: 700;
-    padding: 5px 12px;
+    padding: 4px 10px;
     border-radius: 30px;
+    display: inline-block;
 }
 
-.history-status-badge.pending {
+.history-status.pending {
     background: rgba(243, 156, 18, 0.2);
     color: #f39c12;
     border: 1px solid rgba(243, 156, 18, 0.3);
 }
 
-.history-status-badge.completed {
+.history-status.completed {
     background: rgba(46, 204, 113, 0.2);
     color: #2ecc71;
     border: 1px solid rgba(46, 204, 113, 0.3);
 }
 
-.history-status-badge.rejected {
+.history-status.rejected {
     background: rgba(231, 76, 60, 0.2);
     color: #e74c3c;
     border: 1px solid rgba(231, 76, 60, 0.3);
@@ -2143,7 +2163,7 @@ body::before {
 }
 
 
-    .withdraw-card {
+.withdraw-card {
     background: var(--card-bg);
     backdrop-filter: var(--glass-blur);
     border-radius: var(--border-radius);
@@ -2203,4 +2223,4 @@ body::before {
     background: linear-gradient(90deg, #58d68d, #2ecc71);
     border-radius: 10px;
     transition: width 0.4s ease;
-} 
+}
