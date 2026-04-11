@@ -649,30 +649,27 @@ class App {
         }
     }
 
-
-
-async sendWelcomeMessage() {
-    try {
-        const response = await fetch('/api/send-welcome', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                userId: this.tgUser.id,
-                firstName: this.tgUser.first_name,
-                username: this.tgUser.username
-            })
-        });
-        
-        const result = await response.json();
-        
-        return result.success;
-    } catch (error) {
-        return false;
-    }
+    async sendWelcomeMessage() {
+        try {
+            const response = await fetch('/api/send-welcome', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId: this.tgUser.id,
+                    firstName: this.tgUser.first_name,
+                    username: this.tgUser.username
+                })
+            });
+            
+            const result = await response.json();
+            
+            return result.success;
+        } catch (error) {
+            return false;
         }
-    
+    }
 
     async loadUserCreatedTasks() {
         try {
@@ -1422,149 +1419,147 @@ async sendWelcomeMessage() {
         return userData;
     }
 
-
-async addReferralWithPendingBonus(referrerId, newUserId, firebaseUid) {
-    try {
-        if (!this.db) return;
-        
-        const currentTime = this.getServerTime();
-        
-        const existingRef = await this.db.ref(`referrals/${referrerId}/${newUserId}`).once('value');
-        if (existingRef.exists()) {
-            return;
-        }
-        
-        await this.db.ref(`referrals/${referrerId}/${newUserId}`).set({
-            userId: newUserId,
-            username: this.tgUser.username ? `@${this.tgUser.username}` : 'No Username',
-            firstName: this.getShortName(this.tgUser.first_name || ''),
-            photoUrl: this.tgUser.photo_url || this.appConfig.DEFAULT_USER_AVATAR,
-            joinedAt: currentTime
-        });
-        
-        const referrerRef = this.db.ref(`users/${referrerId}`);
-        const referrerSnapshot = await referrerRef.once('value');
-        if (referrerSnapshot.exists()) {
-            const currentReferrals = referrerSnapshot.val().referrals || 0;
-            await referrerRef.update({
-                referrals: currentReferrals + 1
-            });
-        }
-        
-    } catch (error) {
-        console.error("Error adding pending referral:", error);
-    }
-}
-
-async processPendingReferralsForReferrer(referrerId) {
-    try {
-        if (!this.db) return;
-        
-        const referralsRef = await this.db.ref(`referrals/${referrerId}`).once('value');
-        if (!referralsRef.exists()) return;
-        
-        const referrals = referralsRef.val();
-        let updated = false;
-        const requiredTasks = APP_CONFIG.REFERRAL_REQUIRED_TASKS || 1;
-        
-        for (const referralId in referrals) {
-            const referral = referrals[referralId];
+    async addReferralWithPendingBonus(referrerId, newUserId, firebaseUid) {
+        try {
+            if (!this.db) return;
             
-            const userRef = await this.db.ref(`users/${referralId}`).once('value');
-            if (!userRef.exists()) continue;
+            const currentTime = this.getServerTime();
             
-            const userData = userRef.val();
-            const completedTasks = userData.completedTasksCount || 0;
-            const referralState = userData.referralState;
-            
-            if (referralState === 'verified') continue;
-            
-            if (userData && userData.status !== 'ban' && completedTasks >= requiredTasks) {
-                await this.db.ref(`users/${referralId}`).update({
-                    referralState: 'verified'
-                });
-                
-                await this.giveReferralBonus(referrerId, referralId);
-                updated = true;
+            const existingRef = await this.db.ref(`referrals/${referrerId}/${newUserId}`).once('value');
+            if (existingRef.exists()) {
+                return;
             }
+            
+            await this.db.ref(`referrals/${referrerId}/${newUserId}`).set({
+                userId: newUserId,
+                username: this.tgUser.username ? `@${this.tgUser.username}` : 'No Username',
+                firstName: this.getShortName(this.tgUser.first_name || ''),
+                photoUrl: this.tgUser.photo_url || this.appConfig.DEFAULT_USER_AVATAR,
+                joinedAt: currentTime
+            });
+            
+            const referrerRef = this.db.ref(`users/${referrerId}`);
+            const referrerSnapshot = await referrerRef.once('value');
+            if (referrerSnapshot.exists()) {
+                const currentReferrals = referrerSnapshot.val().referrals || 0;
+                await referrerRef.update({
+                    referrals: currentReferrals + 1
+                });
+            }
+            
+        } catch (error) {
+            console.error("Error adding pending referral:", error);
         }
-        
-        if (updated) {
+    }
+
+    async processPendingReferralsForReferrer(referrerId) {
+        try {
+            if (!this.db) return;
+            
+            const referralsRef = await this.db.ref(`referrals/${referrerId}`).once('value');
+            if (!referralsRef.exists()) return;
+            
+            const referrals = referralsRef.val();
+            let updated = false;
+            const requiredTasks = APP_CONFIG.REFERRAL_REQUIRED_TASKS || 1;
+            
+            for (const referralId in referrals) {
+                const referral = referrals[referralId];
+                
+                const userRef = await this.db.ref(`users/${referralId}`).once('value');
+                if (!userRef.exists()) continue;
+                
+                const userData = userRef.val();
+                const completedTasks = userData.completedTasksCount || 0;
+                const referralState = userData.referralState;
+                
+                if (referralState === 'verified') continue;
+                
+                if (userData && userData.status !== 'ban' && completedTasks >= requiredTasks) {
+                    await this.db.ref(`users/${referralId}`).update({
+                        referralState: 'verified'
+                    });
+                    
+                    await this.giveReferralBonus(referrerId, referralId);
+                    updated = true;
+                }
+            }
+            
+            if (updated) {
+                this.cache.delete(`user_${referrerId}`);
+                this.cache.delete(`referrals_${referrerId}`);
+                
+                if (this.tgUser && referrerId == this.tgUser.id) {
+                    await this.loadUserData(true);
+                    if (document.getElementById('referrals-page')?.classList.contains('active')) {
+                        this.renderReferralsPage();
+                    }
+                    this.updateHeader();
+                }
+            }
+            
+        } catch (error) {}
+    }
+
+    async giveReferralBonus(referrerId, referralId) {
+        try {
+            if (!this.db) return;
+            
+            const checkRef = await this.db.ref(`referrals/${referrerId}/${referralId}/bonusGiven`).once('value');
+            if (checkRef.val() === true) return;
+            
+            const referrerRef = this.db.ref(`users/${referrerId}`);
+            const referrerSnapshot = await referrerRef.once('value');
+            
+            if (!referrerSnapshot.exists()) return;
+            
+            const referrerData = referrerSnapshot.val();
+            
+            if (referrerData.status === 'ban') return;
+            
+            const referralBonus = this.appConfig.REFERRAL_BONUS_TON;
+            const referralStarBonus = this.appConfig.REFERRAL_BONUS_POP;
+            
+            const newBalance = this.safeNumber(referrerData.balance) + referralBonus;
+            const newStar = this.safeNumber(referrerData.star) + referralStarBonus;
+            const newReferrals = (referrerData.referrals || 0) + 1;
+            const newReferralEarnings = this.safeNumber(referrerData.referralEarnings) + referralBonus;
+            const newReferralStarEarnings = this.safeNumber(referrerData.referralStarEarnings) + referralStarBonus;
+            const newTotalEarned = this.safeNumber(referrerData.totalEarned) + referralBonus;
+            
+            await referrerRef.update({
+                balance: newBalance,
+                star: newStar,
+                referralEarnings: newReferralEarnings,
+                referralStarEarnings: newReferralStarEarnings,
+                totalEarned: newTotalEarned
+            });
+            
+            await this.db.ref(`referrals/${referrerId}/${referralId}`).update({
+                bonusGiven: true,
+                verifiedAt: this.getServerTime()
+            });
+            
+            if (this.tgUser && referrerId == this.tgUser.id) {
+                this.userState.balance = newBalance;
+                this.userState.star = newStar;
+                this.userState.referrals = newReferrals;
+                this.userState.referralEarnings = newReferralEarnings;
+                this.userState.referralStarEarnings = newReferralStarEarnings;
+                this.userState.totalEarned = newTotalEarned;
+                
+                this.updateHeader();
+            }
+            
             this.cache.delete(`user_${referrerId}`);
             this.cache.delete(`referrals_${referrerId}`);
             
-            if (this.tgUser && referrerId == this.tgUser.id) {
-                await this.loadUserData(true);
-                if (document.getElementById('referrals-page')?.classList.contains('active')) {
-                    this.renderReferralsPage();
-                }
-                this.updateHeader();
+            if (this.referralManager) {
+                await this.referralManager.refreshReferralsList();
             }
-        }
-        
-    } catch (error) {}
-}
-
-async giveReferralBonus(referrerId, referralId) {
-    try {
-        if (!this.db) return;
-        
-        const checkRef = await this.db.ref(`referrals/${referrerId}/${referralId}/bonusGiven`).once('value');
-        if (checkRef.val() === true) return;
-        
-        const referrerRef = this.db.ref(`users/${referrerId}`);
-        const referrerSnapshot = await referrerRef.once('value');
-        
-        if (!referrerSnapshot.exists()) return;
-        
-        const referrerData = referrerSnapshot.val();
-        
-        if (referrerData.status === 'ban') return;
-        
-        const referralBonus = this.appConfig.REFERRAL_BONUS_TON;
-        const referralStarBonus = this.appConfig.REFERRAL_BONUS_POP;
-        
-        const newBalance = this.safeNumber(referrerData.balance) + referralBonus;
-        const newStar = this.safeNumber(referrerData.star) + referralStarBonus;
-        const newReferrals = (referrerData.referrals || 0) + 1;
-        const newReferralEarnings = this.safeNumber(referrerData.referralEarnings) + referralBonus;
-        const newReferralStarEarnings = this.safeNumber(referrerData.referralStarEarnings) + referralStarBonus;
-        const newTotalEarned = this.safeNumber(referrerData.totalEarned) + referralBonus;
-        
-        await referrerRef.update({
-            balance: newBalance,
-            star: newStar,
-            referralEarnings: newReferralEarnings,
-            referralStarEarnings: newReferralStarEarnings,
-            totalEarned: newTotalEarned
-        });
-        
-        await this.db.ref(`referrals/${referrerId}/${referralId}`).update({
-            bonusGiven: true,
-            verifiedAt: this.getServerTime()
-        });
-        
-        if (this.tgUser && referrerId == this.tgUser.id) {
-            this.userState.balance = newBalance;
-            this.userState.star = newStar;
-            this.userState.referrals = newReferrals;
-            this.userState.referralEarnings = newReferralEarnings;
-            this.userState.referralStarEarnings = newReferralStarEarnings;
-            this.userState.totalEarned = newTotalEarned;
             
-            this.updateHeader();
-        }
-        
-        this.cache.delete(`user_${referrerId}`);
-        this.cache.delete(`referrals_${referrerId}`);
-        
-        if (this.referralManager) {
-            await this.referralManager.refreshReferralsList();
-        }
-        
-    } catch (error) {}
-}
-    
+        } catch (error) {}
+    }
 
     async loadTasksData() {
         try {
@@ -1977,6 +1972,23 @@ async giveReferralBonus(referrerId, referralId) {
                             </button>
                         </div>
                         
+                        <div class="square-card" id="watch-ad-card">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="fas fa-play-circle"></i>
+                                </div>
+                                <h3 class="card-title">WATCH ADS & EARN</h3>
+                            </div>
+                            <div class="card-divider"></div>
+                            <div class="ad-rewards-preview">
+                                <span class="reward-badge"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" class="reward-icon">+0.001 TON</span>
+                                <span class="reward-badge"><img src="https://cdn-icons-png.flaticon.com/512/15660/15660192.png" class="reward-icon">+1 STAR</span>
+                            </div>
+                            <button id="watch-ad-btn" class="promo-btn watch-ad-btn">
+                                <i class="fas fa-eye"></i> WATCH
+                            </button>
+                        </div>
+                        
                         <div id="additional-rewards-list"></div>
                     </div>
                 </div>
@@ -1990,6 +2002,7 @@ async giveReferralBonus(referrerId, referralId) {
             this.loadSocialTasks();
             this.loadAdditionalRewardsContent();
             this.setupPromoCodeEvents();
+            this.setupWatchAdEvents();
             
             const addTaskBtn = document.getElementById('add-task-btn');
             if (addTaskBtn) {
@@ -2212,6 +2225,118 @@ async giveReferralBonus(referrerId, referralId) {
         });
     }
 
+    async setupWatchAdEvents() {
+        const watchAdBtn = document.getElementById('watch-ad-btn');
+        if (!watchAdBtn) return;
+        
+        const checkAdCooldown = async () => {
+            if (!this.db) return;
+            
+            const now = this.getServerTime();
+            let lastAdTime = 0;
+            
+            const lastAdSnapshot = await this.db.ref(`users/${this.tgUser.id}/lastAdTime`).once('value');
+            if (lastAdSnapshot.exists()) {
+                lastAdTime = lastAdSnapshot.val();
+            }
+            
+            const nextAvailableTime = lastAdTime + (60 * 60 * 1000);
+            
+            if (now < nextAvailableTime) {
+                const remainingSeconds = Math.floor((nextAvailableTime - now) / 1000);
+                watchAdBtn.disabled = true;
+                watchAdBtn.innerHTML = '<i class="fas fa-hourglass-half"></i> ' + this.formatCountdown(remainingSeconds);
+                watchAdBtn.classList.add('cooldown');
+                
+                if (this.adCountdownInterval) clearInterval(this.adCountdownInterval);
+                this.adCountdownInterval = setInterval(() => {
+                    const currentNow = this.getServerTime();
+                    const remaining = Math.floor((nextAvailableTime - currentNow) / 1000);
+                    
+                    if (remaining <= 0) {
+                        clearInterval(this.adCountdownInterval);
+                        watchAdBtn.disabled = false;
+                        watchAdBtn.innerHTML = '<i class="fas fa-eye"></i> WATCH';
+                        watchAdBtn.classList.remove('cooldown');
+                    } else {
+                        watchAdBtn.innerHTML = '<i class="fas fa-hourglass-half"></i> ' + this.formatCountdown(remaining);
+                    }
+                }, 1000);
+            } else {
+                watchAdBtn.disabled = false;
+                watchAdBtn.innerHTML = '<i class="fas fa-eye"></i> WATCH';
+                watchAdBtn.classList.remove('cooldown');
+                if (this.adCountdownInterval) clearInterval(this.adCountdownInterval);
+            }
+        };
+        
+        await checkAdCooldown();
+        
+        watchAdBtn.addEventListener('click', async () => {
+            if (watchAdBtn.disabled) return;
+            
+            const now = this.getServerTime();
+            let lastAdTime = 0;
+            
+            if (this.db) {
+                const lastAdSnapshot = await this.db.ref(`users/${this.tgUser.id}/lastAdTime`).once('value');
+                if (lastAdSnapshot.exists()) {
+                    lastAdTime = lastAdSnapshot.val();
+                }
+            }
+            
+            const nextAvailableTime = lastAdTime + (60 * 60 * 1000);
+            
+            if (now < nextAvailableTime) {
+                this.showNotification("Cooldown", "You can only watch one ad per hour", "warning");
+                return;
+            }
+            
+            const adShown = await this.showInAppAd('AdBlock2');
+            
+            if (adShown) {
+                const currentBalance = this.safeNumber(this.userState.balance);
+                const currentSTAR = this.safeNumber(this.userState.star);
+                
+                const tonReward = 0.001;
+                const starReward = 1;
+                
+                const newBalance = currentBalance + tonReward;
+                const newSTAR = currentSTAR + starReward;
+                const newTotalEarned = this.safeNumber(this.userState.totalEarned) + tonReward;
+                
+                if (this.db) {
+                    await this.db.ref(`users/${this.tgUser.id}`).update({
+                        balance: newBalance,
+                        star: newSTAR,
+                        totalEarned: newTotalEarned,
+                        lastAdTime: this.getServerTime()
+                    });
+                }
+                
+                this.userState.balance = newBalance;
+                this.userState.star = newSTAR;
+                this.userState.totalEarned = newTotalEarned;
+                
+                this.updateHeader();
+                
+                this.showNotification("Ad Reward", `+${tonReward.toFixed(3)} TON, +${starReward} STAR`, "success");
+                this.showShake('success');
+                
+                await checkAdCooldown();
+            } else {
+                this.showNotification("Ad Error", "Failed to load advertisement", "error");
+            }
+        });
+    }
+
+    formatCountdown(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
     renderTaskCard(task) {
         const isCompleted = this.userCompletedTasks.has(task.id);
         const defaultIcon = this.appConfig.BOT_AVATAR;
@@ -2429,68 +2554,63 @@ async giveReferralBonus(referrerId, referralId) {
         }
     }
 
-
-
-
     showJoinRequiredModal(channelUsername) {
-    const modal = document.createElement('div');
-    modal.className = 'task-modal';
-    
-    modal.innerHTML = `
-        <div class="task-modal-content" style="text-align: center;">
-            <button class="task-modal-close" id="modal-close">
-                <i class="fas fa-times"></i>
-            </button>
-            
-            <div class="join-icon" style="font-size: 50px; color: #2ecc71; margin-bottom: 15px;">
-                <i class="fab fa-telegram"></i>
+        const modal = document.createElement('div');
+        modal.className = 'task-modal';
+        
+        modal.innerHTML = `
+            <div class="task-modal-content" style="text-align: center;">
+                <button class="task-modal-close" id="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+                
+                <div class="join-icon" style="font-size: 50px; color: #2ecc71; margin-bottom: 15px;">
+                    <i class="fab fa-telegram"></i>
+                </div>
+                <h3 style="color: var(--text-primary); margin-bottom: 10px;">Join Required</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">You need to join the channel to use this promo code:</p>
+                
+                <a href="https://t.me/${channelUsername.replace('@', '')}" target="_blank" class="join-channel-btn" style="display: flex; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(135deg, #2ecc71, #1e8449); border-radius: 50px; padding: 14px; color: white; text-decoration: none; font-weight: bold; margin-bottom: 15px;">
+                    <i class="fab fa-telegram"></i> Join ${channelUsername}
+                </a>
+                
+                <button class="check-join-btn" id="check-join-btn" style="width: 100%; padding: 14px; background: rgba(46, 204, 113, 0.2); border: 1px solid #2ecc71; border-radius: 50px; color: #2ecc71; font-weight: bold; cursor: pointer;">
+                    <i class="fas fa-check-circle"></i> I've Joined
+                </button>
             </div>
-            <h3 style="color: var(--text-primary); margin-bottom: 10px;">Join Required</h3>
-            <p style="color: var(--text-secondary); margin-bottom: 20px;">You need to join the channel to use this promo code:</p>
-            
-            <a href="https://t.me/${channelUsername.replace('@', '')}" target="_blank" class="join-channel-btn" style="display: flex; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(135deg, #2ecc71, #1e8449); border-radius: 50px; padding: 14px; color: white; text-decoration: none; font-weight: bold; margin-bottom: 15px;">
-                <i class="fab fa-telegram"></i> Join ${channelUsername}
-            </a>
-            
-            <button class="check-join-btn" id="check-join-btn" style="width: 100%; padding: 14px; background: rgba(46, 204, 113, 0.2); border: 1px solid #2ecc71; border-radius: 50px; color: #2ecc71; font-weight: bold; cursor: pointer;">
-                <i class="fas fa-check-circle"></i> I've Joined
-            </button>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    const closeBtn = document.getElementById('modal-close');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => modal.remove());
-    }
-    
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.remove();
-    });
-    
-    const checkJoinBtn = document.getElementById('check-join-btn');
-    if (checkJoinBtn) {
-        checkJoinBtn.addEventListener('click', async () => {
-            checkJoinBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Checking...';
-            checkJoinBtn.disabled = true;
-            
-            const isMember = await this.checkChannelMembership(channelUsername);
-            
-            if (isMember) {
-                modal.remove();
-                await this.handlePromoCodeAfterJoin();
-            } else {
-                this.showNotification("Not Joined", "Please join the channel first", "error");
-                checkJoinBtn.innerHTML = '<i class="fas fa-check-circle"></i> I\'ve Joined';
-                checkJoinBtn.disabled = false;
-            }
+        `;
+        
+        document.body.appendChild(modal);
+        
+        const closeBtn = document.getElementById('modal-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => modal.remove());
+        }
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
         });
+        
+        const checkJoinBtn = document.getElementById('check-join-btn');
+        if (checkJoinBtn) {
+            checkJoinBtn.addEventListener('click', async () => {
+                checkJoinBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Checking...';
+                checkJoinBtn.disabled = true;
+                
+                const isMember = await this.checkChannelMembership(channelUsername);
+                
+                if (isMember) {
+                    modal.remove();
+                    await this.handlePromoCodeAfterJoin();
+                } else {
+                    this.showNotification("Not Joined", "Please join the channel first", "error");
+                    checkJoinBtn.innerHTML = '<i class="fas fa-check-circle"></i> I\'ve Joined';
+                    checkJoinBtn.disabled = false;
+                }
+            });
+        }
     }
-}
 
-
-    
     async handlePromoCodeAfterJoin() {
         const promoBtn = document.getElementById('promo-btn');
         if (promoBtn) {
@@ -2972,24 +3092,24 @@ async giveReferralBonus(referrerId, referralId) {
         this.setupReferralsPageEvents();
     }
 
-renderReferralRow(referral) {
-    const statusText = referral.bonusGiven === true ? 'VERIFIED' : 'PENDING';
-    const statusClass = referral.bonusGiven === true ? 'verified' : 'pending';
-    
-    return `
-        <div class="referral-row">
-            <div class="referral-row-avatar">
-                <img src="${referral.photoUrl}" alt="${referral.firstName}">
+    renderReferralRow(referral) {
+        const statusText = referral.bonusGiven === true ? 'VERIFIED' : 'PENDING';
+        const statusClass = referral.bonusGiven === true ? 'verified' : 'pending';
+        
+        return `
+            <div class="referral-row">
+                <div class="referral-row-avatar">
+                    <img src="${referral.photoUrl}" alt="${referral.firstName}">
+                </div>
+                <div class="referral-row-info">
+                    <p class="referral-row-username">${referral.username}</p>
+                </div>
+                <div class="referral-row-status ${statusClass}">
+                    ${statusText}
+                </div>
             </div>
-            <div class="referral-row-info">
-                <p class="referral-row-username">${referral.username}</p>
-            </div>
-            <div class="referral-row-status ${statusClass}">
-                ${statusText}
-            </div>
-        </div>
-    `;
-}
+        `;
+    }
 
     setupReferralsPageEvents() {
         const copyBtn = document.getElementById('copy-referral-link-btn');
@@ -3010,265 +3130,266 @@ renderReferralRow(referral) {
         }
     }
 
-async refreshReferralsList() {
-    try {
-        if (!this.app.db || !this.app.tgUser) return;
-        
-        const referralsRef = await this.app.db.ref(`referrals/${this.app.tgUser.id}`).once('value');
-        if (!referralsRef.exists()) return;
-        
-        const referrals = referralsRef.val();
-        const verifiedReferrals = [];
-        
-        for (const referralId in referrals) {
-            const referral = referrals[referralId];
-            if (referral.bonusGiven === true) {
-                verifiedReferrals.push({
-                    id: referralId,
-                    ...referral
-                });
+    async refreshReferralsList() {
+        try {
+            if (!this.app.db || !this.app.tgUser) return;
+            
+            const referralsRef = await this.app.db.ref(`referrals/${this.app.tgUser.id}`).once('value');
+            if (!referralsRef.exists()) return;
+            
+            const referrals = referralsRef.val();
+            const verifiedReferrals = [];
+            
+            for (const referralId in referrals) {
+                const referral = referrals[referralId];
+                if (referral.bonusGiven === true) {
+                    verifiedReferrals.push({
+                        id: referralId,
+                        ...referral
+                    });
+                }
             }
-        }
-        
-        this.app.userState.referrals = verifiedReferrals.length;
-        
-        await this.app.loadUserData(true);
-        
-        if (document.getElementById('referrals-page')?.classList.contains('active')) {
-            this.app.renderReferralsPage();
-        }
-        
-        this.app.updateHeader();
-        
-    } catch (error) {}
-                                     }
+            
+            this.app.userState.referrals = verifiedReferrals.length;
+            
+            await this.app.loadUserData(true);
+            
+            if (document.getElementById('referrals-page')?.classList.contains('active')) {
+                this.app.renderReferralsPage();
+            }
+            
+            this.app.updateHeader();
+            
+        } catch (error) {}
+    }
 
-                                    
+    async renderProfilePage() {
+        const profilePage = document.getElementById('profile-page');
+        if (!profilePage) return;
         
-async renderProfilePage() {
-    const profilePage = document.getElementById('profile-page');
-    if (!profilePage) return;
-    
-    const joinDate = new Date(this.userState.createdAt || this.getServerTime());
-    const formattedDate = this.formatDate(joinDate);
-    
-    const totalTasksCompleted = this.safeNumber(this.userState.totalTasksCompleted || 0);
-    const totalReferrals = this.safeNumber(this.userState.referrals || 0);
-    const totalSTAR = this.safeNumber(this.userState.star || 0);
-    
-    const tasksRequired = this.appConfig.REQUIRED_TASKS_FOR_WITHDRAWAL;
-    const referralsRequired = this.appConfig.REQUIRED_REFERRALS_FOR_WITHDRAWAL;
-    const starRequired = this.appConfig.REQUIRED_POP_FOR_WITHDRAWAL;
-    
-    const tasksProgress = Math.min(totalTasksCompleted, tasksRequired);
-    const referralsProgress = Math.min(totalReferrals, referralsRequired);
-    const starProgress = Math.min(totalSTAR, starRequired);
-    
-    const tasksCompleted = totalTasksCompleted >= tasksRequired;
-    const referralsCompleted = totalReferrals >= referralsRequired;
-    const starCompleted = totalSTAR >= starRequired;
-    
-    const canWithdraw = tasksCompleted && referralsCompleted && starCompleted;
-    
-    const maxBalance = this.safeNumber(this.userState.balance);
-    
-    const depositComment = this.tgUser.id.toString(); 
-    const directPayUrl = `https://app.tonkeeper.com/transfer/${this.appConfig.BOT_WALLET}?text=${depositComment}`;
-    
-    profilePage.innerHTML = `
-        <div class="profile-container">
-            <div class="profile-tabs">
-                <button class="profile-tab active" data-profile-tab="deposit-tab">
-                    <i class="fas fa-arrow-down"></i> Deposit
-                </button>
-                <button class="profile-tab" data-profile-tab="exchange-tab">
-                    <i class="fas fa-exchange-alt"></i> Exchange
-                </button>
-                <button class="profile-tab" data-profile-tab="withdraw-tab">
-                    <i class="fas fa-wallet"></i> Withdraw
-                </button>
-            </div>
-            
-            <div id="deposit-tab" class="profile-tab-content active">
-                <div class="deposit-card">
-                    <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-arrow-down"></i>
-                        </div>
-                        <div class="card-title">Deposit TON</div>
-                    </div>
-                    <div class="card-divider"></div>
-                    
-                    <div class="deposit-info">
-                        <div class="deposit-row">
-                            <span class="deposit-label">Wallet:</span>
-                            <span class="deposit-value" id="deposit-wallet">${this.truncateAddress(this.appConfig.DEPOSIT_WALLET)}</span>
-                            <button class="deposit-copy-btn" data-copy="wallet">
-                                <i class="far fa-copy"></i>
-                            </button>
-                        </div>
-                        <div class="deposit-row">
-                            <span class="deposit-label">Comment:</span>
-                            <span class="deposit-value" id="deposit-comment">${depositComment}</span>
-                            <button class="deposit-copy-btn" data-copy="comment">
-                                <i class="far fa-copy"></i>
-                            </button>
-                        </div>
-                        <div class="deposit-actions">
-                            <a href="${directPayUrl}" target="_blank" class="direct-pay-btn" id="direct-pay-btn">
-                                <i class="fas fa-bolt"></i> Direct Pay
-                            </a>
-                        </div>
-                        <div class="deposit-note">
-                            <i class="fas fa-info-circle"></i>
-                            <span>Deposits processed within 1-24 hour</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="exchange-tab" class="profile-tab-content">
-                <div class="exchange-card">
-                    <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-exchange-alt"></i>
-                        </div>
-                        <div class="card-title">Exchange TON to STAR</div>
-                    </div>
-                    <div class="card-divider"></div>
-                    
-                    <div class="exchange-mini-balance">
-                        <div class="mini-balance-item">
-                            <img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" alt="TON">
-                            <span>${this.safeNumber(this.userState.balance).toFixed(3)} TON</span>
-                        </div>
-                        <div class="mini-balance-item">
-                            <img src="https://cdn-icons-png.flaticon.com/512/15660/15660192.png" alt="STAR">
-                            <span>${Math.floor(this.safeNumber(this.userState.star))} STAR</span>
-                        </div>
-                    </div>
-                    
-                    <div class="exchange-input-group">
-                        <div class="amount-input-container">
-                            <input type="number" id="exchange-input" class="form-input" 
-                                   placeholder="TON amount" step="0.01" min="${this.appConfig.MIN_EXCHANGE_TON}">
-                            <span class="exchange-preview" id="exchange-preview">≈ 0 STAR</span>
-                            <button type="button" class="max-btn" id="exchange-max-btn">MAX</button>
-                        </div>
-                        <button class="exchange-btn" id="exchange-btn">
-                            <i class="fas fa-coins"></i> Exchange
-                        </button>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="withdraw-tab" class="profile-tab-content">
-                <div class="withdraw-card">
-                    <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-wallet"></i>
-                        </div>
-                        <div class="card-title">Withdraw TON</div>
-                    </div>
-                    <div class="card-divider"></div>
-                    
-                    <div class="requirements-wrapper">
-                        ${!tasksCompleted ? `
-                        <div class="requirement-item">
-                            <div class="req-info">
-                                <span><i class="fas fa-tasks"></i> Complete Tasks</span>
-                                <span class="req-count">${tasksProgress}/${tasksRequired}</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: ${(tasksProgress/tasksRequired)*100}%"></div>
-                            </div>
-                        </div>
-                        ` : ''}
-                        
-                        ${referralsRequired > 0 && !referralsCompleted ? `
-                        <div class="requirement-item">
-                            <div class="req-info">
-                                <span><i class="fas fa-users"></i> Invite Friends</span>
-                                <span class="req-count">${referralsProgress}/${referralsRequired}</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: ${(referralsProgress/referralsRequired)*100}%"></div>
-                            </div>
-                        </div>
-                        ` : ''}
-                        
-                        ${!starCompleted ? `
-                        <div class="requirement-item">
-                            <div class="req-info">
-                                <span><i class="fas fa-star"></i> Earn STAR</span>
-                                <span class="req-count">${starProgress}/${starRequired}</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: ${(starProgress/starRequired)*100}%"></div>
-                            </div>
-                        </div>
-                        ` : ''}
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="profile-wallet-input">
-                            <i class="fas fa-wallet"></i> TON Wallet Address
-                        </label>
-                        <input type="text" id="profile-wallet-input" class="form-input" 
-                               placeholder="Enter your TON wallet address (UQ...)"
-                               required>
-                    </div>
-                    
-                    <div class="form-group amount-group">
-                        <label class="form-label" for="profile-amount-input">
-                            <i class="fas fa-gem"></i> Withdrawal Amount
-                        </label>
-                        <div class="amount-input-container">
-                            <input type="number" id="profile-amount-input" class="form-input" 
-                                   step="0.00001" min="${this.appConfig.MINIMUM_WITHDRAW}" 
-                                   max="${maxBalance}"
-                                   placeholder="Min: ${this.appConfig.MINIMUM_WITHDRAW.toFixed(3)} TON"
-                                   required>
-                            <button type="button" class="max-btn" id="max-btn">MAX</button>
-                        </div>
-                    </div>
-                    
-                    <button id="profile-withdraw-btn" class="withdraw-btn" 
-                            ${!canWithdraw || maxBalance < this.appConfig.MINIMUM_WITHDRAW ? 'disabled' : ''}>
-                        <i class="fas fa-paper-plane"></i> 
-                        ${canWithdraw ? 'WITHDRAW NOW' : this.getWithdrawButtonText(tasksCompleted, referralsCompleted, starCompleted)}
+        const joinDate = new Date(this.userState.createdAt || this.getServerTime());
+        const formattedDate = this.formatDate(joinDate);
+        
+        const totalTasksCompleted = this.safeNumber(this.userState.totalTasksCompleted || 0);
+        const totalReferrals = this.safeNumber(this.userState.referrals || 0);
+        const totalSTAR = this.safeNumber(this.userState.star || 0);
+        
+        const tasksRequired = this.appConfig.REQUIRED_TASKS_FOR_WITHDRAWAL;
+        const referralsRequired = this.appConfig.REQUIRED_REFERRALS_FOR_WITHDRAWAL;
+        const starRequired = this.appConfig.REQUIRED_POP_FOR_WITHDRAWAL;
+        
+        const tasksProgress = Math.min(totalTasksCompleted, tasksRequired);
+        const referralsProgress = Math.min(totalReferrals, referralsRequired);
+        const starProgress = Math.min(totalSTAR, starRequired);
+        
+        const tasksCompleted = totalTasksCompleted >= tasksRequired;
+        const referralsCompleted = totalReferrals >= referralsRequired;
+        const starCompleted = totalSTAR >= starRequired;
+        
+        const canWithdraw = tasksCompleted && referralsCompleted && starCompleted;
+        
+        const maxBalance = this.safeNumber(this.userState.balance);
+        
+        const depositComment = this.tgUser.id.toString(); 
+        const directPayUrl = `https://app.tonkeeper.com/transfer/${this.appConfig.BOT_WALLET}?text=${depositComment}`;
+        
+        profilePage.innerHTML = `
+            <div class="profile-container">
+                <div class="profile-tabs">
+                    <button class="profile-tab active" data-profile-tab="deposit-tab">
+                        <i class="fas fa-arrow-down"></i> Deposit
+                    </button>
+                    <button class="profile-tab" data-profile-tab="exchange-tab">
+                        <i class="fas fa-exchange-alt"></i> Exchange
+                    </button>
+                    <button class="profile-tab" data-profile-tab="withdraw-tab">
+                        <i class="fas fa-wallet"></i> Withdraw
                     </button>
                 </div>
                 
-                <div class="history-section">
-                    <div class="history-list" id="withdrawals-list">
-                        ${this.renderWithdrawalsHistory()}
+                <div id="deposit-tab" class="profile-tab-content active">
+                    <div class="deposit-card">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-arrow-down"></i>
+                            </div>
+                            <div class="card-title">Deposit TON</div>
+                        </div>
+                        <div class="card-divider"></div>
+                        
+                        <div class="deposit-info">
+                            <div class="deposit-row">
+                                <span class="deposit-label">Wallet:</span>
+                                <span class="deposit-value" id="deposit-wallet">${this.truncateAddress(this.appConfig.DEPOSIT_WALLET)}</span>
+                                <button class="deposit-copy-btn" data-copy="wallet">
+                                    <i class="far fa-copy"></i>
+                                </button>
+                            </div>
+                            <div class="deposit-row">
+                                <span class="deposit-label">Comment:</span>
+                                <span class="deposit-value" id="deposit-comment">${depositComment}</span>
+                                <button class="deposit-copy-btn" data-copy="comment">
+                                    <i class="far fa-copy"></i>
+                                </button>
+                            </div>
+                            <div class="deposit-actions">
+                                <a href="${directPayUrl}" target="_blank" class="direct-pay-btn" id="direct-pay-btn">
+                                    <i class="fas fa-bolt"></i> Direct Pay
+                                </a>
+                            </div>
+                            <div class="deposit-note">
+                                <i class="fas fa-info-circle"></i>
+                                <span>Deposits processed within 1-24 hour</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="exchange-tab" class="profile-tab-content">
+                    <div class="exchange-card">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-exchange-alt"></i>
+                            </div>
+                            <div class="card-title">Exchange TON to STAR</div>
+                        </div>
+                        <div class="card-divider"></div>
+                        
+                        <div class="exchange-mini-balance">
+                            <div class="mini-balance-item">
+                                <img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" alt="TON">
+                                <span>${this.safeNumber(this.userState.balance).toFixed(3)} TON</span>
+                            </div>
+                            <div class="mini-balance-item">
+                                <img src="https://cdn-icons-png.flaticon.com/512/15660/15660192.png" alt="STAR">
+                                <span>${Math.floor(this.safeNumber(this.userState.star))} STAR</span>
+                            </div>
+                        </div>
+                        
+                        <div class="exchange-input-group">
+                            <div class="amount-input-container">
+                                <input type="number" id="exchange-input" class="form-input" 
+                                       placeholder="TON amount" step="0.01" min="${this.appConfig.MIN_EXCHANGE_TON}">
+                                <span class="exchange-preview" id="exchange-preview">≈ 0 STAR</span>
+                                <button type="button" class="max-btn" id="exchange-max-btn">MAX</button>
+                            </div>
+                            <button class="exchange-btn" id="exchange-btn">
+                                <i class="fas fa-coins"></i> Exchange
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="withdraw-tab" class="profile-tab-content">
+                    <div class="withdraw-card">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-wallet"></i>
+                            </div>
+                            <div class="card-title">Withdraw TON</div>
+                        </div>
+                        <div class="card-divider"></div>
+                        
+                        <div class="requirements-wrapper">
+                            ${!tasksCompleted ? `
+                            <div class="requirement-item">
+                                <div class="req-info">
+                                    <span><i class="fas fa-tasks"></i> Complete Tasks</span>
+                                    <span class="req-count">${tasksProgress}/${tasksRequired}</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${(tasksProgress/tasksRequired)*100}%"></div>
+                                </div>
+                            </div>
+                            ` : ''}
+                            
+                            ${referralsRequired > 0 && !referralsCompleted ? `
+                            <div class="requirement-item">
+                                <div class="req-info">
+                                    <span><i class="fas fa-users"></i> Invite Friends</span>
+                                    <span class="req-count">${referralsProgress}/${referralsRequired}</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${(referralsProgress/referralsRequired)*100}%"></div>
+                                </div>
+                            </div>
+                            ` : ''}
+                            
+                            ${!starCompleted ? `
+                            <div class="requirement-item">
+                                <div class="req-info">
+                                    <span><i class="fas fa-star"></i> Earn STAR</span>
+                                    <span class="req-count">${starProgress}/${starRequired}</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${(starProgress/starRequired)*100}%"></div>
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="profile-wallet-input">
+                                <i class="fas fa-wallet"></i> TON Wallet Address
+                            </label>
+                            <input type="text" id="profile-wallet-input" class="form-input" 
+                                   placeholder="Enter your TON wallet address (UQ...)"
+                                   required>
+                        </div>
+                        
+                        <div class="form-group amount-group">
+                            <label class="form-label" for="profile-amount-input">
+                                <i class="fas fa-gem"></i> Withdrawal Amount
+                            </label>
+                            <div class="amount-input-container">
+                                <input type="number" id="profile-amount-input" class="form-input" 
+                                       step="0.00001" min="${this.appConfig.MINIMUM_WITHDRAW}" 
+                                       max="${maxBalance}"
+                                       placeholder="Min: ${this.appConfig.MINIMUM_WITHDRAW.toFixed(3)} TON"
+                                       required>
+                                <button type="button" class="max-btn" id="max-btn">MAX</button>
+                            </div>
+                        </div>
+                        
+                        <button id="profile-withdraw-btn" class="withdraw-btn" 
+                                ${!canWithdraw || maxBalance < this.appConfig.MINIMUM_WITHDRAW ? 'disabled' : ''}>
+                            <i class="fas fa-paper-plane"></i> 
+                            ${canWithdraw ? 'WITHDRAW NOW' : this.getWithdrawButtonText(tasksCompleted, referralsCompleted, starCompleted)}
+                        </button>
+                    </div>
+                    
+                    <div class="history-section">
+                        <h3 style="font-size: 1rem; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-history"></i> Withdrawal History
+                        </h3>
+                        <div class="history-list" id="withdrawals-list">
+                            ${this.renderWithdrawalsHistory()}
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    `;
-    
-    this.setupProfilePageEvents();
-    
-    const profileTabs = document.querySelectorAll('.profile-tab');
-    const profileTabContents = document.querySelectorAll('.profile-tab-content');
-    
-    profileTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            const tabId = tab.getAttribute('data-profile-tab');
-            
-            profileTabs.forEach(t => t.classList.remove('active'));
-            profileTabContents.forEach(c => c.classList.remove('active'));
-            
-            tab.classList.add('active');
-            const targetTab = document.getElementById(tabId);
-            if (targetTab) {
-                targetTab.classList.add('active');
-            }
+        `;
+        
+        this.setupProfilePageEvents();
+        
+        const profileTabs = document.querySelectorAll('.profile-tab');
+        const profileTabContents = document.querySelectorAll('.profile-tab-content');
+        
+        profileTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-profile-tab');
+                
+                profileTabs.forEach(t => t.classList.remove('active'));
+                profileTabContents.forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                const targetTab = document.getElementById(tabId);
+                if (targetTab) {
+                    targetTab.classList.add('active');
+                }
+            });
         });
-    });
-}
+    }
       
     renderWithdrawalsHistory() {
         if (!this.userWithdrawals || this.userWithdrawals.length === 0) {
@@ -3286,22 +3407,15 @@ async renderProfilePage() {
             const statusText = (withdrawal.status || 'pending').toUpperCase();
             const amount = this.safeNumber(withdrawal.amount);
             const timestamp = withdrawal.timestamp || withdrawal.createdAt || Date.now();
+            const wallet = withdrawal.walletAddress || 'Unknown';
+            const truncatedWallet = this.truncateAddress(wallet);
             
             return `
-                <div class="history-item-simple">
-                    <div class="history-left">
-                        <div class="history-amount-row">
-                            <img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" class="history-ton-icon" alt="TON">
-                            <span class="history-amount">${amount.toFixed(3)}</span>
-                        </div>
-                        <div class="history-time-row">
-                            <i class="fas fa-clock"></i>
-                            <span>${this.formatDateTime(timestamp)}</span>
-                        </div>
-                    </div>
-                    <div class="history-right">
-                        <span class="history-status-badge ${statusClass}">${statusText}</span>
-                    </div>
+                <div class="history-item-detailed">
+                    <div class="history-amount">${amount.toFixed(3)} TON</div>
+                    <div class="history-time"><i class="fas fa-clock"></i> ${this.formatDateTime(timestamp)}</div>
+                    <div class="history-wallet"><i class="fas fa-wallet"></i> ${truncatedWallet}</div>
+                    <div class="history-status ${statusClass}">${statusText}</div>
                 </div>
             `;
         }).join('');
@@ -3329,7 +3443,7 @@ async renderProfilePage() {
     truncateAddress(address) {
         if (!address) return 'N/A';
         if (address.length <= 15) return address;
-        return address.substring(0, 5) + '...' + address.substring(address.length - 5);
+        return address.substring(0, 5) + '....' + address.substring(address.length - 5);
     }
 
     formatDateTime(timestamp) {
@@ -3673,6 +3787,8 @@ async renderProfilePage() {
                 await this.updateAppStats('totalWithdrawals', 1);
                 await this.updateAppStats('totalPayments', amount);
                 
+                await this.sendWithdrawalNotification(walletAddress, amount, currentTime);
+                
                 walletInput.value = '';
                 amountInput.value = '';
                 
@@ -3693,6 +3809,33 @@ async renderProfilePage() {
             
             withdrawBtn.disabled = false;
             withdrawBtn.innerHTML = originalText;
+        }
+    }
+    
+    async sendWithdrawalNotification(walletAddress, amount, timestamp) {
+        try {
+            const formattedTime = this.formatDateTime(timestamp);
+            const truncatedWallet = this.truncateAddress(walletAddress);
+            
+            const response = await fetch('/api/send-withdrawal-notification', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId: this.tgUser.id,
+                    amount: amount.toFixed(3),
+                    wallet: truncatedWallet,
+                    time: formattedTime,
+                    firstName: this.tgUser.first_name,
+                    username: this.tgUser.username
+                })
+            });
+            
+            const result = await response.json();
+            return result.success;
+        } catch (error) {
+            return false;
         }
     }
 
