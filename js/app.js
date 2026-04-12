@@ -3402,23 +3402,25 @@ class App {
             `;
         }
         
-        return this.userWithdrawals.map(withdrawal => {
-            const statusClass = withdrawal.status || 'pending';
-            const statusText = (withdrawal.status || 'pending').toUpperCase();
-            const amount = this.safeNumber(withdrawal.amount);
-            const timestamp = withdrawal.timestamp || withdrawal.createdAt || Date.now();
-            const wallet = withdrawal.walletAddress || 'Unknown';
-            const truncatedWallet = this.truncateAddress(wallet);
-            
-            return `
-                <div class="history-item-detailed">
-                    <div class="history-amount">${amount.toFixed(3)} TON</div>
-                    <div class="history-time"><i class="fas fa-clock"></i> ${this.formatDateTime(timestamp)}</div>
-                    <div class="history-wallet"><i class="fas fa-wallet"></i> ${truncatedWallet}</div>
-                    <div class="history-status ${statusClass}">${statusText}</div>
-                </div>
-            `;
-        }).join('');
+return this.userWithdrawals.map(withdrawal => {
+    const statusClass = withdrawal.status || 'pending';
+    const statusText = (withdrawal.status || 'pending').toUpperCase();
+    const amount = this.safeNumber(withdrawal.amount);
+    const timestamp = withdrawal.timestamp || withdrawal.createdAt || Date.now();
+    const wallet = withdrawal.walletAddress || 'Unknown';
+    const truncatedWallet = this.truncateAddress(wallet);
+    
+    return `
+        <div class="history-item-detailed">
+            <div class="history-left">
+                <div class="history-amount">${amount.toFixed(3)} TON</div>
+                <div class="history-time"><i class="fas fa-clock"></i> ${this.formatDateTime(timestamp)}</div>
+                <div class="history-wallet"><i class="fas fa-wallet"></i> ${truncatedWallet}</div>
+            </div>
+            <div class="history-status ${statusClass}">${statusText}</div>
+        </div>
+    `;
+}).join('');
     }
     
     truncateString(str, length) {
@@ -3795,7 +3797,7 @@ class App {
                 this.updateHeader();
                 this.renderProfilePage();
                 
-                this.showNotification("Success", "Withdrawal request submitted! Tasks and STAR have been deducted.", "success");
+                this.showNotification("Success", "Withdrawal request submitted!", "success");
                 this.showShake('success');
             }
             
