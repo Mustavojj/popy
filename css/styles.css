@@ -2224,3 +2224,15 @@ body::before {
     border-radius: 10px;
     transition: width 0.4s ease;
 }
+
+.history-item-detailed {
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 16px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
