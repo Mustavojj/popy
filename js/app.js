@@ -2405,140 +2405,143 @@ class App {
         }
     }
 
-    async handlePromoCode() {
-        const promoInput = document.getElementById('promo-input');
-        const promoBtn = document.getElementById('promo-btn');
-        
-        if (!promoInput || !promoBtn) return;
-        
-        const code = promoInput.value.trim().toUpperCase();
-        if (!code) {
-            this.showNotification("Promo Code", "Please enter a promo code", "warning");
-            this.showShake('error');
-            return;
-        }
-        
-        const rateLimitCheck = this.rateLimiter.checkLimit(this.tgUser.id, 'promo_code');
-        if (!rateLimitCheck.allowed) {
-            this.showNotification("Rate Limit", `Please wait ${rateLimitCheck.remaining} seconds`, "warning");
-            this.showShake('error');
-            return;
-        }
-        
-        const adShown = await this.showInAppAd('AdBlock2');
-        
-        if (!adShown) {
-            this.showNotification("Ad Required", "Please watch the ad to apply promo code", "info");
-            this.showShake('warning');
-            return;
-        }
-        
-        const originalText = promoBtn.innerHTML;
-        promoBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Checking...';
-        promoBtn.disabled = true;
-        
-        try {
-            let promoData = null;
-            if (this.db) {
-                const promoCodesRef = await this.db.ref('config/promoCodes').once('value');
-                if (promoCodesRef.exists()) {
-                    const promoCodes = promoCodesRef.val();
-                    for (const id in promoCodes) {
-                        if (promoCodes[id].code === code) {
-                            promoData = { id, ...promoCodes[id] };
-                            break;
-                        }
+
+
+async handlePromoCode() {
+    const promoInput = document.getElementById('promo-input');
+    const promoBtn = document.getElementById('promo-btn');
+    
+    if (!promoInput || !promoBtn) return;
+    
+    const code = promoInput.value.trim().toUpperCase();
+    if (!code) {
+        this.showNotification("Promo Code", "Please enter a promo code", "warning");
+        this.showShake('error');
+        return;
+    }
+    
+    const rateLimitCheck = this.rateLimiter.checkLimit(this.tgUser.id, 'promo_code');
+    if (!rateLimitCheck.allowed) {
+        this.showNotification("Rate Limit", `Please wait ${rateLimitCheck.remaining} seconds`, "warning");
+        this.showShake('error');
+        return;
+    }
+    
+    const adShown = await this.showInAppAd('AdBlock2');
+    
+    if (!adShown) {
+        this.showNotification("Ad Required", "Please watch the ad to apply promo code", "info");
+        this.showShake('warning');
+        return;
+    }
+    
+    const originalText = promoBtn.innerHTML;
+    promoBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Checking...';
+    promoBtn.disabled = true;
+    
+    try {
+        let promoData = null;
+        if (this.db) {
+            const promoCodesRef = await this.db.ref('config/promoCodes').once('value');
+            if (promoCodesRef.exists()) {
+                const promoCodes = promoCodesRef.val();
+                for (const id in promoCodes) {
+                    if (promoCodes[id].code === code) {
+                        promoData = { id, ...promoCodes[id] };
+                        break;
                     }
                 }
             }
-            
-            if (!promoData) {
-                this.showNotification("Promo Code", "Promo code not active", "error");
+        }
+        
+        if (!promoData) {
+            this.showNotification("Promo Code", "Promo code not active", "error");
+            this.showShake('error');
+            promoBtn.innerHTML = originalText;
+            promoBtn.disabled = false;
+            return;
+        }
+        
+        if (this.db) {
+            const usedRef = await this.db.ref(`usedPromoCodes/${this.tgUser.id}/${promoData.id}`).once('value');
+            if (usedRef.exists()) {
+                this.showNotification("Promo Code", "You have already used this code", "error");
                 this.showShake('error');
                 promoBtn.innerHTML = originalText;
                 promoBtn.disabled = false;
                 return;
             }
-            
-            if (this.db) {
-                const usedRef = await this.db.ref(`usedPromoCodes/${this.tgUser.id}/${promoData.id}`).once('value');
-                if (usedRef.exists()) {
-                    this.showNotification("Promo Code", "You have already used this code", "error");
-                    this.showShake('error');
-                    promoBtn.innerHTML = originalText;
-                    promoBtn.disabled = false;
-                    return;
-                }
-            }
-            
-            if (APP_CONFIG.PROMO_CODE_REQUIRED_CHECK && promoData.required) {
-                const requiredChannel = promoData.required || APP_CONFIG.REQUIRED_PROMO_CODE_CHANNEL;
-                
-                const isMember = await this.checkChannelMembership(requiredChannel);
-                
-                if (!isMember) {
-                    this.showJoinRequiredModal(requiredChannel);
-                    promoBtn.innerHTML = originalText;
-                    promoBtn.disabled = false;
-                    return;
-                }
-            }
-            
-            this.rateLimiter.addRequest(this.tgUser.id, 'promo_code');
-            
-            let rewardType = promoData.rewardType || 'ton';
-            let rewardAmount = this.safeNumber(promoData.reward || 0.01);
-            
-            const userUpdates = {};
-            
-            if (rewardType === 'ton') {
-                const currentBalance = this.safeNumber(this.userState.balance);
-                userUpdates.balance = currentBalance + rewardAmount;
-                userUpdates.totalEarned = this.safeNumber(this.userState.totalEarned) + rewardAmount;
-            } else if (rewardType === 'pop') {
-                const currentSTAR = this.safeNumber(this.userState.star);
-                userUpdates.star = currentSTAR + rewardAmount;
-            }
-            
-            userUpdates.totalPromoCodes = this.safeNumber(this.userState.totalPromoCodes) + 1;
-            
-            if (this.db) {
-                await this.db.ref(`users/${this.tgUser.id}`).update(userUpdates);
-                
-                await this.db.ref(`usedPromoCodes/${this.tgUser.id}/${promoData.id}`).set({
-                    code: code,
-                    reward: rewardAmount,
-                    rewardType: rewardType,
-                    claimedAt: this.getServerTime()
-                });
-                
-                await this.db.ref(`config/promoCodes/${promoData.id}/usedCount`).transaction(current => (current || 0) + 1);
-            }
-            
-            if (rewardType === 'ton') {
-                this.userState.balance = userUpdates.balance;
-                this.userState.totalEarned = userUpdates.totalEarned;
-            } else if (rewardType === 'star') {
-                this.userState.star = userUpdates.star;
-            }
-            this.userState.totalPromoCodes = userUpdates.totalPromoCodes;
-            
-            this.cache.delete(`user_${this.tgUser.id}`);
-            
-            this.updateHeader();
-            promoInput.value = '';
-            
-            this.showNotification("Success", `Promo code applied! +${rewardAmount.toFixed(3)} ${rewardType === 'ton' ? 'TON' : 'STAR'}`, "success");
-            this.showShake('success');
-            
-        } catch (error) {
-            this.showNotification("Error", "Failed to apply promo code", "error");
-            this.showShake('error');
-        } finally {
-            promoBtn.innerHTML = originalText;
-            promoBtn.disabled = false;
         }
+        
+        if (APP_CONFIG.PROMO_CODE_REQUIRED_CHECK && promoData.required) {
+            const requiredChannel = promoData.required || APP_CONFIG.REQUIRED_PROMO_CODE_CHANNEL;
+            
+            const isMember = await this.checkChannelMembership(requiredChannel);
+            
+            if (!isMember) {
+                this.showJoinRequiredModal(requiredChannel);
+                promoBtn.innerHTML = originalText;
+                promoBtn.disabled = false;
+                return;
+            }
+        }
+        
+        this.rateLimiter.addRequest(this.tgUser.id, 'promo_code');
+        
+        let rewardType = promoData.rewardType || 'ton';
+        let rewardAmount = this.safeNumber(promoData.reward || 0.01);
+        
+        const userUpdates = {};
+        
+        if (rewardType === 'ton') {
+            const currentBalance = this.safeNumber(this.userState.balance);
+            userUpdates.balance = currentBalance + rewardAmount;
+            userUpdates.totalEarned = this.safeNumber(this.userState.totalEarned) + rewardAmount;
+        } else if (rewardType === 'star' || rewardType === 'pop') {
+            const currentSTAR = this.safeNumber(this.userState.star);
+            userUpdates.star = currentSTAR + rewardAmount;
+        }
+        
+        userUpdates.totalPromoCodes = this.safeNumber(this.userState.totalPromoCodes) + 1;
+        
+        if (this.db) {
+            await this.db.ref(`users/${this.tgUser.id}`).update(userUpdates);
+            
+            await this.db.ref(`usedPromoCodes/${this.tgUser.id}/${promoData.id}`).set({
+                code: code,
+                reward: rewardAmount,
+                rewardType: rewardType,
+                claimedAt: this.getServerTime()
+            });
+            
+            await this.db.ref(`config/promoCodes/${promoData.id}/usedCount`).transaction(current => (current || 0) + 1);
+        }
+        
+        if (rewardType === 'ton') {
+            this.userState.balance = userUpdates.balance;
+            this.userState.totalEarned = userUpdates.totalEarned;
+        } else if (rewardType === 'star' || rewardType === 'pop') {
+            this.userState.star = userUpdates.star;
+        }
+        this.userState.totalPromoCodes = userUpdates.totalPromoCodes;
+        
+        this.cache.delete(`user_${this.tgUser.id}`);
+        
+        this.updateHeader();
+        promoInput.value = '';
+        
+        const rewardSymbol = (rewardType === 'ton') ? 'TON' : 'STAR';
+        this.showNotification("Success", `Promo code applied! +${rewardAmount.toFixed(3)} ${rewardSymbol}`, "success");
+        this.showShake('success');
+        
+    } catch (error) {
+        this.showNotification("Error", "Failed to apply promo code", "error");
+        this.showShake('error');
+    } finally {
+        promoBtn.innerHTML = originalText;
+        promoBtn.disabled = false;
     }
+}  
 
     async checkChannelMembership(channelUsername) {
         try {
