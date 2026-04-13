@@ -791,7 +791,7 @@ class App {
                             <div class="completions-selector">
                                 ${completionsOptions.map(opt => {
                                     let price = Math.floor(opt / 100) * APP_CONFIG.TASK_PRICE_PER_100_COMPLETIONS;
-                                    if (opt === 250) price = 500;
+                                    if (opt === 250) price = 250;
                                     return `
                                         <div class="completion-option ${opt === 100 ? 'active' : ''}" data-completions="${opt}" data-price="${price}">${opt}</div>
                                     `;
