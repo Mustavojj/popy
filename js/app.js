@@ -2518,7 +2518,7 @@ class App {
             if (rewardType === 'ton') {
                 this.userState.balance = userUpdates.balance;
                 this.userState.totalEarned = userUpdates.totalEarned;
-            } else if (rewardType === 'pop') {
+            } else if (rewardType === 'star') {
                 this.userState.star = userUpdates.star;
             }
             this.userState.totalPromoCodes = userUpdates.totalPromoCodes;
