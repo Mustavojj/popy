@@ -2425,7 +2425,7 @@ class App {
             return;
         }
         
-        const adShown = await this.showInAppAd('AdBlock1');
+        const adShown = await this.showInAppAd('AdBlock2');
         
         if (!adShown) {
             this.showNotification("Ad Required", "Please watch the ad to apply promo code", "info");
