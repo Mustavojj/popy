@@ -3970,31 +3970,31 @@ async loadDepositHistory() {
     }
     
     renderDepositsHistory() {
-        if (!this.depositHistory || this.depositHistory.length === 0) {
-            return `
-                <div class="no-data">
-                    <i class="fas fa-history"></i>
-                    <p>No deposit history</p>
-                    <p class="hint">Your deposits will appear here</p>
-                </div>
-            `;
-        }
-        
-        return this.depositHistory.map(deposit => {
-            const amount = this.safeNumber(deposit.amount);
-            const timestamp = deposit.timestamp || Date.now();
-            
-            return `
-                <div class="history-item-detailed">
-                    <div class="history-left">
-                        <div class="history-amount">${amount.toFixed(4)} TON</div>
-                        <div class="history-time"><i class="fas fa-clock"></i> ${this.formatDateTime(timestamp)}</div>
-                    </div>
-                    <div class="history-status completed">COMPLETED</div>
-                </div>
-            `;
-        }).join('');
+    if (!this.depositHistory || this.depositHistory.length === 0) {
+        return `
+            <div class="no-data">
+                <i class="fas fa-history"></i>
+                <p>No deposit history</p>
+                <p class="hint">Your deposits will appear here</p>
+            </div>
+        `;
     }
+    
+    return this.depositHistory.map(deposit => {
+        const amount = this.safeNumber(deposit.amount);
+        const timestamp = deposit.timestamp;
+        
+        return `
+            <div class="history-item-detailed">
+                <div class="history-left">
+                    <div class="history-amount">${amount.toFixed(4)} TON</div>
+                    <div class="history-time"><i class="fas fa-clock"></i> ${this.formatDateTime(timestamp)}</div>
+                </div>
+                <div class="history-status completed">COMPLETED</div>
+            </div>
+        `;
+    }).join('');
+}
       
     renderWithdrawalsHistory() {
         if (!this.userWithdrawals || this.userWithdrawals.length === 0) {
