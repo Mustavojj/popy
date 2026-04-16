@@ -438,11 +438,10 @@ class App {
         if (depositsRef.exists()) {
             this.depositHistory = [];
             depositsRef.forEach(child => {
-                const deposit = child.val();
                 this.depositHistory.push({
                     id: child.key,
-                    amount: deposit.amount || 0,
-                    timestamp: deposit.timestamp || deposit.time || Date.now()
+                    amount: child.val().amount,
+                    timestamp: child.val().time || child.val().timestamp
                 });
             });
             this.depositHistory.sort((a, b) => b.timestamp - a.timestamp);
@@ -452,7 +451,7 @@ class App {
     } catch (error) {
         this.depositHistory = [];
     }
-}
+    }
 
     async loadQuestsProgress() {
         try {
