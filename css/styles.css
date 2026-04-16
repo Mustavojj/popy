@@ -1705,6 +1705,144 @@ body::before {
     margin: 0;
 }
 
+.pending-profits-card {
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: var(--border-radius-sm);
+    padding: 16px;
+    margin-top: 15px;
+    border: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.pending-header {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.pending-header span:first-child {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.pending-amount {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary-light);
+}
+
+.claim-profits-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    border: none;
+    border-radius: 40px;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.claim-profits-btn.disabled {
+    background: rgba(0, 0, 0, 0.4);
+    color: var(--text-light);
+    cursor: not-allowed;
+}
+
+.quest-section {
+    background: var(--card-bg);
+    backdrop-filter: var(--glass-blur);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    border: 1.5px solid var(--card-border);
+    box-shadow: var(--shadow);
+}
+
+.quest-section h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 2px solid var(--card-border);
+    padding-bottom: 12px;
+    background: linear-gradient(135deg, var(--primary-light), var(--secondary-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.quest-card {
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: var(--border-radius-sm);
+    padding: 16px;
+    border: 1px solid var(--card-border);
+}
+
+.quest-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.quest-title {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.quest-rewards {
+    display: flex;
+    gap: 8px;
+}
+
+.quest-progress {
+    margin-bottom: 15px;
+}
+
+.quest-count {
+    text-align: right;
+    font-size: 0.7rem;
+    color: var(--text-light);
+    margin-top: 5px;
+}
+
+.quest-claim-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    border: none;
+    border-radius: 40px;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.quest-claimed-btn {
+    width: 100%;
+    padding: 12px;
+    background: rgba(46, 204, 113, 0.2);
+    border: 1px solid #2ecc71;
+    border-radius: 40px;
+    color: #2ecc71;
+    font-weight: 700;
+    cursor: not-allowed;
+}
+
+.quest-btn-disabled {
+    width: 100%;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border: none;
+    border-radius: 40px;
+    color: var(--text-light);
+    font-weight: 700;
+    cursor: not-allowed;
+}
+
 .last-referrals-section {
     background: var(--card-bg);
     backdrop-filter: var(--glass-blur);
@@ -1868,6 +2006,34 @@ body::before {
     color: var(--text-light);
 }
 
+.my-task-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.my-task-add-btn, .my-task-delete-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.my-task-add-btn {
+    background: linear-gradient(135deg, #2ecc71, #1e8449);
+    border: none;
+    color: white;
+}
+
+.my-task-delete-btn {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    border: none;
+    color: white;
+}
+
 .my-task-progress {
     margin-top: 8px;
 }
@@ -1878,6 +2044,17 @@ body::before {
     font-size: 0.7rem;
     color: var(--text-light);
     margin-bottom: 4px;
+}
+
+.task-completed-badge {
+    text-align: center;
+    margin-top: 8px;
+    padding: 4px;
+    background: rgba(46, 204, 113, 0.2);
+    border-radius: 20px;
+    color: #2ecc71;
+    font-size: 0.7rem;
+    font-weight: 600;
 }
 
 .task-message {
@@ -2303,4 +2480,4 @@ body::before {
     background: rgba(231, 76, 60, 0.2);
     color: #e74c3c;
     border: 1px solid rgba(231, 76, 60, 0.3);
-} 
+    }
