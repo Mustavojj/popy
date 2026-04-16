@@ -435,15 +435,13 @@ async loadDepositHistory() {
     try {
         if (!this.db || !this.tgUser) return;
         const depositsRef = await this.db.ref(`deposits/${this.tgUser.id}`).once('value');
-        
         if (depositsRef.exists()) {
             this.depositHistory = [];
             depositsRef.forEach(child => {
-                const val = child.val();
                 this.depositHistory.push({
                     id: child.key,
-                    amount: val.amount || val.Amount || 0,
-                    timestamp: val.timestamp || val.time || val.Timestamp || Date.now()
+                    amount: child.val().amount,
+                    timestamp: child.val().timestamp
                 });
             });
             this.depositHistory.sort((a, b) => b.timestamp - a.timestamp);
