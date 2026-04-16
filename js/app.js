@@ -3562,7 +3562,7 @@ async loadDepositHistory() {
         if (!referralsPage) return;
         
         const referralLink = `https://t.me/Strzzbot/stars?startapp=${this.tgUser.id}`;
-        const friendsCount = Object.keys(this.userState.friendsCount || {}).length;
+        const friendsCount = this.userState.friendsCount || 0;
         const canClaim = this.pendingProfits > 0.00001;
         
         let currentQuest = this.quests[this.currentQuestIndex];
