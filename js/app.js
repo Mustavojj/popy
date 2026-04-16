@@ -72,6 +72,7 @@ class App {
         this.deviceOwnerId = null;
         
         this.additionalRewards = [];
+        this.depositHistory = [];
         
         this.loadingSteps = [
             { element: null, text: 'Loading App Data...', icon: 'fa-spinner fa-pulse', completedText: 'App Data Loaded', completedIcon: 'fa-check-circle' },
@@ -431,27 +432,28 @@ class App {
         }
     }
 
-async loadDepositHistory() {
-    try {
-        if (!this.db || !this.tgUser) return;
-        const depositsRef = await this.db.ref(`deposits/${this.tgUser.id}`).once('value');
-        if (depositsRef.exists()) {
-            this.depositHistory = [];
-            depositsRef.forEach(child => {
-                this.depositHistory.push({
-                    id: child.key,
-                    amount: child.val().amount,
-                    timestamp: child.val().timestamp
+    async loadDepositHistory() {
+        try {
+            if (!this.db || !this.tgUser) return;
+            const depositsRef = await this.db.ref(`deposits/${this.tgUser.id}`).once('value');
+            if (depositsRef.exists()) {
+                this.depositHistory = [];
+                depositsRef.forEach(child => {
+                    const deposit = child.val();
+                    this.depositHistory.push({
+                        id: child.key,
+                        amount: deposit.amount || 0,
+                        timestamp: deposit.timestamp || deposit.time || Date.now()
+                    });
                 });
-            });
-            this.depositHistory.sort((a, b) => b.timestamp - a.timestamp);
-        } else {
+                this.depositHistory.sort((a, b) => b.timestamp - a.timestamp);
+            } else {
+                this.depositHistory = [];
+            }
+        } catch (error) {
             this.depositHistory = [];
         }
-    } catch (error) {
-        this.depositHistory = [];
     }
-}
 
     async loadQuestsProgress() {
         try {
@@ -459,19 +461,39 @@ async loadDepositHistory() {
             const questsRef = await this.db.ref(`quests/${this.tgUser.id}`).once('value');
             if (questsRef.exists()) {
                 const savedQuests = questsRef.val();
+                let highestCompletedIndex = -1;
                 for (let i = 0; i < this.quests.length; i++) {
                     const quest = this.quests[i];
                     if (savedQuests[quest.id] && savedQuests[quest.id].completed) {
                         quest.completed = true;
-                        this.currentQuestIndex = i + 1;
+                        highestCompletedIndex = i;
+                    } else {
+                        quest.completed = false;
                     }
                 }
-            }
-            if (this.currentQuestIndex >= this.quests.length) {
-                this.currentQuestIndex = this.quests.length - 1;
+                this.currentQuestIndex = highestCompletedIndex + 1;
+                if (this.currentQuestIndex >= this.quests.length) {
+                    this.currentQuestIndex = this.quests.length - 1;
+                }
+            } else {
+                this.currentQuestIndex = 0;
+                for (let i = 0; i < this.quests.length; i++) {
+                    this.quests[i].completed = false;
+                }
             }
         } catch (error) {
+            this.currentQuestIndex = 0;
         }
+    }
+
+    async saveQuestCompletion(questId) {
+        try {
+            if (!this.db || !this.tgUser) return;
+            await this.db.ref(`quests/${this.tgUser.id}/${questId}`).set({
+                completed: true,
+                completedAt: this.getServerTime()
+            });
+        } catch (error) {}
     }
 
     async loadPendingProfits() {
@@ -1319,16 +1341,16 @@ async loadDepositHistory() {
         
         if (maxBtn) {
             maxBtn.addEventListener('click', () => {
-        const pricePer100 = APP_CONFIG.TASK_PRICE_PER_100_COMPLETIONS;
-        const maxStars = Math.floor(this.userSTAR);
-        let maxAdditional = Math.floor((maxStars / pricePer100) * 100);
-        if (maxAdditional > remaining) {
-            maxAdditional = remaining;
+                const pricePer100 = APP_CONFIG.TASK_PRICE_PER_100_COMPLETIONS;
+                const maxStars = Math.floor(this.userSTAR);
+                let maxAdditional = Math.floor((maxStars / pricePer100) * 100);
+                if (maxAdditional > remaining) {
+                    maxAdditional = remaining;
+                }
+                completionsInput.value = maxAdditional;
+                updatePrice();
+            });
         }
-        completionsInput.value = maxAdditional;
-        updatePrice();
-    });
-}
         
         if (confirmBtn) {
             confirmBtn.addEventListener('click', async () => {
@@ -1342,12 +1364,6 @@ async loadDepositHistory() {
                 
                 if (this.userSTAR < price) {
                     this.showMessage(modal, 'Insufficient STAR balance', 'error');
-                    return;
-                }
-                
-                const adShown = await this.showInAppAd('AdBlock1');
-                if (!adShown) {
-                    this.showMessage(modal, 'Please watch the ad to continue', 'warning');
                     return;
                 }
                 
@@ -1420,7 +1436,7 @@ async loadDepositHistory() {
                 </div>
                 
                 <div class="price-info" style="background: rgba(231, 76, 60, 0.2);">
-                    <span class="price-label">Refund (50%):</span>
+                    <span class="price-label">Refund (50% of remaining):</span>
                     <span class="price-value" style="color: #e74c3c;">${refundAmount.toFixed(0)} STAR</span>
                 </div>
                 
@@ -1790,8 +1806,8 @@ async loadDepositHistory() {
                     lastSynced: this.getServerTime(),
                     pendingProfits: 0,
                     friends: {},
+                    friendsCount: 0,
                     completedQuests: {},
-                    depositHistory: [],
                     totalReferralEarnings: 0,
                     totalAds: 0
                 };
@@ -1863,6 +1879,7 @@ async loadDepositHistory() {
             this.userCompletedTasks = new Set(userData.completedTasks || []);
             this.pendingProfits = this.safeNumber(userData.pendingProfits || 0);
             this.totalReferralEarnings = this.safeNumber(userData.totalReferralEarnings || 0);
+            this.userState.friendsCount = userData.friendsCount || 0;
             
             this.cache.set(cacheKey, userData, 60000);
             this.updateHeader();
@@ -1887,6 +1904,7 @@ async loadDepositHistory() {
             deviceId: this.deviceId,
             pendingProfits: 0,
             friends: {},
+            friendsCount: 0,
             completedQuests: {},
             totalReferralEarnings: 0,
             totalAds: 0
@@ -1939,6 +1957,7 @@ async loadDepositHistory() {
             deviceId: this.deviceId,
             pendingProfits: 0,
             friends: {},
+            friendsCount: 0,
             completedQuests: {},
             totalReferralEarnings: 0,
             totalAds: 0
@@ -1981,7 +2000,7 @@ async loadDepositHistory() {
             const referrerRef = this.db.ref(`users/${referrerId}`);
             const referrerSnapshot = await referrerRef.once('value');
             if (referrerSnapshot.exists()) {
-                const currentFriends = Object.keys(referrerSnapshot.val().friends || {}).length;
+                const currentFriends = referrerSnapshot.val().friendsCount || 0;
                 await referrerRef.update({
                     friendsCount: currentFriends + 1
                 });
@@ -2063,6 +2082,7 @@ async loadDepositHistory() {
             deviceId: this.deviceId,
             pendingProfits: userData.pendingProfits || 0,
             friends: userData.friends || {},
+            friendsCount: userData.friendsCount || 0,
             completedQuests: userData.completedQuests || {},
             totalReferralEarnings: userData.totalReferralEarnings || 0,
             totalAds: userData.totalAds || 0
@@ -3569,6 +3589,7 @@ async loadDepositHistory() {
         if (!currentQuest) {
             currentQuest = this.quests[this.quests.length - 1];
         }
+        
         const questCompleted = friendsCount >= currentQuest.required;
         const questClaimed = this.userState.completedQuests && this.userState.completedQuests[currentQuest.id];
         
@@ -3692,6 +3713,7 @@ async loadDepositHistory() {
                     star: newSTAR,
                     completedQuests: completedQuests
                 });
+                await this.saveQuestCompletion(quest.id);
             }
             
             this.userState.balance = newBalance;
@@ -3740,7 +3762,7 @@ async loadDepositHistory() {
         const formattedDate = this.formatDate(joinDate);
         
         const totalTasksCompleted = this.safeNumber(this.userState.totalTasksCompleted || 0);
-        const totalReferrals = Object.keys(this.userState.friends || {}).length;
+        const totalReferrals = this.userState.friendsCount || 0;
         const totalSTAR = this.safeNumber(this.userState.star || 0);
         
         const tasksRequired = this.appConfig.REQUIRED_TASKS_FOR_WITHDRAWAL;
@@ -3970,31 +3992,31 @@ async loadDepositHistory() {
     }
     
     renderDepositsHistory() {
-    if (!this.depositHistory || this.depositHistory.length === 0) {
-        return `
-            <div class="no-data">
-                <i class="fas fa-history"></i>
-                <p>No deposit history</p>
-                <p class="hint">Your deposits will appear here</p>
-            </div>
-        `;
-    }
-    
-    return this.depositHistory.map(deposit => {
-        const amount = this.safeNumber(deposit.amount);
-        const timestamp = deposit.timestamp;
-        
-        return `
-            <div class="history-item-detailed">
-                <div class="history-left">
-                    <div class="history-amount">${amount.toFixed(4)} TON</div>
-                    <div class="history-time"><i class="fas fa-clock"></i> ${this.formatDateTime(timestamp)}</div>
+        if (!this.depositHistory || this.depositHistory.length === 0) {
+            return `
+                <div class="no-data">
+                    <i class="fas fa-history"></i>
+                    <p>No deposit history</p>
+                    <p class="hint">Your deposits will appear here</p>
                 </div>
-                <div class="history-status completed">COMPLETED</div>
-            </div>
-        `;
-    }).join('');
-}
+            `;
+        }
+        
+        return this.depositHistory.map(deposit => {
+            const amount = this.safeNumber(deposit.amount);
+            const timestamp = deposit.timestamp;
+            
+            return `
+                <div class="history-item-detailed">
+                    <div class="history-left">
+                        <div class="history-amount">${amount.toFixed(4)} TON</div>
+                        <div class="history-time"><i class="fas fa-clock"></i> ${this.formatDateTime(timestamp)}</div>
+                    </div>
+                    <div class="history-status completed">COMPLETED</div>
+                </div>
+            `;
+        }).join('');
+    }
       
     renderWithdrawalsHistory() {
         if (!this.userWithdrawals || this.userWithdrawals.length === 0) {
@@ -4258,7 +4280,7 @@ async loadDepositHistory() {
         
         const totalTasksCompleted = this.safeNumber(this.userState.totalTasksCompleted || 0);
         const requiredTasks = this.appConfig.REQUIRED_TASKS_FOR_WITHDRAWAL;
-        const totalReferrals = Object.keys(this.userState.friends || {}).length;
+        const totalReferrals = this.userState.friendsCount || 0;
         const requiredReferrals = this.appConfig.REQUIRED_REFERRALS_FOR_WITHDRAWAL;
         const totalSTAR = this.safeNumber(this.userState.star || 0);
         const requiredSTAR = this.appConfig.REQUIRED_POP_FOR_WITHDRAWAL;
