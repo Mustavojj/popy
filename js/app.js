@@ -432,25 +432,27 @@ class App {
     }
 
     async loadDepositHistory() {
-        try {
-            if (!this.db || !this.tgUser) return;
-            const depositsRef = await this.db.ref(`deposits/${this.tgUser.id}`).once('value');
-            if (depositsRef.exists()) {
-                this.depositHistory = [];
-                depositsRef.forEach(child => {
-                    this.depositHistory.push({
-                        id: child.key,
-                        ...child.val()
-                    });
+    try {
+        if (!this.db || !this.tgUser) return;
+        const depositsRef = await this.db.ref(`deposits/${this.tgUser.id}`).once('value');
+        if (depositsRef.exists()) {
+            this.depositHistory = [];
+            depositsRef.forEach(child => {
+                const deposit = child.val();
+                this.depositHistory.push({
+                    id: child.key,
+                    amount: deposit.amount || 0,
+                    timestamp: deposit.timestamp || deposit.time || Date.now()
                 });
-                this.depositHistory.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-            } else {
-                this.depositHistory = [];
-            }
-        } catch (error) {
+            });
+            this.depositHistory.sort((a, b) => b.timestamp - a.timestamp);
+        } else {
             this.depositHistory = [];
         }
+    } catch (error) {
+        this.depositHistory = [];
     }
+}
 
     async loadQuestsProgress() {
         try {
@@ -1318,10 +1320,16 @@ class App {
         
         if (maxBtn) {
             maxBtn.addEventListener('click', () => {
-                completionsInput.value = remaining;
-                updatePrice();
-            });
+        const pricePer100 = APP_CONFIG.TASK_PRICE_PER_100_COMPLETIONS;
+        const maxStars = Math.floor(this.userSTAR);
+        let maxAdditional = Math.floor((maxStars / pricePer100) * 100);
+        if (maxAdditional > remaining) {
+            maxAdditional = remaining;
         }
+        completionsInput.value = maxAdditional;
+        updatePrice();
+    });
+}
         
         if (confirmBtn) {
             confirmBtn.addEventListener('click', async () => {
@@ -3555,7 +3563,7 @@ class App {
         if (!referralsPage) return;
         
         const referralLink = `https://t.me/Strzzbot/stars?startapp=${this.tgUser.id}`;
-        const friendsCount = Object.keys(this.userState.friends || {}).length;
+        const friendsCount = Object.keys(this.userState.friendsCount || {}).length;
         const canClaim = this.pendingProfits > 0.00001;
         
         let currentQuest = this.quests[this.currentQuestIndex];
