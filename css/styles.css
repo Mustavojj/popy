@@ -2481,3 +2481,144 @@ body::before {
     color: #e74c3c;
     border: 1px solid rgba(231, 76, 60, 0.3);
     }
+
+
+
+.stats-grid-two {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 15px 0;
+}
+
+.stat-card {
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: var(--border-radius-sm);
+    padding: 14px 12px;
+    border: 1px solid var(--card-border);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    border-color: var(--primary-light);
+    transform: translateY(-2px);
+}
+
+.stat-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.1rem;
+    margin: 0 auto 10px;
+    box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3);
+}
+
+.stat-info h4 {
+    font-size: 0.75rem;
+    color: var(--primary-light);
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    font-size: 1rem;
+    font-weight: 800;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+
+.pending-profits-card {
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: var(--border-radius-sm);
+    padding: 16px;
+    margin-top: 15px;
+    border: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.pending-header {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.pending-header span:first-child {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.pending-amount {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary-light);
+}
+
+.claim-profits-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    border: none;
+    border-radius: 40px;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.claim-profits-btn.disabled {
+    background: rgba(0, 0, 0, 0.4);
+    color: var(--text-light);
+    cursor: not-allowed;
+}
+
+.my-task-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.my-task-add-btn, .my-task-delete-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.my-task-add-btn {
+    background: linear-gradient(135deg, #2ecc71, #1e8449);
+    border: none;
+    color: white;
+}
+
+.my-task-delete-btn {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    border: none;
+    color: white;
+}
+
+.task-completed-badge {
+    text-align: center;
+    margin-top: 8px;
+    padding: 4px;
+    background: rgba(46, 204, 113, 0.2);
+    border-radius: 20px;
+    color: #2ecc71;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.balance-ton, .balance-star, .stat-value, .pending-amount,
+.history-amount, .reward-badge, .exchange-mini-balance span {
+    letter-spacing: normal;
+        }
