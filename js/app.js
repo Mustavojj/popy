@@ -1,4 +1,5 @@
-// app.js
+// app.js (كامل)
+
 import { APP_CONFIG, THEME_CONFIG, FEATURES_CONFIG } from './data.js';
 import { CacheManager, NotificationManager, SecurityManager } from './modules/core.js';
 import { TaskManager, ReferralManager } from './modules/features.js';
@@ -98,6 +99,7 @@ class App {
         ];
         this.currentQuestIndex = 0;
         this.pendingProfits = 0;
+        this.totalReferralEarnings = 0;
     }
 
     getRateLimiterClass() {
@@ -181,6 +183,20 @@ class App {
         return Date.now() + this.serverTimeOffset;
     }
 
+    vibrate(type = 'success') {
+        if (window.Telegram?.WebApp?.HapticFeedback) {
+            if (type === 'success') {
+                window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+            } else if (type === 'error') {
+                window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+            } else if (type === 'warning') {
+                window.Telegram.WebApp.HapticFeedback.notificationOccurred('warning');
+            } else {
+                window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+            }
+        }
+    }
+
     async syncServerTime() {
         try {
             const startTime = Date.now();
@@ -260,6 +276,7 @@ class App {
     }
 
     showShake(type = 'error') {
+        this.vibrate(type);
         const mainContent = document.querySelector('#main-content');
         if (mainContent) {
             this.shakeElement(mainContent, type);
@@ -354,6 +371,7 @@ class App {
                 await this.loadQuestsProgress();
                 await this.loadPendingProfits();
                 await this.loadDepositHistory();
+                await this.loadTotalReferralEarnings();
                 this.updateLoadingStep(3, "Tasks Loaded", 'fa-check-circle', true);
             } catch (taskError) {
                 this.updateLoadingStep(3, "Tasks Loaded (partial)", 'fa-exclamation-triangle', false);
@@ -402,6 +420,16 @@ class App {
             }
             
             this.isInitializing = false;
+        }
+    }
+
+    async loadTotalReferralEarnings() {
+        try {
+            if (!this.db || !this.tgUser) return;
+            const earningsRef = await this.db.ref(`users/${this.tgUser.id}/totalReferralEarnings`).once('value');
+            this.totalReferralEarnings = this.safeNumber(earningsRef.val() || 0);
+        } catch (error) {
+            this.totalReferralEarnings = 0;
         }
     }
 
@@ -481,12 +509,12 @@ class App {
             }
             
             this.userState.balance = newBalance;
+            this.showNotification("Claimed", `${this.pendingProfits.toFixed(4)} TON added to balance`, "success");
             this.pendingProfits = 0;
             
             this.updateHeader();
             this.renderReferralsPage();
             
-            this.showNotification("Claimed", `+${this.pendingProfits.toFixed(4)} TON added to balance`, "success");
             this.showShake('success');
         } catch (error) {
             this.showNotification("Error", "Failed to claim profits", "error");
@@ -1758,7 +1786,9 @@ class App {
                     pendingProfits: 0,
                     friends: {},
                     completedQuests: {},
-                    depositHistory: []
+                    depositHistory: [],
+                    totalReferralEarnings: 0,
+                    totalAds: 0
                 };
                 
                 await userRef.set(userData);
@@ -1827,6 +1857,7 @@ class App {
             this.userSTAR = this.safeNumber(userData.star);
             this.userCompletedTasks = new Set(userData.completedTasks || []);
             this.pendingProfits = this.safeNumber(userData.pendingProfits || 0);
+            this.totalReferralEarnings = this.safeNumber(userData.totalReferralEarnings || 0);
             
             this.cache.set(cacheKey, userData, 60000);
             this.updateHeader();
@@ -1851,7 +1882,9 @@ class App {
             deviceId: this.deviceId,
             pendingProfits: 0,
             friends: {},
-            completedQuests: {}
+            completedQuests: {},
+            totalReferralEarnings: 0,
+            totalAds: 0
         };
     }
 
@@ -1902,7 +1935,8 @@ class App {
             pendingProfits: 0,
             friends: {},
             completedQuests: {},
-            depositHistory: []
+            totalReferralEarnings: 0,
+            totalAds: 0
         };
         
         await userRef.set(userData);
@@ -1972,12 +2006,16 @@ class App {
             
             if (referrerSnapshot.exists()) {
                 const currentPending = this.safeNumber(referrerSnapshot.val().pendingProfits || 0);
+                const currentTotalEarnings = this.safeNumber(referrerSnapshot.val().totalReferralEarnings || 0);
+                
                 await referrerRef.update({
-                    pendingProfits: currentPending + profitAmount
+                    pendingProfits: currentPending + profitAmount,
+                    totalReferralEarnings: currentTotalEarnings + profitAmount
                 });
                 
                 if (this.tgUser && referrerId == this.tgUser.id) {
                     this.pendingProfits = currentPending + profitAmount;
+                    this.totalReferralEarnings = currentTotalEarnings + profitAmount;
                     this.renderReferralsPage();
                 }
             }
@@ -2020,7 +2058,9 @@ class App {
             deviceId: this.deviceId,
             pendingProfits: userData.pendingProfits || 0,
             friends: userData.friends || {},
-            completedQuests: userData.completedQuests || {}
+            completedQuests: userData.completedQuests || {},
+            totalReferralEarnings: userData.totalReferralEarnings || 0,
+            totalAds: userData.totalAds || 0
         };
         
         const updates = {};
@@ -2286,7 +2326,7 @@ class App {
             balanceCardsContainer.innerHTML = `
                 <div class="balance-card">
                     <img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" class="balance-icon" alt="TON">
-                    <span class="balance-ton">${tonBalance.toFixed(3)}</span>
+                    <span class="balance-ton">${tonBalance.toFixed(4)}</span>
                 </div>
                 <div class="balance-card">
                     <img src="https://cdn-icons-png.flaticon.com/512/15660/15660192.png" class="balance-icon" alt="STAR">
@@ -2668,7 +2708,7 @@ class App {
                     <div class="card-divider"></div>
                     <p class="reward-description" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">${reward.description}</p>
                     <div class="reward-rewards" style="display: flex; gap: 10px; margin-bottom: 12px;">
-                        ${reward.rewardAmount > 0 ? `<span class="reward-badge"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" class="reward-icon">${reward.rewardAmount.toFixed(3)} TON</span>` : ''}
+                        ${reward.rewardAmount > 0 ? `<span class="reward-badge"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" class="reward-icon">${reward.rewardAmount.toFixed(4)} TON</span>` : ''}
                         ${reward.starAmount > 0 ? `<span class="reward-badge"><img src="https://cdn-icons-png.flaticon.com/512/15660/15660192.png" class="reward-icon">${reward.starAmount} STAR</span>` : ''}
                     </div>
                     <button class="reward-btn promo-btn" data-reward-id="${reward.id}" data-reward-action="${reward.action}" data-reward-url="${reward.actionUrl}">
@@ -2716,7 +2756,7 @@ class App {
                     btn.innerHTML = '<i class="fas fa-check"></i> Claimed';
                     btn.disabled = true;
                     
-                    this.showNotification("Reward Claimed", `${reward.rewardAmount > 0 ? reward.rewardAmount.toFixed(3) + ' TON ' : ''}${reward.starAmount > 0 ? reward.starAmount + ' STAR' : ''}`, "success");
+                    this.showNotification("Reward Claimed", `${reward.rewardAmount > 0 ? reward.rewardAmount.toFixed(4) + ' TON ' : ''}${reward.starAmount > 0 ? reward.starAmount + ' STAR' : ''}`, "success");
                     this.showShake('success');
                 }
             });
@@ -2795,6 +2835,7 @@ class App {
             if (adShown) {
                 const currentBalance = this.safeNumber(this.userState.balance);
                 const currentSTAR = this.safeNumber(this.userState.star);
+                const currentTotalAds = this.safeNumber(this.userState.totalAds || 0);
                 
                 const tonReward = 0.001;
                 const starReward = 1;
@@ -2802,13 +2843,15 @@ class App {
                 const newBalance = currentBalance + tonReward;
                 const newSTAR = currentSTAR + starReward;
                 const newTotalEarned = this.safeNumber(this.userState.totalEarned) + tonReward;
+                const newTotalAds = currentTotalAds + 1;
                 
                 if (this.db) {
                     await this.db.ref(`users/${this.tgUser.id}`).update({
                         balance: newBalance,
                         star: newSTAR,
                         totalEarned: newTotalEarned,
-                        lastAdTime: this.getServerTime()
+                        lastAdTime: this.getServerTime(),
+                        totalAds: newTotalAds
                     });
                     
                     await this.addPendingProfitToReferrer(this.tgUser.id, tonReward);
@@ -2817,10 +2860,11 @@ class App {
                 this.userState.balance = newBalance;
                 this.userState.star = newSTAR;
                 this.userState.totalEarned = newTotalEarned;
+                this.userState.totalAds = newTotalAds;
                 
                 this.updateHeader();
                 
-                this.showNotification("Ad Reward", `${tonReward.toFixed(3)} TON, ${starReward} STAR`, "success");
+                this.showNotification("Ad Reward", `${tonReward.toFixed(4)} TON, ${starReward} STAR`, "success");
                 this.showShake('success');
                 
                 await checkAdCooldown();
@@ -2863,7 +2907,7 @@ class App {
                     <div class="task-rewards">
                         <span class="reward-badge">
                             <img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" class="reward-icon" alt="TON">
-                            ${task.reward.toFixed(3)}
+                            ${task.reward.toFixed(4)}
                         </span>
                         <span class="reward-badge">
                             <img src="https://cdn-icons-png.flaticon.com/512/15660/15660192.png" class="reward-icon" alt="STAR">
@@ -3033,7 +3077,7 @@ class App {
             promoInput.value = '';
             
             const rewardSymbol = (rewardType === 'ton') ? 'TON' : 'STAR';
-            this.showNotification("Success", `Promo code applied! ${rewardAmount.toFixed(3)} ${rewardSymbol}`, "success");
+            this.showNotification("Success", `Promo code applied! ${rewardAmount.toFixed(4)} ${rewardSymbol}`, "success");
             this.showShake('success');
             
         } catch (error) {
@@ -3391,7 +3435,7 @@ class App {
                 if (ownerSnapshot.exists()) {
                     const currentCompletions = ownerSnapshot.val().currentCompletions || 0;
                     const maxCompletions = ownerSnapshot.val().maxCompletions || 100;
-                    const newCompletions = currentCompletions + 1;
+                    const newCompletions = Math.min(currentCompletions + 1, maxCompletions);
                     
                     if (newCompletions >= maxCompletions) {
                         await ownerRef.update({
@@ -3411,7 +3455,7 @@ class App {
                 if (taskSnapshot.exists()) {
                     const currentCompletions = taskSnapshot.val().currentCompletions || 0;
                     const maxCompletions = taskSnapshot.val().maxCompletions || 100;
-                    const newCompletions = currentCompletions + 1;
+                    const newCompletions = Math.min(currentCompletions + 1, maxCompletions);
                     
                     if (newCompletions >= maxCompletions) {
                         await taskRef.update({
@@ -3471,7 +3515,7 @@ class App {
             this.enableAllTaskButtons();
             this.isProcessingTask = false;
             
-            this.showNotification("Task Completed!", `${taskReward.toFixed(3)} TON, ${taskStarReward} STAR`, "success");
+            this.showNotification("Task Completed!", `${taskReward.toFixed(4)} TON, ${taskStarReward} STAR`, "success");
             this.showShake('success');
             
             return true;
@@ -3548,6 +3592,27 @@ class App {
                         </div>
                     </div>
                     
+                    <div class="stats-grid-two">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h4>Total Referrals</h4>
+                                <p class="stat-value">${friendsCount}</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-coins"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h4>Total Earnings</h4>
+                                <p class="stat-value">${this.totalReferralEarnings.toFixed(4)} TON</p>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="pending-profits-card">
                         <div class="pending-header">
                             <span><i class="fas fa-clock"></i> Pending Profits</span>
@@ -3565,7 +3630,7 @@ class App {
                         <div class="quest-info">
                             <div class="quest-title">${currentQuest.text}</div>
                             <div class="quest-rewards">
-                                <span class="reward-badge"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" class="reward-icon">${currentQuest.rewardTon.toFixed(3)} TON</span>
+                                <span class="reward-badge"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" class="reward-icon">${currentQuest.rewardTon.toFixed(4)} TON</span>
                                 <span class="reward-badge"><img src="https://cdn-icons-png.flaticon.com/512/15660/15660192.png" class="reward-icon">${currentQuest.rewardStar} STAR</span>
                             </div>
                         </div>
@@ -3636,7 +3701,7 @@ class App {
             this.updateHeader();
             this.renderReferralsPage();
             
-            this.showNotification("Quest Completed!", `${quest.rewardTon.toFixed(3)} TON, ${quest.rewardStar} STAR`, "success");
+            this.showNotification("Quest Completed!", `${quest.rewardTon.toFixed(4)} TON, ${quest.rewardStar} STAR`, "success");
             this.showShake('success');
         } catch (error) {
             this.showNotification("Error", "Failed to claim quest reward", "error");
@@ -3766,7 +3831,7 @@ class App {
                         <div class="exchange-mini-balance">
                             <div class="mini-balance-item">
                                 <img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" alt="TON">
-                                <span>${this.safeNumber(this.userState.balance).toFixed(3)} TON</span>
+                                <span>${this.safeNumber(this.userState.balance).toFixed(4)} TON</span>
                             </div>
                             <div class="mini-balance-item">
                                 <img src="https://cdn-icons-png.flaticon.com/512/15660/15660192.png" alt="STAR">
@@ -3853,7 +3918,7 @@ class App {
                                 <input type="number" id="profile-amount-input" class="form-input" 
                                        step="0.00001" min="${this.appConfig.MINIMUM_WITHDRAW}" 
                                        max="${maxBalance}"
-                                       placeholder="Min: ${this.appConfig.MINIMUM_WITHDRAW.toFixed(3)} TON"
+                                       placeholder="Min: ${this.appConfig.MINIMUM_WITHDRAW.toFixed(4)} TON"
                                        required>
                                 <button type="button" class="max-btn" id="max-btn">MAX</button>
                             </div>
@@ -3917,7 +3982,7 @@ class App {
             return `
                 <div class="history-item-detailed">
                     <div class="history-left">
-                        <div class="history-amount">${amount.toFixed(3)} TON</div>
+                        <div class="history-amount">${amount.toFixed(4)} TON</div>
                         <div class="history-time"><i class="fas fa-clock"></i> ${this.formatDateTime(timestamp)}</div>
                     </div>
                     <div class="history-status completed">COMPLETED</div>
@@ -3948,7 +4013,7 @@ class App {
             return `
                 <div class="history-item-detailed">
                     <div class="history-left">
-                        <div class="history-amount">${amount.toFixed(3)} TON</div>
+                        <div class="history-amount">${amount.toFixed(4)} TON</div>
                         <div class="history-time"><i class="fas fa-clock"></i> ${this.formatDateTime(timestamp)}</div>
                         <div class="history-wallet"><i class="fas fa-wallet"></i> ${truncatedWallet}</div>
                     </div>
@@ -4050,7 +4115,7 @@ class App {
         if (exchangeMaxBtn && exchangeInput) {
             exchangeMaxBtn.addEventListener('click', () => {
                 const max = this.safeNumber(this.userState.balance);
-                exchangeInput.value = max.toFixed(3);
+                exchangeInput.value = max.toFixed(4);
                 const starAmount = Math.floor(max * this.appConfig.POP_PER_TON);
                 if (exchangePreview) {
                     exchangePreview.textContent = `≈ ${starAmount} STAR`;
@@ -4061,7 +4126,7 @@ class App {
         if (maxBtn && amountInput) {
             maxBtn.addEventListener('click', () => {
                 const max = this.safeNumber(this.userState.balance);
-                amountInput.value = max.toFixed(3);
+                amountInput.value = max.toFixed(4);
             });
         }
         
@@ -4077,7 +4142,7 @@ class App {
                 const value = parseFloat(amountInput.value) || 0;
                 
                 if (value > max) {
-                    amountInput.value = max.toFixed(3);
+                    amountInput.value = max.toFixed(4);
                 }
             });
         }
@@ -4155,11 +4220,11 @@ class App {
                 
                 const miniBalanceItems = document.querySelectorAll('.mini-balance-item');
                 if (miniBalanceItems.length >= 2) {
-                    miniBalanceItems[0].querySelector('span').textContent = `${newTonBalance.toFixed(3)} TON`;
+                    miniBalanceItems[0].querySelector('span').textContent = `${newTonBalance.toFixed(4)} TON`;
                     miniBalanceItems[1].querySelector('span').textContent = `${Math.floor(newStarBalance)} STAR`;
                 }
                 
-                this.showNotification("Success", `Exchanged ${tonAmount.toFixed(3)} TON to ${starAmount} STAR`, "success");
+                this.showNotification("Success", `Exchanged ${tonAmount.toFixed(4)} TON to ${starAmount} STAR`, "success");
                 this.showShake('success');
                 
             } catch (error) {
@@ -4200,7 +4265,7 @@ class App {
         }
         
         if (!amount || amount < minimumWithdraw) {
-            this.showNotification("Error", `Minimum withdrawal is ${minimumWithdraw.toFixed(3)} TON`, "error");
+            this.showNotification("Error", `Minimum withdrawal is ${minimumWithdraw.toFixed(4)} TON`, "error");
             this.showShake('error');
             return;
         }
@@ -4361,7 +4426,7 @@ class App {
                 },
                 body: JSON.stringify({
                     userId: this.tgUser.id,
-                    amount: amount.toFixed(3),
+                    amount: amount.toFixed(4),
                     wallet: truncatedWallet,
                     time: formattedTime,
                     firstName: this.tgUser.first_name,
@@ -4431,6 +4496,7 @@ class App {
     }
 
     showNotification(title, message, type = 'info') {
+        this.vibrate(type);
         if (this.notificationManager) {
             this.notificationManager.showNotification(title, message, type);
         }
