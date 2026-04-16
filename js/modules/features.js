@@ -1,3 +1,4 @@
+// features.js
 import { APP_CONFIG, FEATURES_CONFIG } from '../data.js';
 
 class TaskManager {
@@ -92,7 +93,7 @@ class TaskManager {
                             owner: null
                         };
                         
-                        if (!this.userCompletedTasks.has(task.id)) {
+                        if (!this.userCompletedTasks.has(task.id) && currentCompletions < maxCompletions && (maxCompletions - currentCompletions) > 0) {
                             tasks.push(task);
                         }
                     } catch (error) {}
@@ -141,7 +142,7 @@ class TaskManager {
                                 owner: ownerSnapshot.key
                             };
                             
-                            if (!this.userCompletedTasks.has(task.id)) {
+                            if (!this.userCompletedTasks.has(task.id) && currentCompletions < maxCompletions && (maxCompletions - currentCompletions) > 0) {
                                 tasks.push(task);
                             }
                         } catch (error) {}
@@ -193,21 +194,21 @@ class ReferralManager {
         try {
             if (!this.app.db) return [];
             
-            const referralsRef = await this.app.db.ref(`referrals/${this.app.tgUser.id}`).once('value');
-            if (!referralsRef.exists()) return [];
+            const friendsRef = await this.app.db.ref(`friends/${this.app.tgUser.id}`).once('value');
+            if (!friendsRef.exists()) return [];
             
-            const referralsList = [];
-            referralsRef.forEach(child => {
-                const referralData = child.val();
-                if (referralData && typeof referralData === 'object') {
-                    referralsList.push({
+            const friendsList = [];
+            friendsRef.forEach(child => {
+                const friendData = child.val();
+                if (friendData && typeof friendData === 'object') {
+                    friendsList.push({
                         id: child.key,
-                        ...referralData
+                        ...friendData
                     });
                 }
             });
             
-            this.recentReferrals = referralsList.sort((a, b) => (b.joinedAt || 0) - (a.joinedAt || 0)).slice(0, 10);
+            this.recentReferrals = friendsList.sort((a, b) => (b.joinedAt || 0) - (a.joinedAt || 0)).slice(0, 10);
             
             return this.recentReferrals;
             
@@ -220,23 +221,14 @@ class ReferralManager {
         try {
             if (!this.app.db || !this.app.tgUser) return;
             
-            const referralsRef = await this.app.db.ref(`referrals/${this.app.tgUser.id}`).once('value');
-            if (!referralsRef.exists()) return;
+            const friendsRef = await this.app.db.ref(`friends/${this.app.tgUser.id}`).once('value');
+            if (!friendsRef.exists()) return;
             
-            const referrals = referralsRef.val();
-            const verifiedReferrals = [];
+            const friends = friendsRef.val();
+            const friendsCount = Object.keys(friends).length;
             
-            for (const referralId in referrals) {
-                const referral = referrals[referralId];
-                if (referral.state === 'verified' && referral.bonusGiven) {
-                    verifiedReferrals.push({
-                        id: referralId,
-                        ...referral
-                    });
-                }
-            }
-            
-            this.app.userState.referrals = verifiedReferrals.length;
+            this.app.userState.referrals = friendsCount;
+            this.app.userState.friends = friends;
             
             await this.app.loadUserData(true);
             
@@ -253,34 +245,8 @@ class ReferralManager {
         try {
             if (!this.app.db || !this.app.tgUser) return;
             
-            const referralsRef = await this.app.db.ref(`referrals/${this.app.tgUser.id}`).once('value');
-            if (!referralsRef.exists()) return;
-            
-            const referrals = referralsRef.val();
-            const requiredTasks = APP_CONFIG.REFERRAL_REQUIRED_TASKS || 1;
-            
-            for (const referralId in referrals) {
-                const referral = referrals[referralId];
-                
-                if (referral.state === 'pending' && !referral.bonusGiven) {
-                    const newUserRef = await this.app.db.ref(`users/${referralId}`).once('value');
-                    if (newUserRef.exists()) {
-                        const newUserData = newUserRef.val();
-                        const completedTasks = newUserData.completedTasksCount || 0;
-                        
-                        if (newUserData && newUserData.status !== 'ban' && completedTasks >= requiredTasks) {
-                            await this.app.giveReferralBonus(this.app.tgUser.id, referralId, referral);
-                        }
-                    }
-                }
-            }
-            
-            this.app.cache.delete(`user_${this.app.tgUser.id}`);
-            this.app.cache.delete(`referrals_${this.app.tgUser.id}`);
-            
-            if (document.getElementById('referrals-page')?.classList.contains('active')) {
-                this.app.renderReferralsPage();
-            }
+            const friendsRef = await this.app.db.ref(`friends/${this.app.tgUser.id}`).once('value');
+            if (!friendsRef.exists()) return;
             
         } catch (error) {}
     }
@@ -294,31 +260,6 @@ class ReferralManager {
             
             const userData = userRef.val();
             const completedTasks = userData.completedTasksCount || 0;
-            const requiredTasks = APP_CONFIG.REFERRAL_REQUIRED_TASKS || 1;
-            
-            if (completedTasks >= requiredTasks && userData.referredBy) {
-                const referrerId = userData.referredBy;
-                const referralRef = await this.app.db.ref(`referrals/${referrerId}/${userId}`).once('value');
-                
-                if (referralRef.exists()) {
-                    const referralData = referralRef.val();
-                    
-                    if (referralData.state === 'pending' && !referralData.bonusGiven) {
-                        await this.app.giveReferralBonus(referrerId, userId, referralData);
-                        
-                        this.app.cache.delete(`user_${referrerId}`);
-                        this.app.cache.delete(`referrals_${referrerId}`);
-                        
-                        if (this.app.tgUser && referrerId == this.app.tgUser.id) {
-                            await this.app.loadUserData(true);
-                            if (document.getElementById('referrals-page')?.classList.contains('active')) {
-                                this.app.renderReferralsPage();
-                            }
-                            this.app.updateHeader();
-                        }
-                    }
-                }
-            }
             
         } catch (error) {}
     }
