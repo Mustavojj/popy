@@ -438,10 +438,11 @@ class App {
         if (depositsRef.exists()) {
             this.depositHistory = [];
             depositsRef.forEach(child => {
+                const deposit = child.val();
                 this.depositHistory.push({
                     id: child.key,
-                    amount: child.val().amount,
-                    timestamp: child.val().time || child.val().timestamp
+                    amount: deposit.amount || 0,
+                    timestamp: deposit.timestamp || deposit.time || Date.now()
                 });
             });
             this.depositHistory.sort((a, b) => b.timestamp - a.timestamp);
