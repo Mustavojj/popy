@@ -109,7 +109,9 @@ class App {
                     'task_start': { limit: 1, window: 3000 },
                     'withdrawal': { limit: APP_CONFIG.WITHDRAWAL_LIMIT_PER_DAY, window: 86400000 },
                     'promo_code': { limit: 5, window: 300000 },
-                    'exchange': { limit: 3, window: 3600000 }
+                    'exchange': { limit: 3, window: 3600000 },
+                    'watch_ad_1': { limit: 1, window: 3600000 },
+                    'watch_ad_2': { limit: 1, window: 3600000 }
                 };
                 
                 this.loadRequests();
@@ -1418,7 +1420,7 @@ class App {
         const maxCompletions = task.maxCompletions || 100;
         const remaining = maxCompletions - currentCompletions;
         const pricePer100 = APP_CONFIG.TASK_PRICE_PER_100_COMPLETIONS;
-        const refundAmount = Math.ceil(remaining / 100) * pricePer100 * 0.5;
+        const refundAmount = Math.floor(currentCompletions / 100) * pricePer100 * 0.5;
         
         const modal = document.createElement('div');
         modal.className = 'task-modal';
@@ -1436,7 +1438,7 @@ class App {
                 </div>
                 
                 <div class="price-info" style="background: rgba(231, 76, 60, 0.2);">
-                    <span class="price-label">Refund (50% of remaining):</span>
+                    <span class="price-label">Refund (50% of completed):</span>
                     <span class="price-value" style="color: #e74c3c;">${refundAmount.toFixed(0)} STAR</span>
                 </div>
                 
@@ -1685,9 +1687,10 @@ class App {
             if (adType === 'AdBlock1' && typeof window.AdBlock1 !== 'undefined') {
                 await window.AdBlock1.show();
                 return true;
-            } else if (adType === 'AdBlock2' && typeof window.AdBlock2 !== 'undefined') {
-                await window.AdBlock2.show();
-                return true;
+            } else if (adType === 'AdBlock2' && typeof window.showadsbitvex !== 'undefined') {
+                return await window.showadsbitvex()
+                    .then(() => true)
+                    .catch(() => false);
             }
             return false;
         } catch (error) {
@@ -2004,10 +2007,63 @@ class App {
                 await referrerRef.update({
                     friendsCount: currentFriends + 1
                 });
+                
+                await this.checkAndCompleteNextQuest(referrerId, currentFriends + 1);
             }
             
         } catch (error) {
         }
+    }
+
+    async checkAndCompleteNextQuest(userId, friendsCount) {
+        try {
+            if (!this.db) return;
+            
+            const userRef = this.db.ref(`users/${userId}`);
+            const userSnapshot = await userRef.once('value');
+            if (!userSnapshot.exists()) return;
+            
+            const userData = userSnapshot.val();
+            const completedQuests = userData.completedQuests || {};
+            
+            let nextQuestIndex = -1;
+            for (let i = 0; i < this.quests.length; i++) {
+                const quest = this.quests[i];
+                if (!completedQuests[quest.id]) {
+                    nextQuestIndex = i;
+                    break;
+                }
+            }
+            
+            if (nextQuestIndex === -1) return;
+            
+            const nextQuest = this.quests[nextQuestIndex];
+            
+            if (friendsCount >= nextQuest.required) {
+                const currentBalance = this.safeNumber(userData.balance);
+                const currentSTAR = this.safeNumber(userData.star);
+                
+                const newBalance = currentBalance + nextQuest.rewardTon;
+                const newSTAR = currentSTAR + nextQuest.rewardStar;
+                
+                completedQuests[nextQuest.id] = true;
+                
+                await userRef.update({
+                    balance: newBalance,
+                    star: newSTAR,
+                    completedQuests: completedQuests
+                });
+                
+                if (userId == this.tgUser.id) {
+                    this.userState.balance = newBalance;
+                    this.userState.star = newSTAR;
+                    this.userState.completedQuests = completedQuests;
+                    this.renderReferralsPage();
+                    this.updateHeader();
+                    this.showNotification("Quest Completed!", `${nextQuest.rewardTon.toFixed(4)} TON, ${nextQuest.rewardStar} STAR`, "success");
+                }
+            }
+        } catch (error) {}
     }
 
     async addPendingProfitToReferrer(userId, amount) {
@@ -2511,19 +2567,36 @@ class App {
                             </button>
                         </div>
                         
-                        <div class="square-card" id="watch-ad-card">
+                        <div class="square-card" id="watch-ad-card-1">
                             <div class="card-header">
                                 <div class="card-icon">
                                     <i class="fas fa-play-circle"></i>
                                 </div>
-                                <h3 class="card-title">WATCH ADS & EARN</h3>
+                                <h3 class="card-title">WATCH AD #1</h3>
                             </div>
                             <div class="card-divider"></div>
                             <div class="ad-rewards-preview">
                                 <span class="reward-badge"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" class="reward-icon">0.001 TON</span>
                                 <span class="reward-badge"><img src="https://cdn-icons-png.flaticon.com/512/15660/15660192.png" class="reward-icon">1 STAR</span>
                             </div>
-                            <button id="watch-ad-btn" class="promo-btn watch-ad-btn">
+                            <button id="watch-ad-btn-1" class="promo-btn watch-ad-btn">
+                                <i class="fas fa-eye"></i> WATCH
+                            </button>
+                        </div>
+                        
+                        <div class="square-card" id="watch-ad-card-2">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="fas fa-play-circle"></i>
+                                </div>
+                                <h3 class="card-title">WATCH AD #2</h3>
+                            </div>
+                            <div class="card-divider"></div>
+                            <div class="ad-rewards-preview">
+                                <span class="reward-badge"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" class="reward-icon">0.001 TON</span>
+                                <span class="reward-badge"><img src="https://cdn-icons-png.flaticon.com/512/15660/15660192.png" class="reward-icon">1 STAR</span>
+                            </div>
+                            <button id="watch-ad-btn-2" class="promo-btn watch-ad-btn">
                                 <i class="fas fa-eye"></i> WATCH
                             </button>
                         </div>
@@ -2789,16 +2862,26 @@ class App {
     }
 
     async setupWatchAdEvents() {
-        const watchAdBtn = document.getElementById('watch-ad-btn');
-        if (!watchAdBtn) return;
+        const watchAdBtn1 = document.getElementById('watch-ad-btn-1');
+        const watchAdBtn2 = document.getElementById('watch-ad-btn-2');
         
+        if (watchAdBtn1) {
+            await this.setupSingleAdButton(watchAdBtn1, 'watch_ad_1', 'AdBlock1');
+        }
+        
+        if (watchAdBtn2) {
+            await this.setupSingleAdButton(watchAdBtn2, 'watch_ad_2', 'AdBlock2');
+        }
+    }
+    
+    async setupSingleAdButton(button, actionKey, adType) {
         const checkAdCooldown = async () => {
-            if (!this.db) return;
+            if (!this.db) return true;
             
             const now = this.getServerTime();
             let lastAdTime = 0;
             
-            const lastAdSnapshot = await this.db.ref(`users/${this.tgUser.id}/lastAdTime`).once('value');
+            const lastAdSnapshot = await this.db.ref(`users/${this.tgUser.id}/lastAdTime_${actionKey}`).once('value');
             if (lastAdSnapshot.exists()) {
                 lastAdTime = lastAdSnapshot.val();
             }
@@ -2807,9 +2890,9 @@ class App {
             
             if (now < nextAvailableTime) {
                 const remainingSeconds = Math.floor((nextAvailableTime - now) / 1000);
-                watchAdBtn.disabled = true;
-                watchAdBtn.innerHTML = '<i class="fas fa-hourglass-half"></i> ' + this.formatCountdown(remainingSeconds);
-                watchAdBtn.classList.add('cooldown');
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-hourglass-half"></i> ' + this.formatCountdown(remainingSeconds);
+                button.classList.add('cooldown');
                 
                 if (this.adCountdownInterval) clearInterval(this.adCountdownInterval);
                 this.adCountdownInterval = setInterval(() => {
@@ -2818,31 +2901,33 @@ class App {
                     
                     if (remaining <= 0) {
                         clearInterval(this.adCountdownInterval);
-                        watchAdBtn.disabled = false;
-                        watchAdBtn.innerHTML = '<i class="fas fa-eye"></i> WATCH';
-                        watchAdBtn.classList.remove('cooldown');
+                        button.disabled = false;
+                        button.innerHTML = '<i class="fas fa-eye"></i> WATCH';
+                        button.classList.remove('cooldown');
                     } else {
-                        watchAdBtn.innerHTML = '<i class="fas fa-hourglass-half"></i> ' + this.formatCountdown(remaining);
+                        button.innerHTML = '<i class="fas fa-hourglass-half"></i> ' + this.formatCountdown(remaining);
                     }
                 }, 1000);
+                return false;
             } else {
-                watchAdBtn.disabled = false;
-                watchAdBtn.innerHTML = '<i class="fas fa-eye"></i> WATCH';
-                watchAdBtn.classList.remove('cooldown');
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-eye"></i> WATCH';
+                button.classList.remove('cooldown');
                 if (this.adCountdownInterval) clearInterval(this.adCountdownInterval);
+                return true;
             }
         };
         
         await checkAdCooldown();
         
-        watchAdBtn.addEventListener('click', async () => {
-            if (watchAdBtn.disabled) return;
+        button.addEventListener('click', async () => {
+            if (button.disabled) return;
             
             const now = this.getServerTime();
             let lastAdTime = 0;
             
             if (this.db) {
-                const lastAdSnapshot = await this.db.ref(`users/${this.tgUser.id}/lastAdTime`).once('value');
+                const lastAdSnapshot = await this.db.ref(`users/${this.tgUser.id}/lastAdTime_${actionKey}`).once('value');
                 if (lastAdSnapshot.exists()) {
                     lastAdTime = lastAdSnapshot.val();
                 }
@@ -2855,7 +2940,7 @@ class App {
                 return;
             }
             
-            const adShown = await this.showInAppAd('AdBlock2');
+            const adShown = await this.showInAppAd(adType);
             
             if (adShown) {
                 const currentBalance = this.safeNumber(this.userState.balance);
@@ -2875,7 +2960,7 @@ class App {
                         balance: newBalance,
                         star: newSTAR,
                         totalEarned: newTotalEarned,
-                        lastAdTime: this.getServerTime(),
+                        [`lastAdTime_${actionKey}`]: this.getServerTime(),
                         totalAds: newTotalAds
                     });
                     
@@ -3585,11 +3670,12 @@ class App {
         const friendsCount = this.userState.friendsCount || 0;
         const canClaim = this.pendingProfits > 0.00001;
         
-        let currentQuest = this.quests[this.currentQuestIndex];
-        if (!currentQuest) {
-            currentQuest = this.quests[this.quests.length - 1];
+        let currentQuestIndex = this.currentQuestIndex;
+        if (currentQuestIndex >= this.quests.length) {
+            currentQuestIndex = this.quests.length - 1;
         }
         
+        const currentQuest = this.quests[currentQuestIndex];
         const questCompleted = friendsCount >= currentQuest.required;
         const questClaimed = this.userState.completedQuests && this.userState.completedQuests[currentQuest.id];
         
