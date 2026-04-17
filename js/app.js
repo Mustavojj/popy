@@ -1617,7 +1617,7 @@ class App {
                 this.updateHeader();
             }
         } catch (error) {
-            this.showNotification("Warning", "Using local data", "warning");
+            this.showNotification("Errr", result.error || "Using local data", "error");
             this.userState = this.getDefaultUserState();
             this.userSTAR = 0;
             this.updateHeader();
