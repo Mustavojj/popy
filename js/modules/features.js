@@ -1,4 +1,3 @@
-// features.js
 import { APP_CONFIG, FEATURES_CONFIG } from '../data.js';
 
 class TaskManager {
@@ -28,9 +27,19 @@ class TaskManager {
         try {
             this.userCompletedTasks = new Set(this.app.userState.completedTasks || []);
             
-            this.mainTasks = await this.loadTasksFromDatabase('main');
-            this.partnerTasks = await this.loadTasksFromDatabase('partner');
-            this.socialTasks = await this.loadTasksFromDatabase('social');
+            const result = await this.app.callApi('getTasks');
+            
+            if (result.success && result.data) {
+                const allTasks = result.data;
+                
+                this.mainTasks = allTasks.filter(task => task.category === 'main');
+                this.partnerTasks = allTasks.filter(task => task.category === 'partner');
+                this.socialTasks = allTasks.filter(task => task.category === 'social');
+            } else {
+                this.mainTasks = [];
+                this.partnerTasks = [];
+                this.socialTasks = [];
+            }
             
             this.app.cache.set(cacheKey, {
                 mainTasks: this.mainTasks,
@@ -48,109 +57,37 @@ class TaskManager {
 
     async loadTasksFromDatabase(category) {
         try {
-            if (!this.app.db) return [];
+            const result = await this.app.callApi('getTasks');
+            if (!result.success) return [];
             
-            const tasks = [];
+            const allTasks = result.data || [];
+            const userCompleted = this.app.userCompletedTasks || new Set();
             
-            const tasksSnapshot = await this.app.db.ref('config/tasks').once('value');
-            if (tasksSnapshot.exists()) {
-                tasksSnapshot.forEach(child => {
-                    try {
-                        const taskData = child.val();
-                        
-                        if (taskData.status !== 'active') {
-                            return;
-                        }
-                        
-                        if (taskData.category !== category) {
-                            return;
-                        }
-                        
-                        const currentCompletions = taskData.currentCompletions || 0;
-                        const maxCompletions = taskData.maxCompletions || 999999;
-                        
-                        let reward = this.app.safeNumber(taskData.reward || 0.0001);
-                        let popReward = this.app.safeNumber(taskData.popReward || 1);
-                        
-                        if (category === 'social') {
-                            reward = APP_CONFIG.SOCIAL_TASK_REWARD;
-                            popReward = APP_CONFIG.SOCIAL_TASK_POP_REWARD;
-                        }
-                        
-                        const task = {
-                            id: child.key,
-                            name: taskData.name || 'Unknown Task',
-                            picture: taskData.picture || this.app.appConfig.BOT_AVATAR,
-                            url: taskData.url || '',
-                            type: taskData.type || 'channel',
-                            category: category,
-                            reward: reward,
-                            popReward: popReward,
-                            currentCompletions: currentCompletions,
-                            maxCompletions: maxCompletions,
-                            status: taskData.status || 'active',
-                            verification: taskData.verification || 'NO',
-                            owner: null
-                        };
-                        
-                        if (!this.userCompletedTasks.has(task.id) && currentCompletions < maxCompletions && (maxCompletions - currentCompletions) > 0) {
-                            tasks.push(task);
-                        }
-                    } catch (error) {}
-                });
-            }
-            
-            const userTasksSnapshot = await this.app.db.ref('config/userTasks').once('value');
-            if (userTasksSnapshot.exists()) {
-                userTasksSnapshot.forEach(ownerSnapshot => {
-                    ownerSnapshot.forEach(taskSnapshot => {
-                        try {
-                            const taskData = taskSnapshot.val();
-                            
-                            if (taskData.status !== 'active') {
-                                return;
-                            }
-                            
-                            if (taskData.category !== category) {
-                                return;
-                            }
-                            
-                            const currentCompletions = taskData.currentCompletions || 0;
-                            const maxCompletions = taskData.maxCompletions || 999999;
-                            
-                            let reward = this.app.safeNumber(taskData.reward || 0.0001);
-                            let popReward = this.app.safeNumber(taskData.popReward || 1);
-                            
-                            if (category === 'social') {
-                                reward = APP_CONFIG.SOCIAL_TASK_REWARD;
-                                popReward = APP_CONFIG.SOCIAL_TASK_POP_REWARD;
-                            }
-                            
-                            const task = {
-                                id: taskSnapshot.key,
-                                name: taskData.name || 'Unknown Task',
-                                picture: taskData.picture || this.app.appConfig.BOT_AVATAR,
-                                url: taskData.url || '',
-                                type: taskData.type || 'channel',
-                                category: category,
-                                reward: reward,
-                                popReward: popReward,
-                                currentCompletions: currentCompletions,
-                                maxCompletions: maxCompletions,
-                                status: taskData.status || 'active',
-                                verification: taskData.verification || 'NO',
-                                owner: ownerSnapshot.key
-                            };
-                            
-                            if (!this.userCompletedTasks.has(task.id) && currentCompletions < maxCompletions && (maxCompletions - currentCompletions) > 0) {
-                                tasks.push(task);
-                            }
-                        } catch (error) {}
-                    });
-                });
-            }
-            
-            return tasks;
+            return allTasks.filter(task => {
+                if (task.status !== 'active' && task.status !== undefined) return false;
+                if (task.category !== category) return false;
+                if (userCompleted.has(task.id)) return false;
+                
+                const currentCompletions = task.currentCompletions || 0;
+                const maxCompletions = task.maxCompletions || 999999;
+                if (currentCompletions >= maxCompletions) return false;
+                
+                return true;
+            }).map(task => ({
+                id: task.id,
+                name: task.name,
+                picture: task.picture || this.app.appConfig.BOT_AVATAR,
+                url: task.url,
+                type: task.type || 'channel',
+                category: task.category,
+                reward: task.reward || (category === 'social' ? APP_CONFIG.SOCIAL_TASK_REWARD : 0.001),
+                popReward: task.popReward || (category === 'social' ? APP_CONFIG.SOCIAL_TASK_POP_REWARD : 1),
+                currentCompletions: task.currentCompletions || 0,
+                maxCompletions: task.maxCompletions || 999999,
+                status: task.status || 'active',
+                verification: task.verification || 'NO',
+                owner: task.owner || null
+            }));
             
         } catch (error) {
             return [];
@@ -192,26 +129,13 @@ class ReferralManager {
 
     async loadRecentReferrals() {
         try {
-            if (!this.app.db) return [];
-            
-            const friendsRef = await this.app.db.ref(`friends/${this.app.tgUser.id}`).once('value');
-            if (!friendsRef.exists()) return [];
-            
-            const friendsList = [];
-            friendsRef.forEach(child => {
-                const friendData = child.val();
-                if (friendData && typeof friendData === 'object') {
-                    friendsList.push({
-                        id: child.key,
-                        ...friendData
-                    });
-                }
-            });
-            
-            this.recentReferrals = friendsList.sort((a, b) => (b.joinedAt || 0) - (a.joinedAt || 0)).slice(0, 10);
-            
+            const result = await this.app.callApi('getReferrals');
+            if (result.success && result.data) {
+                this.recentReferrals = result.data.sort((a, b) => (b.joinedAt || 0) - (a.joinedAt || 0)).slice(0, 10);
+            } else {
+                this.recentReferrals = [];
+            }
             return this.recentReferrals;
-            
         } catch (error) {
             return [];
         }
@@ -219,49 +143,30 @@ class ReferralManager {
 
     async refreshReferralsList() {
         try {
-            if (!this.app.db || !this.app.tgUser) return;
-            
-            const friendsRef = await this.app.db.ref(`friends/${this.app.tgUser.id}`).once('value');
-            if (!friendsRef.exists()) return;
-            
-            const friends = friendsRef.val();
-            const friendsCount = Object.keys(friends).length;
-            
-            this.app.userState.referrals = friendsCount;
-            this.app.userState.friends = friends;
-            
-            await this.app.loadUserData(true);
-            
-            if (document.getElementById('referrals-page')?.classList.contains('active')) {
-                this.app.renderReferralsPage();
+            const result = await this.app.callApi('getReferrals');
+            if (result.success && result.data) {
+                const friendsCount = result.data.length;
+                this.app.userState.friendsCount = friendsCount;
+                
+                if (document.getElementById('referrals-page')?.classList.contains('active')) {
+                    this.app.renderReferralsPage();
+                }
+                
+                this.app.updateHeader();
             }
-            
-            this.app.updateHeader();
-            
         } catch (error) {}
     }
 
     async checkReferralsVerification() {
         try {
-            if (!this.app.db || !this.app.tgUser) return;
-            
-            const friendsRef = await this.app.db.ref(`friends/${this.app.tgUser.id}`).once('value');
-            if (!friendsRef.exists()) return;
-            
+            const result = await this.app.callApi('getReferrals');
+            if (result.success && result.data) {
+                this.app.userState.friendsCount = result.data.length;
+            }
         } catch (error) {}
     }
     
     async checkUserCompletedTasksForReferral(userId) {
-        try {
-            if (!this.app.db) return;
-            
-            const userRef = await this.app.db.ref(`users/${userId}`).once('value');
-            if (!userRef.exists()) return;
-            
-            const userData = userRef.val();
-            const completedTasks = userData.completedTasksCount || 0;
-            
-        } catch (error) {}
     }
 }
 
