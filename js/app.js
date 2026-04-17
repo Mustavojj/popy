@@ -110,8 +110,7 @@ class App {
                     'withdrawal': { limit: APP_CONFIG.WITHDRAWAL_LIMIT_PER_DAY, window: 86400000 },
                     'promo_code': { limit: 5, window: 300000 },
                     'exchange': { limit: 3, window: 3600000 },
-                    'watch_ad_1': { limit: 1, window: 3600000 },
-                    'watch_ad_2': { limit: 1, window: 3600000 }
+                    'watch_ad_1': { limit: 1, window: 3600000 }
                 };
                 
                 this.loadRequests();
@@ -457,36 +456,36 @@ class App {
         }
     }
 
-async loadQuestsProgress() {
-    try {
-        if (!this.db || !this.tgUser) return;
-        const questsRef = await this.db.ref(`quests/${this.tgUser.id}`).once('value');
-        if (questsRef.exists()) {
-            const savedQuests = questsRef.val();
-            let highestCompletedIndex = -1;
-            for (let i = 0; i < this.quests.length; i++) {
-                const quest = this.quests[i];
-                if (savedQuests[quest.id] && savedQuests[quest.id].completed) {
-                    quest.completed = true;
-                    highestCompletedIndex = i;
-                } else {
-                    quest.completed = false;
+    async loadQuestsProgress() {
+        try {
+            if (!this.db || !this.tgUser) return;
+            const questsRef = await this.db.ref(`quests/${this.tgUser.id}`).once('value');
+            if (questsRef.exists()) {
+                const savedQuests = questsRef.val();
+                let highestCompletedIndex = -1;
+                for (let i = 0; i < this.quests.length; i++) {
+                    const quest = this.quests[i];
+                    if (savedQuests[quest.id] && savedQuests[quest.id].completed) {
+                        quest.completed = true;
+                        highestCompletedIndex = i;
+                    } else {
+                        quest.completed = false;
+                    }
+                }
+                this.currentQuestIndex = highestCompletedIndex + 1;
+                if (this.currentQuestIndex >= this.quests.length) {
+                    this.currentQuestIndex = this.quests.length - 1;
+                }
+            } else {
+                this.currentQuestIndex = 0;
+                for (let i = 0; i < this.quests.length; i++) {
+                    this.quests[i].completed = false;
                 }
             }
-            this.currentQuestIndex = highestCompletedIndex + 1;
-            if (this.currentQuestIndex >= this.quests.length) {
-                this.currentQuestIndex = this.quests.length - 1;
-            }
-        } else {
+        } catch (error) {
             this.currentQuestIndex = 0;
-            for (let i = 0; i < this.quests.length; i++) {
-                this.quests[i].completed = false;
-            }
         }
-    } catch (error) {
-        this.currentQuestIndex = 0;
     }
-}
 
     async saveQuestCompletion(questId) {
         try {
@@ -1343,23 +1342,22 @@ async loadQuestsProgress() {
         
         if (maxBtn) {
             maxBtn.addEventListener('click', () => {
-                const pricePer100 = APP_CONFIG.TASK_PRICE_PER_100_COMPLETIONS;
                 const maxStars = Math.floor(this.userSTAR);
-                let maxAdditional = Math.floor((maxStars / pricePer100) * 100);
-                if (maxAdditional > remaining) {
-                    maxAdditional = remaining;
-                }
-                completionsInput.value = maxAdditional;
+                completionsInput.value = maxStars;
                 updatePrice();
             });
         }
         
         if (confirmBtn) {
             confirmBtn.addEventListener('click', async () => {
-                const additional = parseInt(completionsInput.value) || 0;
-                if (additional <= 0 || additional > remaining) {
+                let additional = parseInt(completionsInput.value) || 0;
+                if (additional <= 0) {
                     this.showMessage(modal, 'Invalid number of completions', 'error');
                     return;
+                }
+                
+                if (additional > remaining) {
+                    additional = remaining;
                 }
                 
                 const price = Math.ceil(additional / 100) * pricePer100;
@@ -1420,7 +1418,7 @@ async loadQuestsProgress() {
         const maxCompletions = task.maxCompletions || 100;
         const remaining = maxCompletions - currentCompletions;
         const pricePer100 = APP_CONFIG.TASK_PRICE_PER_100_COMPLETIONS;
-        const refundAmount = Math.floor(remaining / 100) * pricePer100 * 0.5;
+        const refundAmount = Math.floor(currentCompletions / 100) * pricePer100 * 0.5;
         
         const modal = document.createElement('div');
         modal.className = 'task-modal';
@@ -1687,10 +1685,9 @@ async loadQuestsProgress() {
             if (adType === 'AdBlock1' && typeof window.AdBlock1 !== 'undefined') {
                 await window.AdBlock1.show();
                 return true;
-            } else if (adType === 'AdBlock2' && typeof window.showadsbitvex !== 'undefined') {
-                return await window.showadsbitvex()
-                    .then(() => true)
-                    .catch(() => false);
+            } else if (adType === 'AdBlock2' && typeof window.AdBlock2 !== 'undefined') {
+                await window.AdBlock2.show();
+                return true;
             }
             return false;
         } catch (error) {
@@ -2008,68 +2005,14 @@ async loadQuestsProgress() {
                     friendsCount: currentFriends + 1
                 });
                 
-                await this.checkAndCompleteNextQuest(referrerId, currentFriends + 1);
-                
+                if (referrerId == this.tgUser.id) {
+                    await this.loadQuestsProgress();
+                    this.renderReferralsPage();
                 }
-            
-            if (referrerId == this.tgUser.id) {
-                await this.loadQuestsProgress();
-                this.renderReferralsPage();
             }
             
         } catch (error) {
         }
-    }
-
-    async checkAndCompleteNextQuest(userId, friendsCount) {
-        try {
-            if (!this.db) return;
-            
-            const userRef = this.db.ref(`users/${userId}`);
-            const userSnapshot = await userRef.once('value');
-            if (!userSnapshot.exists()) return;
-            
-            const userData = userSnapshot.val();
-            const completedQuests = userData.completedQuests || {};
-            
-            let nextQuestIndex = -1;
-            for (let i = 0; i < this.quests.length; i++) {
-                const quest = this.quests[i];
-                if (!completedQuests[quest.id]) {
-                    nextQuestIndex = i;
-                    break;
-                }
-            }
-            
-            if (nextQuestIndex === -1) return;
-            
-            const nextQuest = this.quests[nextQuestIndex];
-            
-            if (friendsCount >= nextQuest.required) {
-                const currentBalance = this.safeNumber(userData.balance);
-                const currentSTAR = this.safeNumber(userData.star);
-                
-                const newBalance = currentBalance + nextQuest.rewardTon;
-                const newSTAR = currentSTAR + nextQuest.rewardStar;
-                
-                completedQuests[nextQuest.id] = true;
-                
-                await userRef.update({
-                    balance: newBalance,
-                    star: newSTAR,
-                    completedQuests: completedQuests
-                });
-                
-                if (userId == this.tgUser.id) {
-                    this.userState.balance = newBalance;
-                    this.userState.star = newSTAR;
-                    this.userState.completedQuests = completedQuests;
-                    this.renderReferralsPage();
-                    this.updateHeader();
-                    this.showNotification("Quest Completed!", `${nextQuest.rewardTon.toFixed(4)} TON, ${nextQuest.rewardStar} STAR`, "success");
-                }
-            }
-        } catch (error) {}
     }
 
     async addPendingProfitToReferrer(userId, amount) {
@@ -2573,7 +2516,7 @@ async loadQuestsProgress() {
                             </button>
                         </div>
                         
-                        <div class="square-card" id="watch-ad-card-1">
+                        <div class="square-card" id="watch-ad-card">
                             <div class="card-header">
                                 <div class="card-icon">
                                     <i class="fas fa-play-circle"></i>
@@ -2585,24 +2528,7 @@ async loadQuestsProgress() {
                                 <span class="reward-badge"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" class="reward-icon">0.001 TON</span>
                                 <span class="reward-badge"><img src="https://cdn-icons-png.flaticon.com/512/15660/15660192.png" class="reward-icon">1 STAR</span>
                             </div>
-                            <button id="watch-ad-btn-1" class="promo-btn watch-ad-btn">
-                                <i class="fas fa-eye"></i> WATCH
-                            </button>
-                        </div>
-                        
-                        <div class="square-card" id="watch-ad-card-2">
-                            <div class="card-header">
-                                <div class="card-icon">
-                                    <i class="fas fa-play-circle"></i>
-                                </div>
-                                <h3 class="card-title">WATCH AD #2</h3>
-                            </div>
-                            <div class="card-divider"></div>
-                            <div class="ad-rewards-preview">
-                                <span class="reward-badge"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" class="reward-icon">0.001 TON</span>
-                                <span class="reward-badge"><img src="https://cdn-icons-png.flaticon.com/512/15660/15660192.png" class="reward-icon">1 STAR</span>
-                            </div>
-                            <button id="watch-ad-btn-2" class="promo-btn watch-ad-btn">
+                            <button id="watch-ad-btn" class="promo-btn watch-ad-btn">
                                 <i class="fas fa-eye"></i> WATCH
                             </button>
                         </div>
@@ -2868,26 +2794,16 @@ async loadQuestsProgress() {
     }
 
     async setupWatchAdEvents() {
-        const watchAdBtn1 = document.getElementById('watch-ad-btn-1');
-        const watchAdBtn2 = document.getElementById('watch-ad-btn-2');
+        const watchAdBtn = document.getElementById('watch-ad-btn');
+        if (!watchAdBtn) return;
         
-        if (watchAdBtn1) {
-            await this.setupSingleAdButton(watchAdBtn1, 'watch_ad_1', 'AdBlock1');
-        }
-        
-        if (watchAdBtn2) {
-            await this.setupSingleAdButton(watchAdBtn2, 'watch_ad_2', 'AdBlock2');
-        }
-    }
-    
-    async setupSingleAdButton(button, actionKey, adType) {
         const checkAdCooldown = async () => {
             if (!this.db) return true;
             
             const now = this.getServerTime();
             let lastAdTime = 0;
             
-            const lastAdSnapshot = await this.db.ref(`users/${this.tgUser.id}/lastAdTime_${actionKey}`).once('value');
+            const lastAdSnapshot = await this.db.ref(`users/${this.tgUser.id}/lastAdTime_watch_ad_1`).once('value');
             if (lastAdSnapshot.exists()) {
                 lastAdTime = lastAdSnapshot.val();
             }
@@ -2896,9 +2812,9 @@ async loadQuestsProgress() {
             
             if (now < nextAvailableTime) {
                 const remainingSeconds = Math.floor((nextAvailableTime - now) / 1000);
-                button.disabled = true;
-                button.innerHTML = '<i class="fas fa-hourglass-half"></i> ' + this.formatCountdown(remainingSeconds);
-                button.classList.add('cooldown');
+                watchAdBtn.disabled = true;
+                watchAdBtn.innerHTML = '<i class="fas fa-hourglass-half"></i> ' + this.formatCountdown(remainingSeconds);
+                watchAdBtn.classList.add('cooldown');
                 
                 if (this.adCountdownInterval) clearInterval(this.adCountdownInterval);
                 this.adCountdownInterval = setInterval(() => {
@@ -2907,18 +2823,18 @@ async loadQuestsProgress() {
                     
                     if (remaining <= 0) {
                         clearInterval(this.adCountdownInterval);
-                        button.disabled = false;
-                        button.innerHTML = '<i class="fas fa-eye"></i> WATCH';
-                        button.classList.remove('cooldown');
+                        watchAdBtn.disabled = false;
+                        watchAdBtn.innerHTML = '<i class="fas fa-eye"></i> WATCH';
+                        watchAdBtn.classList.remove('cooldown');
                     } else {
-                        button.innerHTML = '<i class="fas fa-hourglass-half"></i> ' + this.formatCountdown(remaining);
+                        watchAdBtn.innerHTML = '<i class="fas fa-hourglass-half"></i> ' + this.formatCountdown(remaining);
                     }
                 }, 1000);
                 return false;
             } else {
-                button.disabled = false;
-                button.innerHTML = '<i class="fas fa-eye"></i> WATCH';
-                button.classList.remove('cooldown');
+                watchAdBtn.disabled = false;
+                watchAdBtn.innerHTML = '<i class="fas fa-eye"></i> WATCH';
+                watchAdBtn.classList.remove('cooldown');
                 if (this.adCountdownInterval) clearInterval(this.adCountdownInterval);
                 return true;
             }
@@ -2926,14 +2842,14 @@ async loadQuestsProgress() {
         
         await checkAdCooldown();
         
-        button.addEventListener('click', async () => {
-            if (button.disabled) return;
+        watchAdBtn.addEventListener('click', async () => {
+            if (watchAdBtn.disabled) return;
             
             const now = this.getServerTime();
             let lastAdTime = 0;
             
             if (this.db) {
-                const lastAdSnapshot = await this.db.ref(`users/${this.tgUser.id}/lastAdTime_${actionKey}`).once('value');
+                const lastAdSnapshot = await this.db.ref(`users/${this.tgUser.id}/lastAdTime_watch_ad_1`).once('value');
                 if (lastAdSnapshot.exists()) {
                     lastAdTime = lastAdSnapshot.val();
                 }
@@ -2946,7 +2862,7 @@ async loadQuestsProgress() {
                 return;
             }
             
-            const adShown = await this.showInAppAd(adType);
+            const adShown = await this.showInAppAd('AdBlock2');
             
             if (adShown) {
                 const currentBalance = this.safeNumber(this.userState.balance);
@@ -2966,7 +2882,7 @@ async loadQuestsProgress() {
                         balance: newBalance,
                         star: newSTAR,
                         totalEarned: newTotalEarned,
-                        [`lastAdTime_${actionKey}`]: this.getServerTime(),
+                        lastAdTime_watch_ad_1: this.getServerTime(),
                         totalAds: newTotalAds
                     });
                     
@@ -3812,13 +3728,10 @@ async loadQuestsProgress() {
             this.userState.star = newSTAR;
             this.userState.completedQuests = completedQuests;
             
-            this.currentQuestIndex++;
-            if (this.currentQuestIndex >= this.quests.length) {
-                this.currentQuestIndex = this.quests.length - 1;
-            }
+            await this.loadQuestsProgress();
+            this.renderReferralsPage();
             
             this.updateHeader();
-            this.renderReferralsPage();
             
             this.showNotification("Quest Completed!", `${quest.rewardTon.toFixed(4)} TON, ${quest.rewardStar} STAR`, "success");
             this.showShake('success');
