@@ -16,7 +16,7 @@ export default async function handler(req, res) {
             return res.status(500).json({ success: false, error: 'BOT_TOKEN not configured' });
         }
         
-        const message = `<b>★ Your Withdrawal Requested!</b>\n\n✦ Amount: <code>${amount}</code> <b>TON</b>\n✦ Wallet:</b> <code>${wallet}</code>\n✦ Time: <code>${time}</code>\n\n<b>☆ Withdrawal will processed within 24 hours.</b>`;
+        const message = `<b>★ Your Withdrawal Requested!</b>\n\n✦ Amount: <code>${amount}</code> <b>TON</b>\n✦ Wallet: <code>${wallet}</code>\n✦ Time: <code>${time}</code>\n\n<b>☆ Withdrawal will be processed within 24 hours.</b>`;
         
         const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
             method: 'POST',
@@ -33,12 +33,12 @@ export default async function handler(req, res) {
         const data = await response.json();
         
         if (data.ok) {
-            res.status(200).json({ success: true });
+            return res.status(200).json({ success: true });
         } else {
-            res.status(200).json({ success: false, error: data.description });
+            return res.status(200).json({ success: false, error: data.description });
         }
         
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        return res.status(500).json({ success: false, error: error.message });
     }
 }
