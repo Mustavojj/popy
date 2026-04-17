@@ -457,36 +457,36 @@ class App {
         }
     }
 
-    async loadQuestsProgress() {
-        try {
-            if (!this.db || !this.tgUser) return;
-            const questsRef = await this.db.ref(`quests/${this.tgUser.id}`).once('value');
-            if (questsRef.exists()) {
-                const savedQuests = questsRef.val();
-                let highestCompletedIndex = -1;
-                for (let i = 0; i < this.quests.length; i++) {
-                    const quest = this.quests[i];
-                    if (savedQuests[quest.id] && savedQuests[quest.id].completed) {
-                        quest.completed = true;
-                        highestCompletedIndex = i;
-                    } else {
-                        quest.completed = false;
-                    }
-                }
-                this.currentQuestIndex = highestCompletedIndex + 1;
-                if (this.currentQuestIndex >= this.quests.length) {
-                    this.currentQuestIndex = this.quests.length - 1;
-                }
-            } else {
-                this.currentQuestIndex = 0;
-                for (let i = 0; i < this.quests.length; i++) {
-                    this.quests[i].completed = false;
+async loadQuestsProgress() {
+    try {
+        if (!this.db || !this.tgUser) return;
+        const questsRef = await this.db.ref(`quests/${this.tgUser.id}`).once('value');
+        if (questsRef.exists()) {
+            const savedQuests = questsRef.val();
+            let highestCompletedIndex = -1;
+            for (let i = 0; i < this.quests.length; i++) {
+                const quest = this.quests[i];
+                if (savedQuests[quest.id] && savedQuests[quest.id].completed) {
+                    quest.completed = true;
+                    highestCompletedIndex = i;
+                } else {
+                    quest.completed = false;
                 }
             }
-        } catch (error) {
+            this.currentQuestIndex = highestCompletedIndex + 1;
+            if (this.currentQuestIndex >= this.quests.length) {
+                this.currentQuestIndex = this.quests.length - 1;
+            }
+        } else {
             this.currentQuestIndex = 0;
+            for (let i = 0; i < this.quests.length; i++) {
+                this.quests[i].completed = false;
+            }
         }
+    } catch (error) {
+        this.currentQuestIndex = 0;
     }
+}
 
     async saveQuestCompletion(questId) {
         try {
@@ -2009,6 +2009,12 @@ class App {
                 });
                 
                 await this.checkAndCompleteNextQuest(referrerId, currentFriends + 1);
+                
+                }
+            
+            if (referrerId == this.tgUser.id) {
+                await this.loadQuestsProgress();
+                this.renderReferralsPage();
             }
             
         } catch (error) {
