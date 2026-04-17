@@ -1,7 +1,0 @@
-{
-  "name": "stars-pop-bot",
-  "version": "1.0.0",
-  "dependencies": {
-    "firebase-admin": "^11.11.0"
-  }
-}
