@@ -5,9 +5,6 @@ export function verifyTelegramAuth(initData, botToken) {
     
     const params = new URLSearchParams(initData);
     const hash = params.get('hash');
-    
-    if (!hash) return null;
-    
     params.delete('hash');
     params.sort();
     
@@ -24,6 +21,5 @@ export function verifyTelegramAuth(initData, botToken) {
     
     if (calculatedHash !== hash) return null;
     
-    const user = JSON.parse(params.get('user'));
-    return user;
+    return JSON.parse(params.get('user'));
 }
