@@ -1,17 +1,15 @@
-// api/action.js
+import admin from 'firebase-admin';
 import { verifyTelegramAuth } from './_verify.js';
 
-const FIREBASE_CONFIG = JSON.parse(process.env.FIREBASE_CONFIG);
-const DATABASE_URL = FIREBASE_CONFIG.databaseURL;
-const API_KEY = FIREBASE_CONFIG.apiKey;
-
-async function firebaseRequest(path, method = 'GET', data = null) {
-    const url = `${DATABASE_URL}${path}.json?auth=${API_KEY}`;
-    const options = { method, headers: { 'Content-Type': 'application/json' } };
-    if (data) options.body = JSON.stringify(data);
-    const res = await fetch(url, options);
-    return res.json();
+if (!admin.apps.length) {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        databaseURL: `https://${serviceAccount.project_id}-default-rtdb.firebaseio.com`
+    });
 }
+
+const db = admin.database();
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -33,29 +31,62 @@ export default async function handler(req, res) {
     const telegramId = telegramUser.id;
     
     try {
+        const userRef = db.ref(`users/${telegramId}`);
+        const snapshot = await userRef.once('value');
+        let userData = snapshot.val();
+        
+        if (!userData) {
+            userData = {
+                id: telegramId,
+                username: telegramUser.username ? `@${telegramUser.username}` : 'No Username',
+                firstName: telegramUser.first_name || 'User',
+                photoUrl: telegramUser.photo_url || '',
+                balance: 0,
+                star: 0,
+                completedTasks: [],
+                completedTasksCount: 0,
+                totalTasksCompleted: 0,
+                totalEarned: 0,
+                totalWithdrawals: 0,
+                totalWithdrawnAmount: 0,
+                friends: {},
+                friendsCount: 0,
+                pendingProfits: 0,
+                totalReferralEarnings: 0,
+                totalAds: 0,
+                totalPromoCodes: 0,
+                currentQuestIndex: 0,
+                completedQuests: {},
+                createdAt: Date.now(),
+                lastActive: Date.now(),
+                status: 'free',
+                deviceId: null
+            };
+            await userRef.set(userData);
+        } else {
+            await userRef.update({ lastActive: Date.now() });
+        }
+        
         switch (action) {
-            case 'getUser': {
-                const userData = await firebaseRequest(`/users/${telegramId}`);
-                return res.status(200).json({ success: true, data: userData || { id: telegramId, balance: 0, star: 0, completedTasks: [], friendsCount: 0 } });
-            }
+            case 'getUser':
+                return res.status(200).json({ success: true, data: userData });
             
-            case 'updateUser': {
+            case 'updateUser':
                 const { updates } = data;
-                await firebaseRequest(`/users/${telegramId}`, 'PATCH', updates);
+                await userRef.update(updates);
                 return res.status(200).json({ success: true });
-            }
             
-            case 'getTasks': {
-                const tasks = await firebaseRequest('/config/tasks');
-                const userTasks = await firebaseRequest('/config/userTasks');
+            case 'getTasks':
+                const tasksSnapshot = await db.ref('config/tasks').once('value');
+                const userTasksSnapshot = await db.ref('config/userTasks').once('value');
                 const allTasks = [];
                 
-                if (tasks) {
-                    for (const id in tasks) {
-                        const task = tasks[id];
+                if (tasksSnapshot.exists()) {
+                    tasksSnapshot.forEach(child => {
+                        const task = child.val();
                         if (task.status === 'active') {
                             allTasks.push({
-                                id: id,
+                                id: child.key,
                                 name: task.name,
                                 picture: task.picture,
                                 url: task.url,
@@ -68,16 +99,16 @@ export default async function handler(req, res) {
                                 status: task.status
                             });
                         }
-                    }
+                    });
                 }
                 
-                if (userTasks) {
-                    for (const ownerId in userTasks) {
-                        for (const taskId in userTasks[ownerId]) {
-                            const task = userTasks[ownerId][taskId];
+                if (userTasksSnapshot.exists()) {
+                    userTasksSnapshot.forEach(ownerSnapshot => {
+                        ownerSnapshot.forEach(taskSnapshot => {
+                            const task = taskSnapshot.val();
                             if (task.status === 'active' && task.category === 'social') {
                                 allTasks.push({
-                                    id: taskId,
+                                    id: taskSnapshot.key,
                                     name: task.name,
                                     picture: task.picture,
                                     url: task.url,
@@ -88,33 +119,31 @@ export default async function handler(req, res) {
                                     currentCompletions: task.currentCompletions || 0,
                                     maxCompletions: task.maxCompletions || 100,
                                     status: task.status,
-                                    owner: ownerId
+                                    owner: ownerSnapshot.key
                                 });
                             }
-                        }
-                    }
+                        });
+                    });
                 }
                 
                 return res.status(200).json({ success: true, data: allTasks });
-            }
             
-            case 'completeTask': {
+            case 'completeTask':
                 const { taskId, reward, starReward } = data;
-                const userData = await firebaseRequest(`/users/${telegramId}`);
-                const completedTasks = userData?.completedTasks || [];
+                const completedTasks = userData.completedTasks || [];
                 
                 if (completedTasks.includes(taskId)) {
                     return res.status(200).json({ success: false, error: 'Task already completed' });
                 }
                 
                 completedTasks.push(taskId);
-                const newBalance = (userData?.balance || 0) + reward;
-                const newStar = (userData?.star || 0) + starReward;
-                const newTotalEarned = (userData?.totalEarned || 0) + reward;
-                const newTotalTasks = (userData?.totalTasksCompleted || 0) + 1;
-                const newCompletedCount = (userData?.completedTasksCount || 0) + 1;
+                const newBalance = (userData.balance || 0) + reward;
+                const newStar = (userData.star || 0) + starReward;
+                const newTotalEarned = (userData.totalEarned || 0) + reward;
+                const newTotalTasks = (userData.totalTasksCompleted || 0) + 1;
+                const newCompletedCount = (userData.completedTasksCount || 0) + 1;
                 
-                await firebaseRequest(`/users/${telegramId}`, 'PATCH', {
+                await userRef.update({
                     balance: newBalance,
                     star: newStar,
                     totalEarned: newTotalEarned,
@@ -124,31 +153,39 @@ export default async function handler(req, res) {
                     lastActive: Date.now()
                 });
                 
-                const taskCurrent = await firebaseRequest(`/config/tasks/${taskId}/currentCompletions`);
-                await firebaseRequest(`/config/tasks/${taskId}`, 'PATCH', {
-                    currentCompletions: (taskCurrent?.currentCompletions || 0) + 1
-                });
+                const taskRef = db.ref(`config/tasks/${taskId}/currentCompletions`);
+                const taskCurrent = await taskRef.once('value');
+                await taskRef.set((taskCurrent.val() || 0) + 1);
                 
-                const referrerId = userData?.referredBy;
+                const referrerId = userData.referredBy;
                 if (referrerId && referrerId !== telegramId) {
-                    const referrer = await firebaseRequest(`/users/${referrerId}`);
-                    if (referrer) {
+                    const referrerRef = db.ref(`users/${referrerId}`);
+                    const referrerSnap = await referrerRef.once('value');
+                    if (referrerSnap.exists()) {
+                        const referrer = referrerSnap.val();
                         const profitAmount = reward * 0.2;
-                        await firebaseRequest(`/users/${referrerId}`, 'PATCH', {
+                        await referrerRef.update({
                             pendingProfits: (referrer.pendingProfits || 0) + profitAmount,
                             totalReferralEarnings: (referrer.totalReferralEarnings || 0) + profitAmount
                         });
                     }
                 }
                 
-                return res.status(200).json({ success: true, balance: newBalance, star: newStar, totalEarned: newTotalEarned, completedTasks: completedTasks });
-            }
+                return res.status(200).json({
+                    success: true,
+                    balance: newBalance,
+                    star: newStar,
+                    totalEarned: newTotalEarned,
+                    completedTasks: completedTasks
+                });
             
-            case 'addReferral': {
+            case 'addReferral':
                 const { referrerId } = data;
                 if (referrerId && referrerId !== telegramId) {
-                    const referrer = await firebaseRequest(`/users/${referrerId}`);
-                    if (referrer) {
+                    const referrerRef = db.ref(`users/${referrerId}`);
+                    const referrerSnap = await referrerRef.once('value');
+                    if (referrerSnap.exists()) {
+                        const referrer = referrerSnap.val();
                         const friends = referrer.friends || {};
                         if (!friends[telegramId]) {
                             friends[telegramId] = {
@@ -159,7 +196,7 @@ export default async function handler(req, res) {
                                 joinedAt: Date.now()
                             };
                             const newFriendsCount = (referrer.friendsCount || 0) + 1;
-                            await firebaseRequest(`/users/${referrerId}`, 'PATCH', {
+                            await referrerRef.update({
                                 friends: friends,
                                 friendsCount: newFriendsCount
                             });
@@ -186,134 +223,134 @@ export default async function handler(req, res) {
                                 }
                             }
                             if (newQuestIndex > currentQuestIndex) {
-                                await firebaseRequest(`/users/${referrerId}`, 'PATCH', { currentQuestIndex: newQuestIndex });
+                                await referrerRef.update({ currentQuestIndex: newQuestIndex });
                             }
                         }
                     }
                 }
                 return res.status(200).json({ success: true });
-            }
             
-            case 'getReferrals': {
-                const friends = await firebaseRequest(`/friends/${telegramId}`);
+            case 'getReferrals':
+                const friendsRef = db.ref(`friends/${telegramId}`);
+                const friendsSnap = await friendsRef.once('value');
                 const friendsList = [];
-                if (friends) {
-                    for (const id in friends) {
-                        friendsList.push({ id: id, ...friends[id] });
-                    }
+                if (friendsSnap.exists()) {
+                    friendsSnap.forEach(child => {
+                        friendsList.push({ id: child.key, ...child.val() });
+                    });
                 }
                 return res.status(200).json({ success: true, data: friendsList });
-            }
             
-            case 'getWithdrawals': {
+            case 'getWithdrawals':
                 const withdrawals = [];
-                const pending = await firebaseRequest('/withdrawals/pending');
-                const completed = await firebaseRequest('/withdrawals/completed');
-                const rejected = await firebaseRequest('/withdrawals/rejected');
+                const pendingSnap = await db.ref('withdrawals/pending').once('value');
+                const completedSnap = await db.ref('withdrawals/completed').once('value');
+                const rejectedSnap = await db.ref('withdrawals/rejected').once('value');
                 
-                if (pending) {
-                    for (const id in pending) {
-                        if (pending[id].userId === telegramId) {
-                            withdrawals.push({ id: id, ...pending[id], status: 'pending' });
+                if (pendingSnap.exists()) {
+                    pendingSnap.forEach(child => {
+                        const val = child.val();
+                        if (val.userId === telegramId) {
+                            withdrawals.push({ id: child.key, ...val, status: 'pending' });
                         }
-                    }
+                    });
                 }
-                if (completed) {
-                    for (const id in completed) {
-                        if (completed[id].userId === telegramId) {
-                            withdrawals.push({ id: id, ...completed[id], status: 'completed' });
+                if (completedSnap.exists()) {
+                    completedSnap.forEach(child => {
+                        const val = child.val();
+                        if (val.userId === telegramId) {
+                            withdrawals.push({ id: child.key, ...val, status: 'completed' });
                         }
-                    }
+                    });
                 }
-                if (rejected) {
-                    for (const id in rejected) {
-                        if (rejected[id].userId === telegramId) {
-                            withdrawals.push({ id: id, ...rejected[id], status: 'rejected' });
+                if (rejectedSnap.exists()) {
+                    rejectedSnap.forEach(child => {
+                        const val = child.val();
+                        if (val.userId === telegramId) {
+                            withdrawals.push({ id: child.key, ...val, status: 'rejected' });
                         }
-                    }
+                    });
                 }
                 withdrawals.sort((a, b) => b.timestamp - a.timestamp);
                 return res.status(200).json({ success: true, data: withdrawals });
-            }
             
-            case 'createWithdrawal': {
+            case 'createWithdrawal':
                 const { walletAddress, amount, minimumWithdraw, requiredTasks, requiredReferrals, requiredStar } = data;
-                const userData = await firebaseRequest(`/users/${telegramId}`);
                 
-                if ((userData?.balance || 0) < amount) {
+                if ((userData.balance || 0) < amount) {
                     return res.status(200).json({ success: false, error: 'Insufficient balance' });
                 }
                 if (amount < minimumWithdraw) {
                     return res.status(200).json({ success: false, error: 'Amount too low' });
                 }
-                if ((userData?.totalTasksCompleted || 0) < requiredTasks) {
+                if ((userData.totalTasksCompleted || 0) < requiredTasks) {
                     return res.status(200).json({ success: false, error: 'Complete required tasks first' });
                 }
-                if ((userData?.friendsCount || 0) < requiredReferrals) {
+                if ((userData.friendsCount || 0) < requiredReferrals) {
                     return res.status(200).json({ success: false, error: 'Invite required friends first' });
                 }
-                if ((userData?.star || 0) < requiredStar) {
+                if ((userData.star || 0) < requiredStar) {
                     return res.status(200).json({ success: false, error: 'Earn required STAR first' });
                 }
                 
-                const newBalanceAfter = (userData?.balance || 0) - amount;
-                await firebaseRequest(`/users/${telegramId}`, 'PATCH', {
+                const newBalanceAfter = (userData.balance || 0) - amount;
+                await userRef.update({
                     balance: newBalanceAfter,
-                    totalWithdrawnAmount: (userData?.totalWithdrawnAmount || 0) + amount,
-                    totalWithdrawals: (userData?.totalWithdrawals || 0) + 1,
+                    totalWithdrawnAmount: (userData.totalWithdrawnAmount || 0) + amount,
+                    totalWithdrawals: (userData.totalWithdrawals || 0) + 1,
                     lastWithdrawalDate: Date.now()
                 });
                 
                 const withdrawalId = `wd_${Date.now()}_${telegramId}`;
-                await firebaseRequest(`/withdrawals/pending/${withdrawalId}`, 'PUT', {
+                await db.ref(`withdrawals/pending/${withdrawalId}`).set({
                     id: withdrawalId,
                     userId: telegramId,
                     walletAddress: walletAddress,
                     amount: amount,
                     timestamp: Date.now(),
                     status: 'pending',
-                    userName: userData?.firstName,
+                    userName: userData.firstName,
                     telegramId: telegramId
                 });
                 
                 return res.status(200).json({ success: true, newBalance: newBalanceAfter });
-            }
             
-            case 'getDeposits': {
-                const deposits = await firebaseRequest(`/deposits/${telegramId}`);
-                const depositsList = [];
-                if (deposits) {
-                    for (const id in deposits) {
-                        depositsList.push({ id: id, ...deposits[id] });
-                    }
-                    depositsList.sort((a, b) => b.timestamp - a.timestamp);
+            case 'getDeposits':
+                const depositsSnap = await db.ref(`deposits/${telegramId}`).once('value');
+                const deposits = [];
+                if (depositsSnap.exists()) {
+                    depositsSnap.forEach(child => {
+                        deposits.push({ id: child.key, ...child.val() });
+                    });
+                    deposits.sort((a, b) => b.timestamp - a.timestamp);
                 }
-                return res.status(200).json({ success: true, data: depositsList });
-            }
+                return res.status(200).json({ success: true, data: deposits });
             
-            case 'getAppStats': {
-                const stats = await firebaseRequest('/appStats');
-                return res.status(200).json({ success: true, data: stats || { totalUsers: 0, totalWithdrawals: 0, totalPayments: 0 } });
-            }
+            case 'getAppStats':
+                const statsSnap = await db.ref('appStats').once('value');
+                const stats = statsSnap.val() || { totalUsers: 0, totalWithdrawals: 0, totalPayments: 0 };
+                return res.status(200).json({ success: true, data: stats });
             
-            case 'updateAppStats': {
+            case 'updateAppStats':
                 const { stat, value } = data;
-                const current = await firebaseRequest(`/appStats/${stat}`);
-                await firebaseRequest(`/appStats/${stat}`, 'PUT', (current || 0) + value);
+                const statRef = db.ref(`appStats/${stat}`);
+                const currentStat = (await statRef.once('value')).val() || 0;
+                await statRef.set(currentStat + value);
                 return res.status(200).json({ success: true });
-            }
             
-            case 'usePromoCode': {
+            case 'usePromoCode':
                 const { code } = data;
-                const promos = await firebaseRequest('/config/promoCodes');
+                const promosSnap = await db.ref('config/promoCodes').once('value');
                 let promoData = null;
                 let promoId = null;
                 
-                for (const id in promos) {
-                    if (promos[id].code === code.toUpperCase()) {
-                        promoData = promos[id];
-                        promoId = id;
-                        break;
+                if (promosSnap.exists()) {
+                    for (const id in promosSnap.val()) {
+                        if (promosSnap.val()[id].code === code.toUpperCase()) {
+                            promoData = promosSnap.val()[id];
+                            promoId = id;
+                            break;
+                        }
                     }
                 }
                 
@@ -321,64 +358,69 @@ export default async function handler(req, res) {
                     return res.status(200).json({ success: false, error: 'Invalid promo code' });
                 }
                 
-                const used = await firebaseRequest(`/usedPromoCodes/${telegramId}/${promoId}`);
-                if (used) {
+                const usedRef = db.ref(`usedPromoCodes/${telegramId}/${promoId}`);
+                const usedSnap = await usedRef.once('value');
+                if (usedSnap.exists()) {
                     return res.status(200).json({ success: false, error: 'Code already used' });
                 }
                 
-                const userData = await firebaseRequest(`/users/${telegramId}`);
                 const rewardAmount = promoData.reward || 0.01;
                 const rewardType = promoData.rewardType || 'ton';
                 const promoUpdates = {};
                 
                 if (rewardType === 'ton') {
-                    promoUpdates.balance = (userData?.balance || 0) + rewardAmount;
-                    promoUpdates.totalEarned = (userData?.totalEarned || 0) + rewardAmount;
+                    promoUpdates.balance = (userData.balance || 0) + rewardAmount;
+                    promoUpdates.totalEarned = (userData.totalEarned || 0) + rewardAmount;
                 } else {
-                    promoUpdates.star = (userData?.star || 0) + rewardAmount;
+                    promoUpdates.star = (userData.star || 0) + rewardAmount;
                 }
-                promoUpdates.totalPromoCodes = (userData?.totalPromoCodes || 0) + 1;
+                promoUpdates.totalPromoCodes = (userData.totalPromoCodes || 0) + 1;
                 
-                await firebaseRequest(`/users/${telegramId}`, 'PATCH', promoUpdates);
-                await firebaseRequest(`/usedPromoCodes/${telegramId}/${promoId}`, 'PUT', {
+                await userRef.update(promoUpdates);
+                await usedRef.set({
                     code: code,
                     reward: rewardAmount,
                     rewardType: rewardType,
                     claimedAt: Date.now()
                 });
                 
-                const usedCount = await firebaseRequest(`/config/promoCodes/${promoId}/usedCount`);
-                await firebaseRequest(`/config/promoCodes/${promoId}`, 'PATCH', { usedCount: (usedCount || 0) + 1 });
+                const promoUsedRef = db.ref(`config/promoCodes/${promoId}/usedCount`);
+                const usedCount = (await promoUsedRef.once('value')).val() || 0;
+                await promoUsedRef.set(usedCount + 1);
                 
                 return res.status(200).json({
                     success: true,
                     rewardType: rewardType,
                     rewardAmount: rewardAmount,
-                    newBalance: promoUpdates.balance || userData?.balance,
-                    newStar: promoUpdates.star || userData?.star
+                    newBalance: promoUpdates.balance || userData.balance,
+                    newStar: promoUpdates.star || userData.star
                 });
-            }
             
-            case 'exchangeTonToStar': {
+            case 'exchangeTonToStar':
                 const { tonAmount, popPerTon } = data;
-                const userData = await firebaseRequest(`/users/${telegramId}`);
                 
-                if ((userData?.balance || 0) < tonAmount) {
+                if ((userData.balance || 0) < tonAmount) {
                     return res.status(200).json({ success: false, error: 'Insufficient TON balance' });
                 }
                 
                 const starAmount = Math.floor(tonAmount * popPerTon);
-                const newBalance = (userData?.balance || 0) - tonAmount;
-                const newStar = (userData?.star || 0) + starAmount;
+                const exchangeNewBalance = (userData.balance || 0) - tonAmount;
+                const exchangeNewStar = (userData.star || 0) + starAmount;
                 
-                await firebaseRequest(`/users/${telegramId}`, 'PATCH', { balance: newBalance, star: newStar });
+                await userRef.update({
+                    balance: exchangeNewBalance,
+                    star: exchangeNewStar
+                });
                 
-                return res.status(200).json({ success: true, newBalance: newBalance, newStar: newStar, starAmount: starAmount });
-            }
+                return res.status(200).json({
+                    success: true,
+                    newBalance: exchangeNewBalance,
+                    newStar: exchangeNewStar,
+                    starAmount: starAmount
+                });
             
-            case 'watchAd': {
-                const userData = await firebaseRequest(`/users/${telegramId}`);
-                const lastAdTime = userData?.lastAdTime || 0;
+            case 'watchAd':
+                const lastAdTime = userData.lastAdTime || 0;
                 const now = Date.now();
                 const oneHour = 60 * 60 * 1000;
                 
@@ -389,120 +431,133 @@ export default async function handler(req, res) {
                 
                 const adTonReward = 0.001;
                 const adStarReward = 1;
-                const newBalance = (userData?.balance || 0) + adTonReward;
-                const newStar = (userData?.star || 0) + adStarReward;
-                const newTotalEarned = (userData?.totalEarned || 0) + adTonReward;
-                const newTotalAds = (userData?.totalAds || 0) + 1;
+                const adNewBalance = (userData.balance || 0) + adTonReward;
+                const adNewStar = (userData.star || 0) + adStarReward;
+                const adNewTotalEarned = (userData.totalEarned || 0) + adTonReward;
+                const adNewTotalAds = (userData.totalAds || 0) + 1;
                 
-                await firebaseRequest(`/users/${telegramId}`, 'PATCH', {
-                    balance: newBalance,
-                    star: newStar,
-                    totalEarned: newTotalEarned,
-                    totalAds: newTotalAds,
+                await userRef.update({
+                    balance: adNewBalance,
+                    star: adNewStar,
+                    totalEarned: adNewTotalEarned,
+                    totalAds: adNewTotalAds,
                     lastAdTime: now
                 });
                 
-                return res.status(200).json({ success: true, balance: newBalance, star: newStar, tonReward: adTonReward, starReward: adStarReward });
-            }
+                return res.status(200).json({
+                    success: true,
+                    balance: adNewBalance,
+                    star: adNewStar,
+                    tonReward: adTonReward,
+                    starReward: adStarReward
+                });
             
-            case 'watchAdV2': {
-                const userData = await firebaseRequest(`/users/${telegramId}`);
-                const lastAdV2Time = userData?.lastAdV2Time || 0;
-                const now = Date.now();
-                const oneHour = 60 * 60 * 1000;
+            case 'watchAdV2':
+                const lastAdV2Time = userData.lastAdV2Time || 0;
+                const nowV2 = Date.now();
+                const oneHourV2 = 60 * 60 * 1000;
                 
-                if (now - lastAdV2Time < oneHour) {
-                    const remainingSeconds = Math.ceil((oneHour - (now - lastAdV2Time)) / 1000);
-                    return res.status(200).json({ success: false, error: 'Cooldown', remainingSeconds: remainingSeconds });
+                if (nowV2 - lastAdV2Time < oneHourV2) {
+                    const remainingSecondsV2 = Math.ceil((oneHourV2 - (nowV2 - lastAdV2Time)) / 1000);
+                    return res.status(200).json({ success: false, error: 'Cooldown', remainingSeconds: remainingSecondsV2 });
                 }
                 
                 const adV2TonReward = 0.002;
                 const adV2StarReward = 2;
-                const newBalance = (userData?.balance || 0) + adV2TonReward;
-                const newStar = (userData?.star || 0) + adV2StarReward;
-                const newTotalEarned = (userData?.totalEarned || 0) + adV2TonReward;
-                const newTotalAds = (userData?.totalAds || 0) + 1;
+                const adV2NewBalance = (userData.balance || 0) + adV2TonReward;
+                const adV2NewStar = (userData.star || 0) + adV2StarReward;
+                const adV2NewTotalEarned = (userData.totalEarned || 0) + adV2TonReward;
+                const adV2NewTotalAds = (userData.totalAds || 0) + 1;
                 
-                await firebaseRequest(`/users/${telegramId}`, 'PATCH', {
-                    balance: newBalance,
-                    star: newStar,
-                    totalEarned: newTotalEarned,
-                    totalAds: newTotalAds,
-                    lastAdV2Time: now
+                await userRef.update({
+                    balance: adV2NewBalance,
+                    star: adV2NewStar,
+                    totalEarned: adV2NewTotalEarned,
+                    totalAds: adV2NewTotalAds,
+                    lastAdV2Time: nowV2
                 });
                 
-                return res.status(200).json({ success: true, balance: newBalance, star: newStar, tonReward: adV2TonReward, starReward: adV2StarReward });
-            }
+                return res.status(200).json({
+                    success: true,
+                    balance: adV2NewBalance,
+                    star: adV2NewStar,
+                    tonReward: adV2TonReward,
+                    starReward: adV2StarReward
+                });
             
-            case 'claimPendingProfits': {
-                const userData = await firebaseRequest(`/users/${telegramId}`);
-                const pendingAmount = userData?.pendingProfits || 0;
-                
+            case 'claimPendingProfits':
+                const pendingAmount = userData.pendingProfits || 0;
                 if (pendingAmount <= 0) {
                     return res.status(200).json({ success: false, error: 'No pending profits' });
                 }
                 
-                const newBalance = (userData?.balance || 0) + pendingAmount;
-                await firebaseRequest(`/users/${telegramId}`, 'PATCH', { balance: newBalance, pendingProfits: 0 });
+                const claimNewBalance = (userData.balance || 0) + pendingAmount;
+                await userRef.update({
+                    balance: claimNewBalance,
+                    pendingProfits: 0
+                });
                 
-                return res.status(200).json({ success: true, newBalance: newBalance, claimedAmount: pendingAmount });
-            }
+                return res.status(200).json({
+                    success: true,
+                    newBalance: claimNewBalance,
+                    claimedAmount: pendingAmount
+                });
             
-            case 'getQuests': {
-                const userData = await firebaseRequest(`/users/${telegramId}`);
+            case 'getQuests':
                 return res.status(200).json({
                     success: true,
                     data: {
-                        currentQuestIndex: userData?.currentQuestIndex || 0,
-                        completedQuests: userData?.completedQuests || {}
+                        currentQuestIndex: userData.currentQuestIndex || 0,
+                        completedQuests: userData.completedQuests || {}
                     }
                 });
-            }
             
-            case 'claimQuest': {
+            case 'claimQuest':
                 const { questId, rewardTon, rewardStar, questIndex } = data;
-                const userData = await firebaseRequest(`/users/${telegramId}`);
-                const completedQuests = userData?.completedQuests || {};
+                const completedQuestsObj = userData.completedQuests || {};
                 
-                if (completedQuests[questId]) {
+                if (completedQuestsObj[questId]) {
                     return res.status(200).json({ success: false, error: 'Quest already claimed' });
                 }
                 
-                completedQuests[questId] = true;
-                const newBalance = (userData?.balance || 0) + rewardTon;
-                const newStar = (userData?.star || 0) + rewardStar;
+                completedQuestsObj[questId] = true;
+                const questNewBalance = (userData.balance || 0) + rewardTon;
+                const questNewStar = (userData.star || 0) + rewardStar;
                 const newQuestIndex = questIndex + 1;
                 
-                await firebaseRequest(`/users/${telegramId}`, 'PATCH', {
-                    balance: newBalance,
-                    star: newStar,
-                    completedQuests: completedQuests,
+                await userRef.update({
+                    balance: questNewBalance,
+                    star: questNewStar,
+                    completedQuests: completedQuestsObj,
                     currentQuestIndex: newQuestIndex
                 });
                 
-                return res.status(200).json({ success: true, newBalance: newBalance, newStar: newStar, newQuestIndex: newQuestIndex });
-            }
+                return res.status(200).json({
+                    success: true,
+                    newBalance: questNewBalance,
+                    newStar: questNewStar,
+                    newQuestIndex: newQuestIndex
+                });
             
-            case 'getUserCreatedTasks': {
-                const userTasks = await firebaseRequest(`/config/userTasks/${telegramId}`);
-                const tasksList = [];
-                if (userTasks) {
-                    for (const id in userTasks) {
-                        tasksList.push({ id: id, ...userTasks[id] });
-                    }
+            case 'getUserCreatedTasks':
+                const userTasksRef = db.ref(`config/userTasks/${telegramId}`);
+                const userTasksSnap = await userTasksRef.once('value');
+                const userTasks = [];
+                if (userTasksSnap.exists()) {
+                    userTasksSnap.forEach(child => {
+                        userTasks.push({ id: child.key, ...child.val() });
+                    });
                 }
-                return res.status(200).json({ success: true, data: tasksList });
-            }
+                return res.status(200).json({ success: true, data: userTasks });
             
-            case 'createTask': {
+            case 'createTask':
                 const { taskName, taskLink, taskType, verification, completions, price } = data;
-                const userData = await firebaseRequest(`/users/${telegramId}`);
                 
-                if ((userData?.star || 0) < price) {
+                if ((userData.star || 0) < price) {
                     return res.status(200).json({ success: false, error: 'Insufficient STAR balance' });
                 }
                 
-                const newStar = (userData?.star || 0) - price;
+                const newTaskStar = (userData.star || 0) - price;
                 const taskData = {
                     name: taskName,
                     url: taskLink,
@@ -519,128 +574,153 @@ export default async function handler(req, res) {
                     picture: ''
                 };
                 
-                await firebaseRequest(`/users/${telegramId}`, 'PATCH', { star: newStar });
-                const newTaskRef = await firebaseRequest(`/config/userTasks/${telegramId}`, 'POST', taskData);
+                await userRef.update({ star: newTaskStar });
+                const newTaskRef = await db.ref(`config/userTasks/${telegramId}`).push(taskData);
                 
-                return res.status(200).json({ success: true, newStar: newStar, taskId: newTaskRef.name });
-            }
+                return res.status(200).json({
+                    success: true,
+                    newStar: newTaskStar,
+                    taskId: newTaskRef.key
+                });
             
-            case 'deleteTask': {
+            case 'deleteTask':
                 const { taskId: deleteTaskId } = data;
-                const taskToDelete = await firebaseRequest(`/config/userTasks/${telegramId}/${deleteTaskId}`);
+                const taskToDeleteRef = db.ref(`config/userTasks/${telegramId}/${deleteTaskId}`);
+                const taskToDelete = await taskToDeleteRef.once('value');
                 
-                if (!taskToDelete) {
+                if (!taskToDelete.exists()) {
                     return res.status(200).json({ success: false, error: 'Task not found' });
                 }
                 
-                const currentCompletionsValue = taskToDelete.currentCompletions || 0;
+                const taskValue = taskToDelete.val();
+                const currentCompletionsValue = taskValue.currentCompletions || 0;
                 const pricePer100 = 100;
                 const refundAmount = Math.ceil(currentCompletionsValue / 100) * pricePer100 * 0.5;
-                const userData = await firebaseRequest(`/users/${telegramId}`);
-                const newStar = (userData?.star || 0) + refundAmount;
+                const refundNewStar = (userData.star || 0) + refundAmount;
                 
-                await firebaseRequest(`/config/userTasks/${telegramId}/${deleteTaskId}`, 'DELETE');
-                await firebaseRequest(`/users/${telegramId}`, 'PATCH', { star: newStar });
+                await taskToDeleteRef.remove();
+                await userRef.update({ star: refundNewStar });
                 
-                return res.status(200).json({ success: true, newStar: newStar, refundAmount: refundAmount });
-            }
+                return res.status(200).json({
+                    success: true,
+                    newStar: refundNewStar,
+                    refundAmount: refundAmount
+                });
             
-            case 'addCompletions': {
-                const { taskId: addTaskId, additionalCompletions, pricePer100 } = data;
-                const task = await firebaseRequest(`/config/userTasks/${telegramId}/${addTaskId}`);
+            case 'addCompletions':
+                const { taskId: addTaskId, additionalCompletions, pricePer100: pricePer100Value } = data;
+                const addTaskRef = db.ref(`config/userTasks/${telegramId}/${addTaskId}`);
+                const addTaskSnap = await addTaskRef.once('value');
                 
-                if (!task) {
+                if (!addTaskSnap.exists()) {
                     return res.status(200).json({ success: false, error: 'Task not found' });
                 }
                 
-                const price = Math.ceil(additionalCompletions / 100) * pricePer100;
-                const userData = await firebaseRequest(`/users/${telegramId}`);
+                const addTaskData = addTaskSnap.val();
+                const addPrice = Math.ceil(additionalCompletions / 100) * pricePer100Value;
                 
-                if ((userData?.star || 0) < price) {
+                if ((userData.star || 0) < addPrice) {
                     return res.status(200).json({ success: false, error: 'Insufficient STAR balance' });
                 }
                 
-                const newMaxCompletions = (task.maxCompletions || 100) + additionalCompletions;
-                const newStar = (userData?.star || 0) - price;
+                const addNewMaxCompletions = (addTaskData.maxCompletions || 100) + additionalCompletions;
+                const addNewStar = (userData.star || 0) - addPrice;
                 
-                await firebaseRequest(`/config/userTasks/${telegramId}/${addTaskId}`, 'PATCH', { maxCompletions: newMaxCompletions });
-                await firebaseRequest(`/users/${telegramId}`, 'PATCH', { star: newStar });
+                await addTaskRef.update({ maxCompletions: addNewMaxCompletions });
+                await userRef.update({ star: addNewStar });
                 
-                return res.status(200).json({ success: true, newStar: newStar, newMaxCompletions: newMaxCompletions });
-            }
+                return res.status(200).json({
+                    success: true,
+                    newStar: addNewStar,
+                    newMaxCompletions: addNewMaxCompletions
+                });
             
-            case 'getMaxCompletionsFromStar': {
-                const { starAmount, pricePer100 } = data;
-                const maxPossibleCompletions = Math.floor((starAmount / pricePer100) * 100);
-                return res.status(200).json({ success: true, maxCompletions: maxPossibleCompletions });
-            }
+            case 'getMaxCompletionsFromStar':
+                const { starAmount, pricePer100: pricePer100Max } = data;
+                const maxPossibleCompletions = Math.floor((starAmount / pricePer100Max) * 100);
+                return res.status(200).json({
+                    success: true,
+                    maxCompletions: maxPossibleCompletions
+                });
             
-            case 'getAdditionalRewards': {
-                const rewards = await firebaseRequest('/config/more');
-                const rewardsList = [];
-                if (rewards) {
-                    for (const id in rewards) {
-                        if (rewards[id].status === 'active') {
-                            rewardsList.push({
-                                id: id,
-                                name: rewards[id].name || 'Reward',
-                                description: rewards[id].description || '',
-                                rewardType: rewards[id].rewardType || 'ton',
-                                rewardAmount: rewards[id].rewardAmount || 0,
-                                starAmount: rewards[id].popAmount || 0,
-                                icon: rewards[id].icon || 'fa-gift',
-                                action: rewards[id].action || 'none',
-                                actionUrl: rewards[id].actionUrl || ''
+            case 'getAdditionalRewards':
+                const rewardsRef = db.ref('config/more');
+                const rewardsSnap = await rewardsRef.once('value');
+                const rewards = [];
+                if (rewardsSnap.exists()) {
+                    rewardsSnap.forEach(child => {
+                        const reward = child.val();
+                        if (reward.status === 'active') {
+                            rewards.push({
+                                id: child.key,
+                                name: reward.name || 'Reward',
+                                description: reward.description || '',
+                                rewardType: reward.rewardType || 'ton',
+                                rewardAmount: reward.rewardAmount || 0,
+                                starAmount: reward.popAmount || 0,
+                                icon: reward.icon || 'fa-gift',
+                                action: reward.action || 'none',
+                                actionUrl: reward.actionUrl || ''
                             });
                         }
-                    }
+                    });
                 }
-                return res.status(200).json({ success: true, data: rewardsList });
-            }
+                return res.status(200).json({ success: true, data: rewards });
             
-            case 'claimAdditionalReward': {
+            case 'claimAdditionalReward':
                 const { rewardId } = data;
-                const reward = await firebaseRequest(`/config/more/${rewardId}`);
+                const rewardRef = db.ref(`config/more/${rewardId}`);
+                const rewardSnap = await rewardRef.once('value');
                 
-                if (!reward) {
+                if (!rewardSnap.exists()) {
                     return res.status(200).json({ success: false, error: 'Reward not found' });
                 }
                 
-                const alreadyClaimed = await firebaseRequest(`/claimedRewards/${telegramId}/${rewardId}`);
-                if (alreadyClaimed) {
+                const rewardData = rewardSnap.val();
+                const rewardTon = rewardData.rewardAmount || 0;
+                const rewardStar = rewardData.popAmount || 0;
+                
+                const claimedRewardsRef = db.ref(`claimedRewards/${telegramId}/${rewardId}`);
+                const alreadyClaimed = await claimedRewardsRef.once('value');
+                
+                if (alreadyClaimed.exists()) {
                     return res.status(200).json({ success: false, error: 'Reward already claimed' });
                 }
                 
-                const userData = await firebaseRequest(`/users/${telegramId}`);
-                const rewardTon = reward.rewardAmount || 0;
-                const rewardStar = reward.popAmount || 0;
-                const newBalance = (userData?.balance || 0) + rewardTon;
-                const newStar = (userData?.star || 0) + rewardStar;
+                const claimNewBalance = (userData.balance || 0) + rewardTon;
+                const claimNewStar = (userData.star || 0) + rewardStar;
                 
-                await firebaseRequest(`/users/${telegramId}`, 'PATCH', {
-                    balance: newBalance,
-                    star: newStar,
-                    totalEarned: (userData?.totalEarned || 0) + rewardTon
+                await userRef.update({
+                    balance: claimNewBalance,
+                    star: claimNewStar,
+                    totalEarned: (userData.totalEarned || 0) + rewardTon
                 });
-                await firebaseRequest(`/claimedRewards/${telegramId}/${rewardId}`, 'PUT', { claimedAt: Date.now() });
+                await claimedRewardsRef.set({ claimedAt: Date.now() });
                 
-                return res.status(200).json({ success: true, newBalance: newBalance, newStar: newStar, tonReward: rewardTon, starReward: rewardStar });
-            }
+                return res.status(200).json({
+                    success: true,
+                    newBalance: claimNewBalance,
+                    newStar: claimNewStar,
+                    tonReward: rewardTon,
+                    starReward: rewardStar
+                });
             
-            case 'registerDevice': {
+            case 'registerDevice':
                 const { deviceId, userAgent, screenResolution, timezone, language } = data;
-                const device = await firebaseRequest(`/devices/${deviceId}`);
+                const deviceRef = db.ref(`devices/${deviceId}`);
+                const deviceSnap = await deviceRef.once('value');
                 
-                if (device) {
-                    if (device.ownerId && device.ownerId !== telegramId) {
+                if (deviceSnap.exists()) {
+                    const deviceData = deviceSnap.val();
+                    if (deviceData.ownerId && deviceData.ownerId !== telegramId) {
                         return res.status(200).json({ success: false, allowed: false, error: 'Device already registered with another account' });
                     }
-                    await firebaseRequest(`/devices/${deviceId}`, 'PATCH', {
+                    await deviceRef.update({
                         lastSeen: Date.now(),
                         lastUserId: telegramId
                     });
                 } else {
-                    await firebaseRequest(`/devices/${deviceId}`, 'PUT', {
+                    await deviceRef.set({
                         ownerId: telegramId,
                         firstSeen: Date.now(),
                         lastSeen: Date.now(),
@@ -651,14 +731,14 @@ export default async function handler(req, res) {
                     });
                 }
                 
-                await firebaseRequest(`/users/${telegramId}`, 'PATCH', { deviceId: deviceId });
+                await userRef.update({ deviceId: deviceId });
                 
                 return res.status(200).json({ success: true, allowed: true });
-            }
             
             default:
                 return res.status(400).json({ error: 'Unknown action' });
         }
+        
     } catch (error) {
         console.error('API Error:', error);
         return res.status(500).json({ error: error.message });
