@@ -1420,7 +1420,7 @@ class App {
         const maxCompletions = task.maxCompletions || 100;
         const remaining = maxCompletions - currentCompletions;
         const pricePer100 = APP_CONFIG.TASK_PRICE_PER_100_COMPLETIONS;
-        const refundAmount = Math.floor(currentCompletions / 100) * pricePer100 * 0.5;
+        const refundAmount = Math.floor(remaining / 100) * pricePer100 * 0.5;
         
         const modal = document.createElement('div');
         modal.className = 'task-modal';
