@@ -2622,3 +2622,8 @@ body::before {
 .history-amount, .reward-badge, .exchange-mini-balance span {
     letter-spacing: normal;
         }
+
+.task-btn.check {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+}
