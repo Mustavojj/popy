@@ -1257,6 +1257,10 @@ class App {
         const maxCompletions = task.maxCompletions || 100;
         const remaining = maxCompletions - currentCompletions;
         const pricePer100 = APP_CONFIG.TASK_PRICE_PER_100_COMPLETIONS;
+        const userSTAR = this.safeNumber(this.userState.star);
+        
+        const maxPossibleByStars = Math.floor(userSTAR / pricePer100) * 100;
+        const maxAllowed = Math.min(maxPossibleByStars, remaining);
         
         const modal = document.createElement('div');
         modal.className = 'task-modal';
@@ -1265,22 +1269,22 @@ class App {
                 <button class="task-modal-close" id="add-completions-close">
                     <i class="fas fa-times"></i>
                 </button>
-                <h3 style="text-align: center; margin-bottom: 20px; color: var(--primary-light);">Add More Completions</h3>
+                <h3 style="text-align: center; margin-bottom: 20px; color: var(--primary-light);">Add Completions</h3>
                 
                 <div class="form-group">
-                    <label class="form-label">Current Completions: ${currentCompletions} / ${maxCompletions}</label>
-                    <label class="form-label">Remaining: ${remaining}</label>
+                    <label class="form-label">Current: ${currentCompletions} / ${maxCompletions}</label>
+                    <label class="form-label">You can add: <strong>${maxAllowed}</strong> completions with your STAR balance</label>
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">Your STAR Balance: ${Math.floor(this.userSTAR)}</label>
+                    <label class="form-label">Your STAR Balance: ${Math.floor(userSTAR)}</label>
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label">Additional Completions</label>
                     <div class="amount-input-container">
                         <input type="number" id="additional-completions" class="form-input" 
-                               placeholder="Enter number of completions" min="1" max="${remaining}" step="1">
+                               placeholder="Enter number of completions" min="1" max="${maxAllowed}" step="100">
                         <button type="button" class="max-btn" id="max-completions-btn">MAX</button>
                     </div>
                 </div>
@@ -1317,15 +1321,19 @@ class App {
         
         const updatePrice = () => {
             let additional = parseInt(completionsInput.value) || 0;
-            if (additional > remaining) {
-                additional = remaining;
-                completionsInput.value = remaining;
+            if (additional % 100 !== 0) {
+                additional = Math.floor(additional / 100) * 100;
+                completionsInput.value = additional;
             }
-            const price = Math.ceil(additional / 100) * pricePer100;
+            if (additional > maxAllowed) {
+                additional = maxAllowed;
+                completionsInput.value = maxAllowed;
+            }
+            const price = (additional / 100) * pricePer100;
             priceSpan.textContent = `${price} STAR`;
             
-            const hasEnoughStars = this.userSTAR >= price;
-            confirmBtn.disabled = !(additional > 0 && additional <= remaining && hasEnoughStars);
+            const hasEnoughStars = userSTAR >= price;
+            confirmBtn.disabled = !(additional > 0 && additional <= maxAllowed && hasEnoughStars);
             
             if (!hasEnoughStars && additional > 0) {
                 messageDiv.textContent = 'Insufficient STAR balance!';
@@ -1342,8 +1350,7 @@ class App {
         
         if (maxBtn) {
             maxBtn.addEventListener('click', () => {
-                const maxStars = Math.floor(this.userSTAR);
-                completionsInput.value = maxStars;
+                completionsInput.value = maxAllowed;
                 updatePrice();
             });
         }
@@ -1356,13 +1363,13 @@ class App {
                     return;
                 }
                 
-                if (additional > remaining) {
-                    additional = remaining;
+                if (additional > maxAllowed) {
+                    additional = maxAllowed;
                 }
                 
-                const price = Math.ceil(additional / 100) * pricePer100;
+                const price = (additional / 100) * pricePer100;
                 
-                if (this.userSTAR < price) {
+                if (userSTAR < price) {
                     this.showMessage(modal, 'Insufficient STAR balance', 'error');
                     return;
                 }
@@ -1373,7 +1380,7 @@ class App {
                 
                 try {
                     const newMaxCompletions = maxCompletions + additional;
-                    const newSTAR = this.userSTAR - price;
+                    const newSTAR = userSTAR - price;
                     
                     if (this.db) {
                         await this.db.ref(`config/userTasks/${this.tgUser.id}/${task.id}`).update({
@@ -1414,12 +1421,6 @@ class App {
     }
 
     async showDeleteTaskConfirmation(task) {
-        const currentCompletions = task.currentCompletions || 0;
-        const maxCompletions = task.maxCompletions || 100;
-        const remaining = maxCompletions - currentCompletions;
-        const pricePer100 = APP_CONFIG.TASK_PRICE_PER_100_COMPLETIONS;
-        const refundAmount = Math.floor(currentCompletions / 100) * pricePer100 * 0.5;
-        
         const modal = document.createElement('div');
         modal.className = 'task-modal';
         modal.innerHTML = `
@@ -1431,13 +1432,7 @@ class App {
                 
                 <div class="form-group">
                     <label class="form-label">Task: ${task.name}</label>
-                    <label class="form-label">Progress: ${currentCompletions}/${maxCompletions}</label>
-                    <label class="form-label">Remaining completions: ${remaining}</label>
-                </div>
-                
-                <div class="price-info" style="background: rgba(231, 76, 60, 0.2);">
-                    <span class="price-label">Refund (50% of completed):</span>
-                    <span class="price-value" style="color: #e74c3c;">${refundAmount.toFixed(0)} STAR</span>
+                    <label class="form-label">Progress: ${task.currentCompletions || 0}/${task.maxCompletions || 100}</label>
                 </div>
                 
                 <div class="task-message" id="delete-task-message" style="display: none;"></div>
@@ -1476,14 +1471,6 @@ class App {
                 try {
                     if (this.db) {
                         await this.db.ref(`config/userTasks/${this.tgUser.id}/${task.id}`).remove();
-                        
-                        const newSTAR = this.userSTAR + refundAmount;
-                        await this.db.ref(`users/${this.tgUser.id}`).update({
-                            star: newSTAR
-                        });
-                        
-                        this.userSTAR = newSTAR;
-                        this.userState.star = newSTAR;
                     }
                     
                     await this.loadUserCreatedTasks();
@@ -1492,7 +1479,7 @@ class App {
                     
                     const messageDiv = document.getElementById('delete-task-message');
                     if (messageDiv) {
-                        messageDiv.textContent = `Task deleted! Refunded ${refundAmount.toFixed(0)} STAR`;
+                        messageDiv.textContent = `Task "${task.name}" deleted successfully!`;
                         messageDiv.className = 'task-message success';
                         messageDiv.style.display = 'block';
                     }
@@ -2027,7 +2014,7 @@ class App {
             
             if (!referrerId || referrerId === userId) return;
             
-            const profitAmount = amount * 0.2;
+            const profitAmount = amount * (APP_CONFIG.REFERRAL_PERCENTAGE / 100);
             if (profitAmount <= 0) return;
             
             const referrerRef = this.db.ref(`users/${referrerId}`);
@@ -3592,14 +3579,31 @@ class App {
         const friendsCount = this.userState.friendsCount || 0;
         const canClaim = this.pendingProfits > 0.00001;
         
-        let currentQuestIndex = this.currentQuestIndex;
-        if (currentQuestIndex >= this.quests.length) {
-            currentQuestIndex = this.quests.length - 1;
+        let currentQuest = null;
+        let questCompleted = false;
+        let questClaimed = false;
+        
+        for (let i = this.currentQuestIndex; i < this.quests.length; i++) {
+            const quest = this.quests[i];
+            if (!quest.completed && !(this.userState.completedQuests && this.userState.completedQuests[quest.id])) {
+                currentQuest = quest;
+                questCompleted = friendsCount >= quest.required;
+                questClaimed = false;
+                break;
+            }
         }
         
-        const currentQuest = this.quests[currentQuestIndex];
-        const questCompleted = friendsCount >= currentQuest.required;
-        const questClaimed = this.userState.completedQuests && this.userState.completedQuests[currentQuest.id];
+        if (!currentQuest && this.currentQuestIndex < this.quests.length) {
+            currentQuest = this.quests[this.currentQuestIndex];
+            questCompleted = friendsCount >= currentQuest.required;
+            questClaimed = this.userState.completedQuests && this.userState.completedQuests[currentQuest.id];
+        }
+        
+        if (!currentQuest) {
+            currentQuest = this.quests[this.quests.length - 1];
+            questCompleted = friendsCount >= currentQuest.required;
+            questClaimed = this.userState.completedQuests && this.userState.completedQuests[currentQuest.id];
+        }
         
         referralsPage.innerHTML = `
             <div class="referrals-container">
@@ -3620,8 +3624,8 @@ class App {
                                 <i class="fas fa-percent"></i>
                             </div>
                             <div class="info-content">
-                                <h4>Earn 20% Commission</h4>
-                                <p>20% of your friends earnings</p>
+                                <h4>Earn ${APP_CONFIG.REFERRAL_PERCENTAGE}% Commission</h4>
+                                <p>${APP_CONFIG.REFERRAL_PERCENTAGE}% of your friends earnings</p>
                             </div>
                         </div>
                     </div>
@@ -3677,7 +3681,7 @@ class App {
                         ${!questClaimed && questCompleted ? 
                             `<button class="quest-claim-btn" id="quest-claim-btn"><i class="fas fa-gift"></i> CLAIM</button>` : 
                             questClaimed ? 
-                            `<button class="quest-claimed-btn" disabled><i class="fas fa-check"></i> CLAIMED</button>` :
+                            `` :
                             `<button class="quest-btn-disabled" disabled><i class="fas fa-lock"></i> ${friendsCount}/${currentQuest.required}</button>`
                         }
                     </div>
@@ -3714,6 +3718,16 @@ class App {
             
             const completedQuests = this.userState.completedQuests || {};
             completedQuests[quest.id] = true;
+            quest.completed = true;
+            
+            let newQuestIndex = this.currentQuestIndex;
+            for (let i = 0; i < this.quests.length; i++) {
+                if (!this.quests[i].completed && !completedQuests[this.quests[i].id]) {
+                    newQuestIndex = i;
+                    break;
+                }
+            }
+            this.currentQuestIndex = newQuestIndex;
             
             if (this.db) {
                 await this.db.ref(`users/${this.tgUser.id}`).update({
