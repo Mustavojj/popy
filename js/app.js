@@ -1260,7 +1260,7 @@ class App {
         const userSTAR = this.safeNumber(this.userState.star);
         
         const maxPossibleByStars = Math.floor(userSTAR / pricePer100) * 100;
-        const maxAllowed = maxPossibleByStars;
+        const maxAllowed = Math.min(maxPossibleByStars, remaining);
         
         const modal = document.createElement('div');
         modal.className = 'task-modal';
