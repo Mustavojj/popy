@@ -18,7 +18,7 @@ export const APP_CONFIG = {
     WITHDRAWAL_LIMIT_PER_DAY: 1,
     NEWS_CHANNEL_LINK: "https://t.me/STARZ_NEW",
     REQUIRED_PROMO_CODE_CHANNEL: "https://t.me/STARZ_NEW",
-    PROMO_CODE_REQUIRED_CHECK: false,
+    PROMO_CODE_REQUIRED_CHECK: true,
     MAINTENANCE_MODE: false,
 };
 
