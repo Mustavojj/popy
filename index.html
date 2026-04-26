@@ -3,24 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>STAR Z</title>
+    <title>STAR Z - Mining Farm</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="css/styles.css">
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-    <script src="https://mzedrmdgzuonhulzzssx.supabase.co/functions/v1/ad-script?appid=b5fb038a-14e"></script>
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -32,94 +27,73 @@
     </script>
 </head>
 <body>
-    
-    <div class="app-background"></div>
+    <div class="sky-overlay"></div>
+    <div class="farm-background"></div>
     
     <div id="app-loader">
         <div class="loading-container">
             <div class="loading-logo">
-                <img src="https://i.ibb.co/XxXhyZYf/file-000000006f8c720e9ab4c76b6e560062.png" 
-                     alt="STAR BUZZ" 
-                     class="loading-logo-img"
-                     oncontextmenu="return false;" 
-                     ondragstart="return false">
+                <img src="https://i.ibb.co/XxXhyZYf/file-000000006f8c720e9ab4c76b6e560062.png" alt="STAR Z" class="loading-logo-img">
             </div>
-            
             <div class="loading-steps">
-                <div class="loading-step" style="background: rgba(0, 0, 0, 0.3); border-left: 3px solid #58d68d; color: #58d68d;">
-                    <i class="fas fa-spinner fa-pulse" style="color: #58d68d; margin-right: 12px; width: 20px; text-align: center;"></i>
-                    <span>Loading App Data...</span>
-                </div>
-                <div class="loading-step" style="background: rgba(0, 0, 0, 0.3); border-left: 3px solid #58d68d; color: #58d68d;">
-                    <i class="fas fa-spinner fa-pulse" style="color: #58d68d; margin-right: 12px; width: 20px; text-align: center;"></i>
-                    <span>Loading User Data...</span>
-                </div>
-                <div class="loading-step" style="background: rgba(0, 0, 0, 0.3); border-left: 3px solid #58d68d; color: #58d68d;">
-                    <i class="fas fa-spinner fa-pulse" style="color: #58d68d; margin-right: 12px; width: 20px; text-align: center;"></i>
-                    <span>Checking User Status...</span>
-                </div>
-                <div class="loading-step" style="background: rgba(0, 0, 0, 0.3); border-left: 3px solid #58d68d; color: #58d68d;">
-                    <i class="fas fa-spinner fa-pulse" style="color: #58d68d; margin-right: 12px; width: 20px; text-align: center;"></i>
-                    <span>Loading Tasks...</span>
-                </div>
-                <div class="loading-step" style="background: rgba(0, 0, 0, 0.3); border-left: 3px solid #58d68d; color: #58d68d;">
-                    <i class="fas fa-spinner fa-pulse" style="color: #58d68d; margin-right: 12px; width: 20px; text-align: center;"></i>
-                    <span>App Loading...</span>
-                </div>
+                <div class="loading-step"><i class="fas fa-spinner fa-pulse"></i><span>Loading App Data...</span></div>
+                <div class="loading-step"><i class="fas fa-spinner fa-pulse"></i><span>Loading User Data...</span></div>
+                <div class="loading-step"><i class="fas fa-spinner fa-pulse"></i><span>Checking User Status...</span></div>
+                <div class="loading-step"><i class="fas fa-spinner fa-pulse"></i><span>Loading Plans...</span></div>
+                <div class="loading-step"><i class="fas fa-spinner fa-pulse"></i><span>App Loading...</span></div>
             </div>
         </div>
     </div>
 
     <div id="app" style="display: none;">
         <header class="app-header">
-            <div class="profile-card">
-                <div class="profile-content">
-                    <div class="profile-left">
-                        <div class="user-avatar-wrapper">
-                            <div class="user-avatar-container">
-                                <img id="user-photo" class="user-avatar" 
-                                     src="https://cdn-icons-png.flaticon.com/512/9195/9195920.png" 
-                                     alt="User" 
-                                     oncontextmenu="return false;" 
-                                     ondragstart="return false">
-                            </div>
-                        </div>
-                        <div class="user-info-left">
-                            <h2 id="user-name" class="user-name">User</h2>
-                        </div>
-                    </div>
-                    <div class="balance-cards" id="header-balance-cards"></div>
+            <div class="header-top">
+                <div class="user-info">
+                    <img id="user-photo" class="user-avatar" src="https://cdn-icons-png.flaticon.com/512/9195/9195920.png" alt="User">
+                    <span id="user-name" class="user-name">User</span>
                 </div>
+                <button id="theme-toggle" class="theme-toggle-btn">
+                    <i class="fas fa-moon"></i>
+                </button>
             </div>
         </header>
         
         <main id="main-content">
+            <div id="home-page" class="page active"></div>
+            <div id="plans-page" class="page"></div>
             <div id="tasks-page" class="page"></div>
-            <div id="referrals-page" class="page"></div>
+            <div id="team-page" class="page"></div>
             <div id="profile-page" class="page"></div>
         </main>
           
         <nav class="bottom-nav">
-            <button class="nav-btn active" data-page="tasks-page">
-                <i class="fas fa-coins"></i>
-                <span>Earn</span>
-            </button>
-            <button class="nav-btn" data-page="referrals-page">
-                <i class="fas fa-user-plus"></i>
-                <span>Invite</span>
-            </button>
-            <button class="nav-btn user-photo-btn" data-page="profile-page">
-                <img id="bottom-nav-user-photo" 
-                     src="https://cdn-icons-png.flaticon.com/512/9195/9195920.png" 
-                     alt="Profile"
-                     oncontextmenu="return false;" 
-                     ondragstart="return false">
-                <span>Profile</span>
-            </button>
+            <button class="nav-btn active" data-page="home-page"><i class="fas fa-home"></i><span>Home</span></button>
+            <button class="nav-btn" data-page="plans-page"><i class="fas fa-chart-line"></i><span>Plans</span></button>
+            <button class="nav-btn" data-page="tasks-page"><i class="fas fa-coins"></i><span>Earn</span></button>
+            <button class="nav-btn" data-page="team-page"><i class="fas fa-users"></i><span>Team</span></button>
+            <button class="nav-btn" data-page="profile-page"><i class="fas fa-user"></i><span>Me</span></button>
         </nav>
     </div>
 
     <style>
+        .sky-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            transition: background 0.3s ease;
+        }
+        .farm-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: repeating-linear-gradient(45deg, rgba(76, 175, 80, 0.05) 0px, rgba(76, 175, 80, 0.05) 2px, transparent 2px, transparent 8px);
+        }
         .loading-logo {
             width: 100px;
             height: 100px;
@@ -130,20 +104,12 @@
             border: 2px solid #2ecc71;
             box-shadow: 0 0 20px rgba(46, 204, 113, 0.5);
         }
-        
-        .loading-logo-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 50%;
-        }
-        
+        .loading-logo-img { width: 100%; height: 100%; object-fit: cover; }
         @keyframes pulse-scale {
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
             100% { transform: scale(1); }
         }
-        
         .error-container {
             position: fixed;
             top: 0;
@@ -156,7 +122,6 @@
             justify-content: center;
             z-index: 10000;
         }
-        
         .error-content {
             text-align: center;
             padding: 30px;
@@ -164,25 +129,7 @@
             border-radius: 28px;
             margin: 20px;
             max-width: 320px;
-            border: 1px solid rgba(46, 204, 113, 0.3);
         }
-        
-        .error-icon {
-            font-size: 48px;
-            color: #2ecc71;
-            margin-bottom: 15px;
-        }
-        
-        .error-content h2 {
-            color: #2ecc71;
-            margin-bottom: 15px;
-        }
-        
-        .error-content p {
-            color: #d5f5e3;
-            margin: 10px 0;
-        }
-        
         .reload-btn {
             background: linear-gradient(135deg, #2ecc71, #1e8449);
             border: none;
@@ -193,70 +140,39 @@
             margin-top: 20px;
             cursor: pointer;
         }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
-            20%, 40%, 60%, 80% { transform: translateX(2px); }
+        .theme-toggle-btn {
+            background: rgba(0,0,0,0.3);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
         }
-
-        @keyframes shake-success {
-            0%, 100% { transform: translateY(0); }
-            25% { transform: translateY(-3px); }
-            75% { transform: translateY(3px); }
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
         }
-
-        @keyframes shake-error {
-            0%, 100% { transform: translateX(0); }
-            20% { transform: translateX(-5px); }
-            40% { transform: translateX(5px); }
-            60% { transform: translateX(-3px); }
-            80% { transform: translateX(3px); }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
-
-        .shake {
-            animation: shake 0.4s ease-in-out;
-        }
-
-        .shake-success {
-            animation: shake-success 0.4s ease-in-out;
-        }
-
-        .shake-error {
-            animation: shake-error 0.4s ease-in-out;
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary-color);
         }
     </style>
 
     <script type="module" src="js/app.js"></script>
-    
-    <script>
-        (function() {
-            'use strict';
-            
-            function showError() {
-                document.body.innerHTML = `
-                    <div class="error-container">
-                        <div class="error-content">
-                            <div class="error-icon">
-                                <i class="fab fa-telegram"></i>
-                            </div>
-                            <h2>STAR BUZZ</h2>
-                            <p>Please open from Telegram Mini App</p>
-                            <button onclick="window.location.reload()" class="reload-btn">
-                                <i class="fas fa-redo"></i> Reload
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            document.addEventListener('DOMContentLoaded', function() {
-                if (!window.Telegram || !window.Telegram.WebApp) {
-                    showError();
-                    return;
-                }
-            });
-        })();
-    </script>
 </body>
 </html>
