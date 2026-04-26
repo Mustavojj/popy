@@ -3,7 +3,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
     
-    const { action, userId, chatId, channel, planType, firstName } = req.body;
+    const { action, userId, chatId, channel, planType, firstName, amount, wallet, time } = req.body;
     const BOT_TOKEN = process.env.BOT_TOKEN;
     
     if (!BOT_TOKEN) {
@@ -11,7 +11,6 @@ export default async function handler(req, res) {
     }
     
     try {
-        // التحقق من العضوية في القناة
         if (action === 'check_channel') {
             const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${channel}&user_id=${userId}`);
             const data = await response.json();
@@ -19,7 +18,6 @@ export default async function handler(req, res) {
             return res.json({ isMember });
         }
         
-        // التحقق من كون البوت أدمن
         if (action === 'check_bot_admin') {
             const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChatAdministrators?chat_id=${chatId}`);
             const data = await response.json();
@@ -27,7 +25,6 @@ export default async function handler(req, res) {
             return res.json({ isAdmin });
         }
         
-        // التحقق من عضوية المستخدم في مجموعة
         if (action === 'verify_member') {
             const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${chatId}&user_id=${userId}`);
             const data = await response.json();
@@ -35,9 +32,8 @@ export default async function handler(req, res) {
             return res.json({ isMember });
         }
         
-        // إرسال رسالة ترحيب
         if (action === 'send_welcome') {
-            const message = `<b>🚀 Welcome to STARS BUZZ!</b>\n\n🤑 Complete tasks to earn rewards\n👫 Invite friends for bonus rewards\n✅ Get real users for your tasks\n⚡ Start your journey now!`;
+            const message = `<b>🚀 Welcome to Star Farmer!</b>\n\n🤑 Complete tasks to earn Eggs\n👫 Invite friends for 10% bonus\n✅ Start mining with Free plan\n⚡ Start your farming journey now!`;
             const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -46,7 +42,7 @@ export default async function handler(req, res) {
                     text: message,
                     parse_mode: 'HTML',
                     reply_markup: {
-                        inline_keyboard: [[{ text: "GET NEWS 📉", url: "https://t.me/STARZ_NEW" }]]
+                        inline_keyboard: [[{ text: "JOIN COMMUNITY 📢", url: "https://t.me/STARZ_NEW" }]]
                     }
                 })
             });
@@ -54,9 +50,8 @@ export default async function handler(req, res) {
             return res.json({ success: data.ok });
         }
         
-        // إرسال إشعار توقف التعدين
         if (action === 'mining_stopped') {
-            const message = `⏰ <b>Mining Session Stopped!</b>\n\nYour <b>${planType}</b> plan has finished its ${process.env.MINING_SESSION_HOURS || 6}-hour mining session.\n\n🔄 Return to the app and click <b>Start</b> to continue mining!`;
+            const message = `⏰ <b>Mining Session Stopped!</b>\n\nYour <b>${planType}</b> plan has finished its ${process.env.MINING_SESSION_HOURS || 6}-hour mining session.\n\n🔄 Return to Star Farmer and click <b>Start</b> to continue mining!`;
             const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -66,10 +61,8 @@ export default async function handler(req, res) {
             return res.json({ success: data.ok });
         }
         
-        // إرسال إشعار السحب
         if (action === 'withdrawal_notification') {
-            const { amount, wallet, time } = req.body;
-            const message = `<b>★ Your Withdrawal Requested!</b>\n\n✦ Amount: <code>${amount}</code> <b>TON</b>\n✦ Wallet: <code>${wallet}</code>\n✦ Time: <code>${time}</code>\n\n<b>☆ Withdrawal will be processed within 24 hours.</b>`;
+            const message = `<b>🌟 Withdrawal Requested!</b>\n\n✦ Amount: <code>${amount}</code> <b>TON</b>\n✦ Wallet: <code>${wallet}</code>\n✦ Time: <code>${time}</code>\n\n<b>✓ Withdrawal will be processed within 24 hours.</b>`;
             const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
