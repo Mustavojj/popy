@@ -3,30 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Star Farmer - Mining Hub</title>
+    <title>Star Farmer</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        if (typeof Adsgram !== 'undefined') {
-            window.AdBlock1 = Adsgram.init({ blockId: "int-27339" });
-            window.AdBlock2 = Adsgram.init({ blockId: "27338" });
-        }
-    });
-</script>
-<link rel="stylesheet" href="css/styles.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 <div id="app-loader">
     <div class="loader-container">
         <img src="https://i.ibb.co/XxXhyZYf/file-000000006f8c720e9ab4c76b6e560062.png" class="loader-logo">
         <div class="loader-text">Loading<span class="dots">...</span></div>
-        <div class="loader-error" id="loader-error" style="display:none;"></div>
+        <div class="loader-error" id="loader-error"></div>
     </div>
 </div>
 <div id="app" style="display:none;">
@@ -41,62 +33,27 @@
             </div>
             <div class="header-actions">
                 <button id="support-btn" class="header-icon-btn"><i class="fas fa-headset"></i></button>
-                <button id="settings-btn" class="header-icon-btn"><i class="fas fa-cog"></i></button>
+                <button id="vibration-toggle-btn" class="header-icon-btn"><i class="fas fa-vibration"></i></button>
             </div>
         </div>
     </header>
     <main id="main-content">
         <div id="home-page" class="page active"></div>
-        <div id="mining-page" class="page"></div>
         <div id="earn-page" class="page"></div>
         <div id="team-page" class="page"></div>
         <div id="withdraw-page" class="page"></div>
     </main>
     <nav class="bottom-nav">
         <button class="nav-btn active" data-page="home-page"><i class="fas fa-home"></i><span>Home</span></button>
-        <button class="nav-btn" data-page="mining-page"><i class="fas fa-microchip"></i><span>Mining</span></button>
-        <button class="nav-btn" data-page="earn-page"><i class="fas fa-tasks"></i><span>Earn</span></button>
+        <button class="nav-btn" data-page="earn-page"><i class="fas fa-coins"></i><span>Earn</span></button>
         <button class="nav-btn" data-page="team-page"><i class="fas fa-users"></i><span>Team</span></button>
         <button class="nav-btn" data-page="withdraw-page"><i class="fas fa-wallet"></i><span>Withdraw</span></button>
     </nav>
 </div>
-<div id="settings-modal" class="modal" style="display:none;">
-    <div class="modal-content">
-        <div class="modal-header"><h3><i class="fas fa-sliders-h"></i> Settings</h3><button class="modal-close" id="close-settings">&times;</button></div>
-        <div class="modal-body">
-            <div class="setting-item"><span><i class="fas fa-globe"></i> Language</span><select id="language-select"><option value="en">English</option><option value="ar">العربية</option></select></div>
-            <div class="setting-item"><span><i class="fas fa-volume-up"></i> Sound Effects</span><label class="toggle-switch"><input type="checkbox" id="sound-toggle" checked><span class="toggle-slider"></span></label></div>
-            <div class="setting-item"><span><i class="fas fa-vibration"></i> Vibration</span><label class="toggle-switch"><input type="checkbox" id="vibration-toggle" checked><span class="toggle-slider"></span></label></div>
-        </div>
-    </div>
-</div>
-<div id="welcome-bonus-modal" class="modal" style="display:none;">
-    <div class="modal-content">
-        <div class="modal-header"><h3><i class="fas fa-gift"></i> Welcome Bonus!</h3></div>
-        <div class="modal-body">
-            <p style="text-align:center;margin-bottom:20px">Claim your <strong>1000 Power</strong> to start mining!</p>
-            <button id="claim-welcome-btn" class="submit-btn" style="width:100%">Claim Bonus</button>
-        </div>
-    </div>
-</div>
-<div id="exchange-confirm-modal" class="modal" style="display:none;">
-    <div class="modal-content">
-        <div class="modal-header"><h3><i class="fas fa-exchange-alt"></i> Confirm Exchange</h3><button class="modal-close" id="close-exchange">&times;</button></div>
-        <div class="modal-body">
-            <p id="exchange-details" style="text-align:center;margin-bottom:20px"></p>
-            <button id="confirm-exchange-btn" class="submit-btn" style="width:100%">Confirm (Watch Ad)</button>
-        </div>
-    </div>
-</div>
 <div id="tasks-info-modal" class="modal" style="display:none;">
     <div class="modal-content">
         <div class="modal-header"><h3><i class="fas fa-info-circle"></i> Partner Tasks</h3><button class="modal-close" id="close-tasks-info">&times;</button></div>
-        <div class="modal-body">
-            <p><i class="fas fa-plus-circle"></i> You can add task by support</p>
-            <p><i class="fas fa-handshake"></i> You can cooperate with us</p>
-            <p><i class="fas fa-headset"></i> Contact support for details</p>
-            <button id="contact-support-modal-btn" class="support-modal-btn"><i class="fas fa-headset"></i> Contact Support</button>
-        </div>
+        <div class="modal-body"><p><i class="fas fa-plus-circle"></i> You can add task by support</p><p><i class="fas fa-handshake"></i> You can cooperate with us</p><p><i class="fas fa-headset"></i> Contact support for details</p><button id="contact-support-modal" class="support-btn"><i class="fas fa-headset"></i> Contact Support</button></div>
     </div>
 </div>
 <script type="module" src="js/app.js"></script>
