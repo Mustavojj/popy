@@ -13,6 +13,4 @@ export const APP_CONFIG = {
     DEFAULT_USER_AVATAR: "https://i.ibb.co/XxXhyZYf/file-000000006f8c720e9ab4c76b6e560062.png",
     BOT_AVATAR: "https://i.ibb.co/XxXhyZYf/file-000000006f8c720e9ab4c76b6e560062.png",
     LEVEL_FORMULA: { base: 1000, multiplier: 1.2 },
-    WITHDRAWAL_LIMIT_PER_DAY: 1,
-    MAINTENANCE_MODE: false,
 };
