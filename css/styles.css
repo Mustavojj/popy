@@ -161,6 +161,10 @@ body {
     justify-content: center;
 }
 
+.vibration-icon i {
+    font-size: 1.2rem;
+}
+
 .header-icon-btn:active {
     transform: scale(0.95);
     background: rgba(255, 255, 255, 0.2);
@@ -398,12 +402,18 @@ body {
 
 .exchange-group {
     display: flex;
+    flex-direction: column;
     gap: 8px;
-    align-items: center;
     margin-top: 12px;
 }
 
-.exchange-group .form-input {
+.exchange-input-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.exchange-input-wrapper .form-input {
     flex: 1;
     padding: 10px 14px;
     background: #0a0a0a;
@@ -413,12 +423,12 @@ body {
     font-size: 0.9rem;
 }
 
-.exchange-group .form-input:focus {
+.exchange-input-wrapper .form-input:focus {
     outline: none;
     border-color: var(--primary);
 }
 
-.exchange-group .submit-btn {
+.exchange-input-wrapper .submit-btn {
     padding: 10px 18px;
     background: var(--primary);
     border: none;
@@ -428,6 +438,12 @@ body {
     cursor: pointer;
     font-size: 0.85rem;
     white-space: nowrap;
+}
+
+.exchange-preview {
+    font-size: 0.7rem;
+    color: var(--primary-light);
+    padding-left: 8px;
 }
 
 .rate-info {
@@ -803,20 +819,6 @@ body {
     border-radius: 40px;
     color: white;
     font-size: 0.9rem;
-    padding-right: 60px;
-}
-
-.input-wrapper .action-btn {
-    position: absolute;
-    right: 6px;
-    padding: 6px 14px;
-    background: var(--primary);
-    border: none;
-    border-radius: 40px;
-    color: white;
-    font-size: 0.7rem;
-    font-weight: 600;
-    cursor: pointer;
 }
 
 .withdraw-note {
@@ -836,6 +838,11 @@ body {
     font-weight: 700;
     cursor: pointer;
     font-size: 1rem;
+}
+
+.withdraw-confirm-btn.disabled {
+    opacity: 0.5;
+    pointer-events: none;
 }
 
 .history-list {
@@ -923,6 +930,16 @@ body {
 
 .modal-body {
     padding: 20px;
+}
+
+.cancel-btn {
+    background: #2a2a2a;
+    border: none;
+    border-radius: 40px;
+    color: #888;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 12px;
 }
 
 .support-btn {
