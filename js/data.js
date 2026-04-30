@@ -2,7 +2,7 @@ export const APP_CONFIG = {
     APP_NAME: "Star Farmer",
     BOT_USERNAME: "Strzzbot",
     SUPPORT_LINK: "https://t.me/Supports",
-    MINIMUM_WITHDRAW: 0.002,
+    MINIMUM_WITHDRAW: 0.1,
     REFERRAL_PERCENTAGE: 10,
     REFERRAL_POWER_BONUS: 100,
     WELCOME_BONUS_POWER: 1000,
