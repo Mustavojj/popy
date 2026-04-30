@@ -28,11 +28,11 @@ class App {
         this.referralPower = 0;
         this.referralTon = 0;
         this.isTaskRunning = false;
+        this.mainTasks = [];
+        this.partnerTasks = [];
         
-        this.quests = [
-            { id: 'level', name: 'Up To Level', target: 2, current: 1, reward: 50, completed: false, claimed: false },
-            { id: 'invite', name: 'Invite a friend', target: 1, current: 0, reward: 50, completed: false, claimed: false }
-        ];
+        this.levelQuest = { id: 'level', target: 2, reward: 50, completed: false, claimed: false };
+        this.inviteQuest = { id: 'invite', target: 1, reward: 50, completed: false, claimed: false };
         
         this.vibrationEnabled = true;
         this.loadSettings();
@@ -163,10 +163,58 @@ class App {
             this.userLevel = newLevel;
             this.showNotification('Level Up!', `Reached level ${this.userLevel}!`, 'success');
             this.vibrate('success');
-            this.updateQuestProgress('level', this.userLevel);
+            this.updateLevelQuestProgress();
         }
         this.userLevel = newLevel;
         document.getElementById('user-level').innerText = this.userLevel;
+    }
+    
+    updateLevelQuestProgress() {
+        if (!this.levelQuest.claimed && this.userLevel >= this.levelQuest.target) {
+            this.levelQuest.completed = true;
+            this.showNotification('Quest Complete!', `+${this.levelQuest.reward} Power available!`, 'success');
+            this.renderEarn();
+        }
+    }
+    
+    updateInviteQuestProgress() {
+        if (!this.inviteQuest.claimed && this.verifiedReferrals >= this.inviteQuest.target) {
+            this.inviteQuest.completed = true;
+            this.showNotification('Quest Complete!', `+${this.inviteQuest.reward} Power available!`, 'success');
+            this.renderEarn();
+        }
+    }
+    
+    async claimLevelQuest() {
+        if (!this.levelQuest.completed || this.levelQuest.claimed) return;
+        
+        this.powerBalance += this.levelQuest.reward;
+        this.levelQuest.claimed = true;
+        this.levelQuest.completed = false;
+        this.levelQuest.target++;
+        this.levelQuest.reward = Math.floor(this.levelQuest.reward * 1.5);
+        
+        await this.updateLevelFromPower();
+        await this.saveUserData();
+        this.renderEarn();
+        this.showNotification('Quest Reward Claimed!', `+${this.levelQuest.reward} Power`, 'success');
+        this.updateLevelQuestProgress();
+    }
+    
+    async claimInviteQuest() {
+        if (!this.inviteQuest.completed || this.inviteQuest.claimed) return;
+        
+        this.powerBalance += this.inviteQuest.reward;
+        this.inviteQuest.claimed = true;
+        this.inviteQuest.completed = false;
+        this.inviteQuest.target++;
+        this.inviteQuest.reward = Math.floor(this.inviteQuest.reward * 1.5);
+        
+        await this.updateLevelFromPower();
+        await this.saveUserData();
+        this.renderEarn();
+        this.showNotification('Quest Reward Claimed!', `+${this.inviteQuest.reward} Power`, 'success');
+        this.updateInviteQuestProgress();
     }
     
     getMiningRate() {
@@ -398,48 +446,6 @@ class App {
         return true;
     }
     
-    updateQuestProgress(questId, value) {
-        const quest = this.quests.find(q => q.id === questId);
-        if (!quest || quest.claimed) return;
-        
-        quest.current = value;
-        if (quest.current >= quest.target && !quest.completed) {
-            quest.completed = true;
-        }
-        
-        if (quest.completed && !quest.claimed) {
-            this.showNotification('Quest Complete!', `+${quest.reward} Power available!`, 'success');
-            this.renderEarn();
-        }
-    }
-    
-    async claimQuest(questId) {
-        const quest = this.quests.find(q => q.id === questId);
-        if (!quest || !quest.completed || quest.claimed) return;
-        
-        this.powerBalance += quest.reward;
-        quest.claimed = true;
-        quest.completed = false;
-        
-        if (questId === 'level') {
-            quest.target++;
-            quest.reward *= 2;
-            quest.current = this.userLevel;
-            quest.claimed = false;
-            if (quest.current >= quest.target) quest.completed = true;
-        } else if (questId === 'invite') {
-            quest.target++;
-            quest.reward *= 2;
-            quest.claimed = false;
-            if (quest.current >= quest.target) quest.completed = true;
-        }
-        
-        await this.updateLevelFromPower();
-        await this.saveUserData();
-        this.renderEarn();
-        this.showNotification('Quest Reward Claimed!', `+${quest.reward} Power`, 'success');
-    }
-    
     async withdraw(amount, wallet) {
         if (!wallet || wallet.length < 20) {
             this.showNotification('Error', 'Invalid wallet address', 'error');
@@ -562,7 +568,8 @@ class App {
             }
             
             await this.loadReferralStats();
-            this.updateQuestProgress('invite', this.verifiedReferrals);
+            this.updateInviteQuestProgress();
+            this.updateLevelQuestProgress();
             
             this.setupEventListeners();
             this.renderUI();
@@ -658,21 +665,37 @@ class App {
     }
     
     async loadCompletedTasks() {
+        if (!this.db) {
+            this.userCompletedTasks = new Set();
+            return;
+        }
         const snap = await this.db.ref(`users/${this.tgUser.id}/completedTasks`).once('value');
-        if (snap.exists()) this.userCompletedTasks = new Set(snap.val());
+        this.userCompletedTasks = snap.exists() ? new Set(snap.val()) : new Set();
     }
     
     async loadWithdrawals() {
-        const snap = await this.db.ref(`withdrawals/${this.tgUser.id}`).once('value');
-        if (snap.exists()) {
+        if (!this.db) {
             this.withdrawals = [];
-            snap.forEach(c => this.withdrawals.push({ id: c.key, ...c.val() }));
+            return;
+        }
+        const snap = await this.db.ref(`withdrawals/${this.tgUser.id}`).once('value');
+        this.withdrawals = [];
+        if (snap.exists()) {
+            snap.forEach(c => {
+                this.withdrawals.push({ id: c.key, ...c.val() });
+            });
             this.withdrawals.sort((a,b) => b.timestamp - a.timestamp);
         }
     }
     
     async loadReferralStats() {
-        if (!this.db) return;
+        if (!this.db) {
+            this.totalReferrals = 0;
+            this.verifiedReferrals = 0;
+            this.referralPower = 0;
+            this.referralTon = 0;
+            return;
+        }
         const snap = await this.db.ref(`users/${this.tgUser.id}`).once('value');
         if (snap.exists()) {
             const d = snap.val();
@@ -680,7 +703,7 @@ class App {
             this.verifiedReferrals = d.verifiedReferrals ?? 0;
             this.referralPower = d.referralPower ?? 0;
             this.referralTon = d.referralTon ?? 0;
-            this.updateQuestProgress('invite', this.verifiedReferrals);
+            this.updateInviteQuestProgress();
         }
     }
     
@@ -696,7 +719,11 @@ class App {
     }
     
     async loadTasks() {
-        if (!this.db) return;
+        if (!this.db) {
+            this.mainTasks = [];
+            this.partnerTasks = [];
+            return;
+        }
         const snap = await this.db.ref('tasks').once('value');
         this.mainTasks = [];
         this.partnerTasks = [];
@@ -707,13 +734,13 @@ class App {
                 else if (task.category === 'partner') this.partnerTasks.push(task);
             });
         }
-        if (this.mainTasks.length === 0) {
+        if (!this.mainTasks.length) {
             this.mainTasks = [
                 { id: 'main_1', name: 'Join Telegram Channel', reward: 50, url: 'https://t.me/STARZ_NEW', verify: true, img: APP_CONFIG.BOT_AVATAR },
                 { id: 'main_2', name: 'Follow on Twitter', reward: 30, url: 'https://twitter.com', verify: false, img: APP_CONFIG.BOT_AVATAR }
             ];
         }
-        if (this.partnerTasks.length === 0) {
+        if (!this.partnerTasks.length) {
             this.partnerTasks = [
                 { id: 'partner_1', name: 'Partner Task 1', reward: 25, url: 'https://t.me/partner', verify: true, img: APP_CONFIG.BOT_AVATAR }
             ];
@@ -779,29 +806,53 @@ class App {
         const el = document.getElementById('earn-page');
         if (!el) return;
         
-        const mainTasksHtml = this.mainTasks.filter(t => !this.userCompletedTasks.has(t.id)).map(t => `
+        const mainTasksHtml = this.mainTasks && this.mainTasks.length ? this.mainTasks.filter(t => !this.userCompletedTasks.has(t.id)).map(t => `
             <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> +${t.reward} Power</div></div><button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button></div>
-        `).join('');
+        `).join('') : '<div class="no-data">No tasks available</div>';
         
-        const partnerTasksHtml = this.partnerTasks.filter(t => !this.userCompletedTasks.has(t.id)).map(t => `
+        const partnerTasksHtml = this.partnerTasks && this.partnerTasks.length ? this.partnerTasks.filter(t => !this.userCompletedTasks.has(t.id)).map(t => `
             <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> +${t.reward} Power</div></div><button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button></div>
-        `).join('');
+        `).join('') : '<div class="no-data">No tasks available</div>';
         
-        const questsHtml = this.quests.map(q => {
-            if (q.claimed) return '';
-            const progress = Math.min((q.current / q.target) * 100, 100);
-            const displayName = q.id === 'level' ? `Up To Level ${q.target}` : q.name;
-            return `<div class="quest-card"><div class="quest-header"><span class="quest-title">${displayName}</span><span class="quest-reward"><i class="fas fa-bolt"></i> ${q.reward} Power</span></div><div class="quest-progress-bar"><div class="quest-progress-fill" style="width: ${progress}%"></div></div><div class="quest-stats"><span>${q.current}/${q.target}</span>${q.completed ? '<button class="quest-claim-btn" data-quest="'+q.id+'">Claim</button>' : '<span>Not yet</span>'}</div></div>`;
-        }).join('');
+        const levelProgress = Math.min((this.userLevel / this.levelQuest.target) * 100, 100);
+        const inviteProgress = Math.min((this.verifiedReferrals / this.inviteQuest.target) * 100, 100);
+        
+        const levelQuestHtml = `
+            <div class="quest-card">
+                <div class="quest-header">
+                    <span class="quest-title">Up to Level ${this.levelQuest.target}</span>
+                    <span class="quest-reward"><i class="fas fa-bolt"></i> ${this.levelQuest.reward} Power</span>
+                </div>
+                <div class="quest-progress-bar"><div class="quest-progress-fill" style="width: ${levelProgress}%"></div></div>
+                <div class="quest-stats">
+                    <span>${this.userLevel}/${this.levelQuest.target}</span>
+                    ${this.levelQuest.completed && !this.levelQuest.claimed ? '<button class="quest-claim-btn" data-quest="level">Claim</button>' : this.levelQuest.claimed ? '<span>Claimed ✓</span>' : '<span>Not yet</span>'}
+                </div>
+            </div>
+        `;
+        
+        const inviteQuestHtml = `
+            <div class="quest-card">
+                <div class="quest-header">
+                    <span class="quest-title">Invite ${this.inviteQuest.target} friend${this.inviteQuest.target > 1 ? 's' : ''}</span>
+                    <span class="quest-reward"><i class="fas fa-bolt"></i> ${this.inviteQuest.reward} Power</span>
+                </div>
+                <div class="quest-progress-bar"><div class="quest-progress-fill" style="width: ${inviteProgress}%"></div></div>
+                <div class="quest-stats">
+                    <span>${this.verifiedReferrals}/${this.inviteQuest.target}</span>
+                    ${this.inviteQuest.completed && !this.inviteQuest.claimed ? '<button class="quest-claim-btn" data-quest="invite">Claim</button>' : this.inviteQuest.claimed ? '<span>Claimed ✓</span>' : '<span>Not yet</span>'}
+                </div>
+            </div>
+        `;
         
         el.innerHTML = `
             <div class="promo-card"><div class="promo-title"><i class="fas fa-gift"></i> Promo Code</div><div class="promo-input-group"><input type="text" id="promo-input" class="form-input" placeholder="Enter code" autocomplete="off"><button id="promo-submit" class="promo-submit-btn" disabled>Claim</button></div></div>
             <div class="section-title"><i class="fas fa-star"></i> Main Tasks</div>
-            <div class="tasks-list">${mainTasksHtml || '<div class="no-data">No tasks available</div>'}</div>
+            <div class="tasks-list">${mainTasksHtml}</div>
             <div class="section-title"><i class="fas fa-handshake"></i> Partner Tasks<button id="tasks-info-btn" class="info-icon-btn" style="margin-left:auto;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:#fff;cursor:pointer"><i class="fas fa-question"></i></button></div>
-            <div class="tasks-list">${partnerTasksHtml || '<div class="no-data">No tasks available</div>'}</div>
+            <div class="tasks-list">${partnerTasksHtml}</div>
             <div class="section-title"><i class="fas fa-trophy"></i> Quests</div>
-            <div class="quests-section">${questsHtml || '<div class="no-data">No quests available</div>'}</div>
+            <div class="quests-section">${levelQuestHtml}${inviteQuestHtml}</div>
         `;
         
         const promoInput = document.getElementById('promo-input');
@@ -860,7 +911,9 @@ class App {
         
         document.querySelectorAll('.quest-claim-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                this.claimQuest(btn.dataset.quest);
+                const questId = btn.dataset.quest;
+                if (questId === 'level') this.claimLevelQuest();
+                else if (questId === 'invite') this.claimInviteQuest();
             });
         });
     }
@@ -887,14 +940,15 @@ class App {
     renderWithdraw() {
         const el = document.getElementById('withdraw-page');
         if (!el) return;
-        const historyHtml = this.withdrawals.map(w => `<div class="history-item"><div><small>${new Date(w.timestamp).toLocaleDateString()}</small><br><small>${w.wallet?.slice(0,6)}...${w.wallet?.slice(-4)}</small></div><div class="history-amount"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" style="width:16px"> ${w.amount.toFixed(5)}</div><div class="history-status ${w.status}">${w.status}</div></div>`).join('');
+        const historyHtml = this.withdrawals && this.withdrawals.length ? this.withdrawals.map(w => `<div class="history-item"><div><small>${new Date(w.timestamp).toLocaleDateString()}</small><br><small>${w.wallet?.slice(0,6)}...${w.wallet?.slice(-4)}</small></div><div class="history-amount"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" style="width:16px"> ${w.amount.toFixed(5)}</div><div class="history-status ${w.status}">${w.status}</div></div>`).join('') : '<div class="no-data">No withdrawals yet</div>';
+        
         el.innerHTML = `
             <div class="withdraw-card"><h3><i class="fas fa-wallet"></i> Withdraw TON</h3><div class="withdraw-balance"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png"><span>Available: ${this.tonBalance.toFixed(6)} TON</span></div>
             <div class="form-group"><label class="form-label">TON Wallet</label><div class="input-wrapper"><input type="text" id="wallet-addr" class="form-input" placeholder="UQ..."></div></div>
             <div class="form-group"><label class="form-label">Amount</label><div class="input-wrapper"><input type="number" id="withdraw-amount" class="form-input" placeholder="Min: ${APP_CONFIG.MINIMUM_WITHDRAW} TON"></div></div>
             <div class="withdraw-note"><i class="fas fa-info-circle"></i> Minimum withdrawal: ${APP_CONFIG.MINIMUM_WITHDRAW} TON</div>
             <button id="withdraw-btn" class="withdraw-confirm-btn disabled">Confirm Withdrawal</button></div>
-            <div class="history-list"><h4><i class="fas fa-history"></i> Withdrawal History</h4>${historyHtml || '<div class="no-data">No withdrawals yet</div>'}</div>
+            <div class="history-list"><h4><i class="fas fa-history"></i> Withdrawal History</h4>${historyHtml}</div>
         `;
         
         const walletInput = document.getElementById('wallet-addr');
