@@ -819,6 +819,20 @@ body {
     border-radius: 40px;
     color: white;
     font-size: 0.9rem;
+    padding-right: 60px;
+}
+
+.input-wrapper .action-btn {
+    position: absolute;
+    right: 6px;
+    padding: 6px 14px;
+    background: var(--primary);
+    border: none;
+    border-radius: 40px;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
 }
 
 .withdraw-note {
@@ -933,13 +947,25 @@ body {
 }
 
 .cancel-btn {
+    flex: 1;
+    padding: 12px;
     background: #2a2a2a;
     border: none;
     border-radius: 40px;
     color: #888;
     font-weight: 600;
     cursor: pointer;
+}
+
+.confirm-ad-btn {
+    flex: 1;
     padding: 12px;
+    background: var(--primary);
+    border: none;
+    border-radius: 40px;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
 }
 
 .support-btn {
