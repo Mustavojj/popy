@@ -223,8 +223,14 @@ class App {
     
     async updateMiningHash(forceSave = false) {
         if (!this.miningActive || !this.miningStartTime) return;
-        const now = await this.getServerTime();
-        const elapsedSeconds = Math.floor((now - this.miningStartTime) / 1000);
+        const currentServerTime = await this.getServerTime();
+        
+        if (currentServerTime >= this.miningEndTime) {
+            await this.stopMining();
+            return;
+        }
+        
+        const elapsedSeconds = Math.floor((currentServerTime - this.miningStartTime) / 1000);
         const ratePerSecond = this.getMiningRate();
         const newHashBalance = elapsedSeconds * ratePerSecond;
         
@@ -250,10 +256,11 @@ class App {
         const confirmed = await this.showConfirmAd('Watch an ad to start mining?', 'start mining');
         if (!confirmed) return;
         
-        const now = await this.getServerTime();
+        const serverTime = await this.getServerTime();
+        
         this.miningActive = true;
-        this.miningStartTime = now;
-        this.miningEndTime = now + (APP_CONFIG.MINING_SESSION_HOURS * 3600000);
+        this.miningStartTime = serverTime;
+        this.miningEndTime = serverTime + (APP_CONFIG.MINING_SESSION_HOURS * 3600000);
         this.hashBalance = 0;
         
         await this.saveUserData();
@@ -283,25 +290,34 @@ class App {
         
         this.miningInterval = setInterval(async () => {
             if (!this.miningActive) return;
-            const now = await this.getServerTime();
-            if (this.miningEndTime && now >= this.miningEndTime) {
+            const serverTime = await this.getServerTime();
+            if (this.miningEndTime && serverTime >= this.miningEndTime) {
                 await this.stopMining();
             } else {
                 await this.updateMiningHash(true);
             }
         }, 10000);
         
-        this.uiUpdateInterval = setInterval(() => {
+        this.uiUpdateInterval = setInterval(async () => {
             if (this.miningActive) {
+                await this.updateMiningTimerDisplay();
                 this.updateHomeHashDisplay();
-                this.updateMiningTimerDisplay();
             }
         }, 1000);
     }
     
-    updateMiningTimerDisplay() {
+    async updateMiningTimerDisplay() {
         if (!this.miningEndTime) return;
-        const remaining = Math.max(0, (this.miningEndTime - Date.now()) / 1000);
+        
+        const currentServerTime = await this.getServerTime();
+        const remaining = Math.max(0, (this.miningEndTime - currentServerTime) / 1000);
+        
+        if (remaining <= 0 && this.miningActive) {
+            await this.stopMining();
+            this.renderHome();
+            return;
+        }
+        
         const hours = Math.floor(remaining / 3600);
         const minutes = Math.floor((remaining % 3600) / 60);
         const seconds = Math.floor(remaining % 60);
@@ -523,12 +539,13 @@ class App {
             await this.loadTasks();
             
             if (this.miningActive && this.miningEndTime) {
-                const now = await this.getServerTime();
-                if (now >= this.miningEndTime) {
+                const serverTime = await this.getServerTime();
+                if (serverTime >= this.miningEndTime) {
                     this.miningActive = false;
                     this.miningStartTime = null;
                     this.miningEndTime = null;
                     await this.saveUserData();
+                    this.renderHome();
                 } else {
                     await this.updateMiningHash(true);
                     this.startMiningLoop();
@@ -903,6 +920,8 @@ class App {
                             newBtn.innerHTML = 'Done';
                             newBtn.classList.add('done');
                             newBtn.disabled = true;
+                            this.isTaskRunning = false;
+                            this.enableAllTaskButtons();
                         });
                     }
                 }, 1000);
@@ -945,7 +964,7 @@ class App {
         el.innerHTML = `
             <div class="withdraw-card"><h3><i class="fas fa-wallet"></i> Withdraw TON</h3><div class="withdraw-balance"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png"><span>Available: ${this.tonBalance.toFixed(6)} TON</span></div>
             <div class="form-group"><label class="form-label">TON Wallet</label><div class="input-wrapper"><input type="text" id="wallet-addr" class="form-input" placeholder="UQ..."></div></div>
-            <div class="form-group"><label class="form-label">Amount</label><div class="input-wrapper"><input type="number" id="withdraw-amount" class="form-input" placeholder="Min: ${APP_CONFIG.MINIMUM_WITHDRAW} TON"></div></div>
+            <div class="form-group"><label class="form-label">Amount</label><div class="input-wrapper"><input type="number" id="withdraw-amount" class="form-input" placeholder="Min: ${APP_CONFIG.MINIMUM_WITHDRAW} TON" step="0.00001"><button id="max-amount" class="action-btn">MAX</button></div></div>
             <div class="withdraw-note"><i class="fas fa-info-circle"></i> Minimum withdrawal: ${APP_CONFIG.MINIMUM_WITHDRAW} TON</div>
             <button id="withdraw-btn" class="withdraw-confirm-btn disabled">Confirm Withdrawal</button></div>
             <div class="history-list"><h4><i class="fas fa-history"></i> Withdrawal History</h4>${historyHtml}</div>
@@ -954,6 +973,7 @@ class App {
         const walletInput = document.getElementById('wallet-addr');
         const amountInput = document.getElementById('withdraw-amount');
         const withdrawBtn = document.getElementById('withdraw-btn');
+        const maxBtn = document.getElementById('max-amount');
         
         const checkWithdrawReady = () => {
             const wallet = walletInput?.value.trim();
@@ -967,6 +987,13 @@ class App {
                 }
             }
         };
+        
+        maxBtn?.addEventListener('click', () => {
+            if (amountInput) {
+                amountInput.value = this.tonBalance.toFixed(5);
+                checkWithdrawReady();
+            }
+        });
         
         walletInput?.addEventListener('input', checkWithdrawReady);
         amountInput?.addEventListener('input', checkWithdrawReady);
@@ -985,9 +1012,15 @@ class App {
         if (vibrationBtn) {
             vibrationBtn.onclick = () => {
                 this.vibrationEnabled = !this.vibrationEnabled;
-                vibrationBtn.style.opacity = this.vibrationEnabled ? '1' : '0.5';
+                if (this.vibrationEnabled) {
+                    vibrationBtn.style.opacity = '1';
+                    vibrationBtn.innerHTML = '<i class="fas fa-vibration"></i>';
+                    this.vibrate('success');
+                } else {
+                    vibrationBtn.style.opacity = '0.5';
+                    vibrationBtn.innerHTML = '<i class="fas fa-vibration"></i>';
+                }
                 this.saveSettings();
-                if (this.vibrationEnabled) this.vibrate('success');
                 this.showNotification('Settings', `Vibration ${this.vibrationEnabled ? 'ON' : 'OFF'}`, 'info');
             };
             vibrationBtn.style.opacity = this.vibrationEnabled ? '1' : '0.5';
