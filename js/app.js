@@ -107,9 +107,43 @@ class App {
         setTimeout(() => el.remove(), 3000);
     }
     
+    async showConfirmAd(message, action) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('confirm-modal');
+            const msgEl = document.getElementById('confirm-message');
+            const confirmBtn = document.getElementById('confirm-ok');
+            const cancelBtn = document.getElementById('confirm-cancel');
+            const closeBtn = document.getElementById('close-confirm');
+            
+            msgEl.innerText = message;
+            modal.style.display = 'flex';
+            
+            const handleConfirm = async () => {
+                modal.style.display = 'none';
+                cleanup();
+                const ad = await this.showAd('AdBlock2', action);
+                resolve(ad);
+            };
+            
+            const handleCancel = () => {
+                modal.style.display = 'none';
+                cleanup();
+                resolve(false);
+            };
+            
+            const cleanup = () => {
+                confirmBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+                closeBtn.removeEventListener('click', handleCancel);
+            };
+            
+            confirmBtn.addEventListener('click', handleConfirm);
+            cancelBtn.addEventListener('click', handleCancel);
+            closeBtn.addEventListener('click', handleCancel);
+        });
+    }
+    
     async showAd(block, action) {
-        const confirmed = confirm(`Watch an ad to ${action}?`);
-        if (!confirmed) return false;
         try {
             if (window[block]) await window[block].show();
             return true;
@@ -139,15 +173,18 @@ class App {
         return this.powerBalance * APP_CONFIG.POWER_PER_HASH_RATE;
     }
     
-    async updateMiningHash() {
+    async updateMiningHash(forceSave = false) {
         if (!this.miningActive || !this.miningStartTime) return;
         const now = await this.getServerTime();
         const elapsedSeconds = Math.floor((now - this.miningStartTime) / 1000);
         const ratePerSecond = this.getMiningRate();
         const newHashBalance = elapsedSeconds * ratePerSecond;
-        this.hashBalance = newHashBalance;
-        await this.saveUserData();
-        this.updateHomeHashDisplay();
+        
+        if (Math.abs(this.hashBalance - newHashBalance) > 0.000001 || forceSave) {
+            this.hashBalance = newHashBalance;
+            await this.saveUserData();
+            this.updateHomeHashDisplay();
+        }
     }
     
     updateHomeHashDisplay() {
@@ -162,8 +199,8 @@ class App {
     }
     
     async startMining() {
-        const ad = await this.showAd('AdBlock1', 'start mining');
-        if (!ad) return;
+        const confirmed = await this.showConfirmAd('Watch an ad to start mining?', 'start mining');
+        if (!confirmed) return;
         
         const now = await this.getServerTime();
         this.miningActive = true;
@@ -180,7 +217,7 @@ class App {
     async stopMining() {
         if (!this.miningActive) return;
         
-        await this.updateMiningHash();
+        await this.updateMiningHash(true);
         this.miningActive = false;
         this.miningStartTime = null;
         this.miningEndTime = null;
@@ -202,7 +239,7 @@ class App {
             if (this.miningEndTime && now >= this.miningEndTime) {
                 await this.stopMining();
             } else {
-                await this.updateMiningHash();
+                await this.updateMiningHash(true);
             }
         }, 10000);
         
@@ -232,8 +269,14 @@ class App {
             return false;
         }
         const tonAmount = amount / APP_CONFIG.HASH_PER_TON;
-        const ad = await this.showAd('AdBlock2', `exchange ${amount.toLocaleString()} HASH to ${tonAmount.toFixed(8)} TON`);
-        if (!ad) return false;
+        const confirmed = await this.showConfirmAd(`Exchange ${amount.toLocaleString()} HASH to ${tonAmount.toFixed(8)} TON?`, 'exchange HASH to TON');
+        if (!confirmed) return false;
+        
+        await this.updateMiningHash(true);
+        if (amount > Math.floor(this.hashBalance)) {
+            this.showNotification('Error', 'Insufficient balance', 'error');
+            return false;
+        }
         
         this.hashBalance -= amount;
         this.tonBalance += tonAmount;
@@ -251,7 +294,7 @@ class App {
     async addReferralEarnings(userId, tonAmount) {
         const userSnap = await this.db.ref(`users/${userId}`).once('value');
         const referredBy = userSnap.val()?.referredBy;
-        if (referredBy && referredBy !== userId) {
+        if (referredBy && referredBy !== userId && referredBy !== this.tgUser.id) {
             const commission = tonAmount * (APP_CONFIG.REFERRAL_PERCENTAGE / 100);
             const referrerRef = this.db.ref(`users/${referredBy}`);
             const referrerSnap = await referrerRef.once('value');
@@ -262,10 +305,6 @@ class App {
                     tonBalance: currentTon + commission,
                     referralTon: currentReferralTon + commission
                 });
-                if (referredBy == this.tgUser.id) {
-                    this.referralTon += commission;
-                    this.tonBalance += commission;
-                }
             }
         }
     }
@@ -410,8 +449,8 @@ class App {
             this.showNotification('Error', 'Invalid amount', 'error');
             return false;
         }
-        const ad = await this.showAd('AdBlock2', 'withdraw TON');
-        if (!ad) return false;
+        const confirmed = await this.showConfirmAd(`Withdraw ${amount.toFixed(5)} TON to ${wallet.slice(0,6)}...${wallet.slice(-4)}?`, 'withdraw TON');
+        if (!confirmed) return false;
         
         this.tonBalance -= amount;
         await this.saveUserData();
@@ -430,7 +469,7 @@ class App {
         
         this.withdrawals.unshift(withdrawal);
         this.renderWithdraw();
-        this.showNotification('Withdrawn!', `${amount.toFixed(4)} TON requested`, 'success');
+        this.showNotification('Withdrawn!', `${amount.toFixed(5)} TON requested`, 'success');
         return true;
     }
     
@@ -485,8 +524,12 @@ class App {
                     this.miningEndTime = null;
                     await this.saveUserData();
                 } else {
+                    await this.updateMiningHash(true);
                     this.startMiningLoop();
                 }
+            } else if (this.miningActive) {
+                await this.updateMiningHash(true);
+                this.startMiningLoop();
             }
             
             if (!this.hasClaimedWelcome) {
@@ -499,22 +542,27 @@ class App {
                     await this.db.ref(`users/${this.tgUser.id}`).update({ hasClaimedWelcome: true, isVerified: true });
                     const userSnap = await this.db.ref(`users/${this.tgUser.id}`).once('value');
                     const referredBy = userSnap.val()?.referredBy;
-                    if (referredBy && referredBy !== this.tgUser.id) {
+                    if (referredBy && referredBy !== this.tgUser.id && referredBy !== this.deviceOwnerId) {
                         const referrerRef = this.db.ref(`users/${referredBy}`);
                         const referrerSnap = await referrerRef.once('value');
                         if (referrerSnap.exists()) {
                             const currentPower = referrerSnap.val().powerBalance ?? 0;
                             const currentVerified = referrerSnap.val().verifiedReferrals ?? 0;
                             const currentReferralPower = referrerSnap.val().referralPower ?? 0;
+                            const currentTotalReferrals = referrerSnap.val().totalReferrals ?? 0;
                             await referrerRef.update({ 
                                 powerBalance: currentPower + APP_CONFIG.REFERRAL_POWER_BONUS,
                                 verifiedReferrals: currentVerified + 1,
-                                referralPower: currentReferralPower + APP_CONFIG.REFERRAL_POWER_BONUS
+                                referralPower: currentReferralPower + APP_CONFIG.REFERRAL_POWER_BONUS,
+                                totalReferrals: currentTotalReferrals + 1
                             });
                         }
                     }
                 }
             }
+            
+            await this.loadReferralStats();
+            this.updateQuestProgress('invite', this.verifiedReferrals);
             
             this.setupEventListeners();
             this.renderUI();
@@ -578,7 +626,8 @@ class App {
             this.miningEndTime = d.miningEndTime ?? null;
         } else {
             const startParam = this.tg.initDataUnsafe?.start_param;
-            const referredBy = (startParam && !isNaN(startParam)) ? parseInt(startParam) : null;
+            let referredBy = (startParam && !isNaN(startParam)) ? parseInt(startParam) : null;
+            if (referredBy === this.tgUser.id || referredBy === this.deviceOwnerId) referredBy = null;
             await ref.set({
                 id: this.tgUser.id,
                 username: this.tgUser.username || '',
@@ -631,7 +680,7 @@ class App {
             this.verifiedReferrals = d.verifiedReferrals ?? 0;
             this.referralPower = d.referralPower ?? 0;
             this.referralTon = d.referralTon ?? 0;
-            this.updateQuestProgress('invite', this.totalReferrals);
+            this.updateQuestProgress('invite', this.verifiedReferrals);
         }
     }
     
@@ -693,16 +742,24 @@ class App {
                 ${!this.miningActive ? `<button id="start-mining-btn" class="mining-action-btn"><i class="fas fa-play"></i> Start Mining</button>` : ''}
             </div>
             <div class="level-progress"><div class="progress-header"><span>Level ${this.userLevel}</span><span>${Math.floor(this.powerBalance).toLocaleString()} / ${requiredPower.toLocaleString()} Power</span></div><div class="progress-bar"><div class="progress-fill" style="width: ${progress}%"></div></div></div>
-            <div class="exchange-card"><div class="exchange-header"><h3><i class="fas fa-exchange-alt"></i> Exchange</h3><div class="exchange-balance"><i class="fas fa-microchip"></i> ${Math.floor(this.hashBalance).toLocaleString()} HASH</div></div><div class="exchange-group"><input type="number" id="exchange-amount" class="form-input" placeholder="HASH amount"><button id="exchange-btn" class="submit-btn" disabled style="opacity:0.5">Exchange</button></div><div class="rate-info"><i class="fas fa-info-circle"></i> 1 HASH = ${tonPerHash.toFixed(8)} TON</div></div>
+            <div class="exchange-card"><div class="exchange-header"><h3><i class="fas fa-exchange-alt"></i> Exchange</h3><div class="exchange-balance"><i class="fas fa-microchip"></i> ${Math.floor(this.hashBalance).toLocaleString()} HASH</div></div><div class="exchange-group"><div class="exchange-input-wrapper"><input type="number" id="exchange-amount" class="form-input" placeholder="HASH amount"><button id="exchange-btn" class="submit-btn" disabled style="opacity:0.5">Exchange</button></div><div id="exchange-preview" class="exchange-preview"></div></div><div class="rate-info"><i class="fas fa-info-circle"></i> 1 HASH = ${tonPerHash.toFixed(8)} TON</div></div>
         `;
         
         const exchangeInput = document.getElementById('exchange-amount');
         const exchangeBtn = document.getElementById('exchange-btn');
+        const exchangePreview = document.getElementById('exchange-preview');
+        
         if (exchangeInput && exchangeBtn) {
             exchangeInput.addEventListener('input', () => {
                 const val = parseFloat(exchangeInput.value);
                 exchangeBtn.disabled = !val || val <= 0;
                 exchangeBtn.style.opacity = (!val || val <= 0) ? '0.5' : '1';
+                if (val > 0) {
+                    const tonValue = val / APP_CONFIG.HASH_PER_TON;
+                    exchangePreview.innerText = `≈ ${tonValue.toFixed(8)} TON`;
+                } else {
+                    exchangePreview.innerText = '';
+                }
             });
             exchangeBtn.addEventListener('click', () => {
                 const amount = parseFloat(exchangeInput.value);
@@ -710,6 +767,7 @@ class App {
                 exchangeInput.value = '';
                 exchangeBtn.disabled = true;
                 exchangeBtn.style.opacity = '0.5';
+                exchangePreview.innerText = '';
             });
         }
         
@@ -730,9 +788,10 @@ class App {
         `).join('');
         
         const questsHtml = this.quests.map(q => {
-            const progress = Math.min((q.current / q.target) * 100, 100);
             if (q.claimed) return '';
-            return `<div class="quest-card"><div class="quest-header"><span class="quest-title">${q.name}</span><span class="quest-reward"><i class="fas fa-bolt"></i> ${q.reward} Power</span></div><div class="quest-progress-bar"><div class="quest-progress-fill" style="width: ${progress}%"></div></div><div class="quest-stats"><span>${q.current}/${q.target}</span>${q.completed ? '<button class="quest-claim-btn" data-quest="'+q.id+'">Claim</button>' : '<span>Not yet</span>'}</div></div>`;
+            const progress = Math.min((q.current / q.target) * 100, 100);
+            const displayName = q.id === 'level' ? `Up To Level ${q.target}` : q.name;
+            return `<div class="quest-card"><div class="quest-header"><span class="quest-title">${displayName}</span><span class="quest-reward"><i class="fas fa-bolt"></i> ${q.reward} Power</span></div><div class="quest-progress-bar"><div class="quest-progress-fill" style="width: ${progress}%"></div></div><div class="quest-stats"><span>${q.current}/${q.target}</span>${q.completed ? '<button class="quest-claim-btn" data-quest="'+q.id+'">Claim</button>' : '<span>Not yet</span>'}</div></div>`;
         }).join('');
         
         el.innerHTML = `
@@ -750,14 +809,14 @@ class App {
         if (promoInput && promoSubmit) {
             promoInput.addEventListener('input', () => {
                 promoSubmit.disabled = promoInput.value.trim() === '';
-                promoSubmit.style.opacity = promoSubmit.disabled ? '0.5' : '1';
+                promoSubmit.classList.toggle('active', !promoSubmit.disabled);
             });
             promoSubmit.addEventListener('click', () => {
                 const code = promoInput.value.trim();
                 if (code) this.applyPromoCode(code);
                 promoInput.value = '';
                 promoSubmit.disabled = true;
-                promoSubmit.style.opacity = '0.5';
+                promoSubmit.classList.remove('active');
             });
         }
         
@@ -828,28 +887,40 @@ class App {
     renderWithdraw() {
         const el = document.getElementById('withdraw-page');
         if (!el) return;
-        const historyHtml = this.withdrawals.map(w => `<div class="history-item"><div><small>${new Date(w.timestamp).toLocaleDateString()}</small><br><small>${w.wallet?.slice(0,6)}...${w.wallet?.slice(-4)}</small></div><div class="history-amount"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" style="width:16px"> ${w.amount.toFixed(4)}</div><div class="history-status ${w.status}">${w.status}</div></div>`).join('');
+        const historyHtml = this.withdrawals.map(w => `<div class="history-item"><div><small>${new Date(w.timestamp).toLocaleDateString()}</small><br><small>${w.wallet?.slice(0,6)}...${w.wallet?.slice(-4)}</small></div><div class="history-amount"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" style="width:16px"> ${w.amount.toFixed(5)}</div><div class="history-status ${w.status}">${w.status}</div></div>`).join('');
         el.innerHTML = `
             <div class="withdraw-card"><h3><i class="fas fa-wallet"></i> Withdraw TON</h3><div class="withdraw-balance"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png"><span>Available: ${this.tonBalance.toFixed(6)} TON</span></div>
-            <div class="form-group"><label class="form-label">TON Wallet</label><div class="input-wrapper"><input type="text" id="wallet-addr" class="form-input" placeholder="UQ..."><button id="paste-wallet" class="action-btn">Paste</button></div></div>
-            <div class="form-group"><label class="form-label">Amount</label><div class="input-wrapper"><input type="number" id="withdraw-amount" class="form-input" placeholder="Min: ${APP_CONFIG.MINIMUM_WITHDRAW} TON"><button id="max-amount" class="action-btn">MAX</button></div></div>
+            <div class="form-group"><label class="form-label">TON Wallet</label><div class="input-wrapper"><input type="text" id="wallet-addr" class="form-input" placeholder="UQ..."></div></div>
+            <div class="form-group"><label class="form-label">Amount</label><div class="input-wrapper"><input type="number" id="withdraw-amount" class="form-input" placeholder="Min: ${APP_CONFIG.MINIMUM_WITHDRAW} TON"></div></div>
             <div class="withdraw-note"><i class="fas fa-info-circle"></i> Minimum withdrawal: ${APP_CONFIG.MINIMUM_WITHDRAW} TON</div>
-            <button id="withdraw-btn" class="withdraw-confirm-btn">Confirm Withdrawal</button></div>
+            <button id="withdraw-btn" class="withdraw-confirm-btn disabled">Confirm Withdrawal</button></div>
             <div class="history-list"><h4><i class="fas fa-history"></i> Withdrawal History</h4>${historyHtml || '<div class="no-data">No withdrawals yet</div>'}</div>
         `;
         
-        document.getElementById('paste-wallet')?.addEventListener('click', async () => {
-            try {
-                const text = await navigator.clipboard.readText();
-                document.getElementById('wallet-addr').value = text;
-            } catch(e) {}
-        });
-        document.getElementById('max-amount')?.addEventListener('click', () => {
-            document.getElementById('withdraw-amount').value = this.tonBalance;
-        });
-        document.getElementById('withdraw-btn')?.addEventListener('click', () => {
-            const amount = parseFloat(document.getElementById('withdraw-amount').value);
-            const wallet = document.getElementById('wallet-addr').value.trim();
+        const walletInput = document.getElementById('wallet-addr');
+        const amountInput = document.getElementById('withdraw-amount');
+        const withdrawBtn = document.getElementById('withdraw-btn');
+        
+        const checkWithdrawReady = () => {
+            const wallet = walletInput?.value.trim();
+            const amount = parseFloat(amountInput?.value);
+            const isValid = wallet && wallet.length >= 20 && amount >= APP_CONFIG.MINIMUM_WITHDRAW && amount <= this.tonBalance;
+            if (withdrawBtn) {
+                if (isValid) {
+                    withdrawBtn.classList.remove('disabled');
+                } else {
+                    withdrawBtn.classList.add('disabled');
+                }
+            }
+        };
+        
+        walletInput?.addEventListener('input', checkWithdrawReady);
+        amountInput?.addEventListener('input', checkWithdrawReady);
+        
+        withdrawBtn?.addEventListener('click', () => {
+            if (withdrawBtn.classList.contains('disabled')) return;
+            const amount = parseFloat(amountInput.value);
+            const wallet = walletInput.value.trim();
             this.withdraw(amount, wallet);
         });
     }
@@ -861,7 +932,6 @@ class App {
             vibrationBtn.onclick = () => {
                 this.vibrationEnabled = !this.vibrationEnabled;
                 vibrationBtn.style.opacity = this.vibrationEnabled ? '1' : '0.5';
-                vibrationBtn.innerHTML = this.vibrationEnabled ? '<i class="fas fa-vibration"></i>' : '<i class="fas fa-vibration"></i>';
                 this.saveSettings();
                 if (this.vibrationEnabled) this.vibrate('success');
                 this.showNotification('Settings', `Vibration ${this.vibrationEnabled ? 'ON' : 'OFF'}`, 'info');
