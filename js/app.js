@@ -16,6 +16,7 @@ class App {
         this.userLevel = 1;
         this.isVerified = false;
         this.hasClaimedWelcome = false;
+        this.hasStartedMining = false;
         this.userCompletedTasks = new Set();
         this.miningActive = false;
         this.miningStartTime = null;
@@ -30,6 +31,7 @@ class App {
         this.isTaskRunning = false;
         this.mainTasks = [];
         this.partnerTasks = [];
+        this.pendingExchange = null;
         
         this.levelQuest = { id: 'level', target: 2, reward: 50, completed: false, claimed: false };
         this.inviteQuest = { id: 'invite', target: 1, reward: 50, completed: false, claimed: false };
@@ -172,6 +174,7 @@ class App {
     updateLevelQuestProgress() {
         if (!this.levelQuest.claimed && this.userLevel >= this.levelQuest.target) {
             this.levelQuest.completed = true;
+            this.saveQuestCompletion('level', this.levelQuest.target);
             this.showNotification('Quest Complete!', `+${this.levelQuest.reward} Power available!`, 'success');
             this.renderEarn();
         }
@@ -180,9 +183,15 @@ class App {
     updateInviteQuestProgress() {
         if (!this.inviteQuest.claimed && this.verifiedReferrals >= this.inviteQuest.target) {
             this.inviteQuest.completed = true;
+            this.saveQuestCompletion('invite', this.inviteQuest.target);
             this.showNotification('Quest Complete!', `+${this.inviteQuest.reward} Power available!`, 'success');
             this.renderEarn();
         }
+    }
+    
+    async saveQuestCompletion(questId, target) {
+        if (!this.db) return;
+        await this.db.ref(`users/${this.tgUser.id}/completedQuests/${questId}_${target}`).set(true);
     }
     
     async claimLevelQuest() {
@@ -263,6 +272,36 @@ class App {
         this.miningEndTime = serverTime + (APP_CONFIG.MINING_SESSION_HOURS * 3600000);
         this.hashBalance = 0;
         
+        if (!this.hasStartedMining && this.db && this.tgUser) {
+            this.hasStartedMining = true;
+            await this.db.ref(`users/${this.tgUser.id}`).update({ hasStartedMining: true });
+            
+            const userSnap = await this.db.ref(`users/${this.tgUser.id}`).once('value');
+            const referredBy = userSnap.val()?.referredBy;
+            if (referredBy && referredBy !== this.tgUser.id && referredBy !== this.deviceOwnerId) {
+                const referrerRef = this.db.ref(`users/${referredBy}`);
+                const referrerSnap = await referrerRef.once('value');
+                if (referrerSnap.exists()) {
+                    const currentPower = referrerSnap.val().powerBalance ?? 0;
+                    const currentVerified = referrerSnap.val().verifiedReferrals ?? 0;
+                    const currentReferralPower = referrerSnap.val().referralPower ?? 0;
+                    await referrerRef.update({ 
+                        powerBalance: currentPower + APP_CONFIG.REFERRAL_POWER_BONUS,
+                        verifiedReferrals: currentVerified + 1,
+                        referralPower: currentReferralPower + APP_CONFIG.REFERRAL_POWER_BONUS
+                    });
+                    
+                    await this.db.ref(`referrals/${referredBy}/${this.tgUser.id}`).update({
+                        userId: this.tgUser.id,
+                        userName: this.tgUser.first_name,
+                        userPhoto: this.tgUser.photo_url,
+                        state: 'Verified',
+                        verifiedAt: serverTime
+                    });
+                }
+            }
+        }
+        
         await this.saveUserData();
         this.renderHome();
         this.startMiningLoop();
@@ -342,8 +381,10 @@ class App {
             return false;
         }
         
-        this.hashBalance -= amount;
+        const previousHashBalance = this.hashBalance;
+        this.hashBalance = previousHashBalance - amount;
         this.tonBalance += tonAmount;
+        
         await this.saveUserData();
         
         if (this.db && this.tgUser.id) {
@@ -537,6 +578,7 @@ class App {
             await this.loadReferralStats();
             await this.loadPromoCodes();
             await this.loadTasks();
+            await this.loadQuestsState();
             
             if (this.miningActive && this.miningEndTime) {
                 const serverTime = await this.getServerTime();
@@ -579,6 +621,14 @@ class App {
                                 referralPower: currentReferralPower + APP_CONFIG.REFERRAL_POWER_BONUS,
                                 totalReferrals: currentTotalReferrals + 1
                             });
+                            
+                            await this.db.ref(`referrals/${referredBy}/${this.tgUser.id}`).update({
+                                userId: this.tgUser.id,
+                                userName: this.tgUser.first_name,
+                                userPhoto: this.tgUser.photo_url,
+                                state: 'Not Verified',
+                                joinedAt: await this.getServerTime()
+                            });
                         }
                     }
                 }
@@ -592,13 +642,35 @@ class App {
             this.renderUI();
             this.setupNavigation();
             
-            document.getElementById('app-loader').style.display = 'none';
-            document.getElementById('app').style.display = 'block';
+            const loader = document.getElementById('app-loader');
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                    document.getElementById('app').style.display = 'block';
+                }, 500);
+            } else {
+                document.getElementById('app').style.display = 'block';
+            }
             this.isInitialized = true;
             
         } catch(err) {
             document.getElementById('loader-error').textContent = err.message;
             document.getElementById('loader-error').style.display = 'block';
+        }
+    }
+    
+    async loadQuestsState() {
+        if (!this.db) return;
+        const levelSnap = await this.db.ref(`users/${this.tgUser.id}/completedQuests/level_${this.levelQuest.target}`).once('value');
+        if (levelSnap.exists()) {
+            this.levelQuest.completed = true;
+            this.levelQuest.claimed = true;
+        }
+        const inviteSnap = await this.db.ref(`users/${this.tgUser.id}/completedQuests/invite_${this.inviteQuest.target}`).once('value');
+        if (inviteSnap.exists()) {
+            this.inviteQuest.completed = true;
+            this.inviteQuest.claimed = true;
         }
     }
     
@@ -613,6 +685,7 @@ class App {
             this.userLevel = d.level ?? 1;
             this.isVerified = d.isVerified ?? false;
             this.hasClaimedWelcome = d.hasClaimedWelcome ?? false;
+            this.hasStartedMining = d.hasStartedMining ?? false;
             this.miningActive = d.miningActive ?? false;
             this.miningStartTime = d.miningStartTime ?? null;
             this.miningEndTime = d.miningEndTime ?? null;
@@ -645,6 +718,7 @@ class App {
             this.userLevel = d.level ?? 1;
             this.isVerified = d.isVerified ?? false;
             this.hasClaimedWelcome = d.hasClaimedWelcome ?? false;
+            this.hasStartedMining = d.hasStartedMining ?? false;
             this.miningActive = d.miningActive ?? false;
             this.miningStartTime = d.miningStartTime ?? null;
             this.miningEndTime = d.miningEndTime ?? null;
@@ -660,6 +734,23 @@ class App {
                 referredBy: referredBy,
                 createdAt: await this.getServerTime()
             });
+            
+            if (referredBy && referredBy !== this.tgUser.id) {
+                const referrerRef = this.db.ref(`users/${referredBy}`);
+                const referrerSnap = await referrerRef.once('value');
+                if (referrerSnap.exists()) {
+                    const currentTotal = referrerSnap.val().totalReferrals ?? 0;
+                    await referrerRef.update({ totalReferrals: currentTotal + 1 });
+                    
+                    await this.db.ref(`referrals/${referredBy}/${this.tgUser.id}`).set({
+                        userId: this.tgUser.id,
+                        userName: this.tgUser.first_name,
+                        userPhoto: this.tgUser.photo_url,
+                        state: 'Not Verified',
+                        joinedAt: await this.getServerTime()
+                    });
+                }
+            }
         }
         document.getElementById('user-name').innerText = this.tgUser.first_name || 'User';
         document.getElementById('user-level').innerText = this.userLevel;
@@ -675,6 +766,7 @@ class App {
         if (this.userLevel !== undefined) updates.level = this.userLevel;
         if (this.isVerified !== undefined) updates.isVerified = this.isVerified;
         if (this.hasClaimedWelcome !== undefined) updates.hasClaimedWelcome = this.hasClaimedWelcome;
+        if (this.hasStartedMining !== undefined) updates.hasStartedMining = this.hasStartedMining;
         if (this.miningActive !== undefined) updates.miningActive = this.miningActive;
         if (this.miningStartTime !== undefined) updates.miningStartTime = this.miningStartTime;
         if (this.miningEndTime !== undefined) updates.miningEndTime = this.miningEndTime;
@@ -805,13 +897,15 @@ class App {
                     exchangePreview.innerText = '';
                 }
             });
-            exchangeBtn.addEventListener('click', () => {
+            exchangeBtn.addEventListener('click', async () => {
                 const amount = parseFloat(exchangeInput.value);
-                if (amount > 0) this.exchangeHash(amount);
-                exchangeInput.value = '';
-                exchangeBtn.disabled = true;
-                exchangeBtn.style.opacity = '0.5';
-                exchangePreview.innerText = '';
+                if (amount > 0) {
+                    await this.exchangeHash(amount);
+                    exchangeInput.value = '';
+                    exchangeBtn.disabled = true;
+                    exchangeBtn.style.opacity = '0.5';
+                    exchangePreview.innerText = '';
+                }
             });
         }
         
@@ -911,6 +1005,8 @@ class App {
                         clearInterval(interval);
                         btn.innerHTML = 'Claim';
                         btn.disabled = false;
+                        btn.classList.remove('start');
+                        btn.classList.add('check');
                         const newBtn = btn.cloneNode(true);
                         btn.parentNode.replaceChild(newBtn, btn);
                         newBtn.addEventListener('click', async () => {
@@ -918,6 +1014,7 @@ class App {
                             newBtn.disabled = true;
                             await this.completeTask(id, reward, url, verify, newBtn);
                             newBtn.innerHTML = 'Done';
+                            newBtn.classList.remove('check');
                             newBtn.classList.add('done');
                             newBtn.disabled = true;
                             this.isTaskRunning = false;
@@ -1024,6 +1121,7 @@ class App {
                 this.showNotification('Settings', `Vibration ${this.vibrationEnabled ? 'ON' : 'OFF'}`, 'info');
             };
             vibrationBtn.style.opacity = this.vibrationEnabled ? '1' : '0.5';
+            vibrationBtn.innerHTML = '<i class="fas fa-vibration"></i>';
         }
         document.getElementById('close-tasks-info')?.addEventListener('click', () => {
             document.getElementById('tasks-info-modal').style.display = 'none';
