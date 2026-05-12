@@ -11,11 +11,11 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+    <script src="https://adexora.com/cdn/ads.js?id=2067"></script>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
-<!-- Loader Screen -->
 <div id="app-loader">
     <div class="loader-container">
         <div class="loader-logo-wrapper">
@@ -25,12 +25,11 @@
         <div class="loader-progress-container">
             <div class="loader-progress-bar" id="loader-progress-bar"></div>
         </div>
-        <div class="loader-text" id="loader-text">Initializing<span class="dots">...</span></div>
+        <div class="loader-text" id="loader-text">0%</div>
         <div class="loader-error" id="loader-error"></div>
     </div>
 </div>
 
-<!-- Main App -->
 <div id="app" style="display:none;">
     <header class="app-header">
         <div class="header-top">
@@ -65,7 +64,6 @@
     </nav>
 </div>
 
-<!-- Modals -->
 <div id="claim-modal" class="modal" style="display:none;">
     <div class="modal-content glass-modal">
         <div class="modal-header">
@@ -74,8 +72,7 @@
         </div>
         <div class="modal-body" style="text-align:center">
             <div class="reward-amount" id="claim-reward-amount">0.00000000 TON</div>
-            <p style="margin:16px 0;color:#888">Watch an ad to claim your earnings</p>
-            <button id="confirm-claim-btn" class="confirm-ad-btn" style="width:100%">Watch Ad & Claim</button>
+            <button id="confirm-claim-btn" class="confirm-ad-btn" style="width:100%">Claim Rewards</button>
         </div>
     </div>
 </div>
@@ -88,19 +85,6 @@
             <p><i class="fas fa-handshake" style="color:#6C63FF;margin-right:8px"></i> You can cooperate with us</p>
             <p><i class="fas fa-headset" style="color:#6C63FF;margin-right:8px"></i> Contact support for details</p>
             <button id="contact-support-modal" class="support-btn"><i class="fas fa-headset"></i> Contact Support</button>
-        </div>
-    </div>
-</div>
-
-<div id="confirm-modal" class="modal" style="display:none;">
-    <div class="modal-content glass-modal">
-        <div class="modal-header"><h3><i class="fas fa-question-circle"></i> Confirm Action</h3><button class="modal-close" id="close-confirm">&times;</button></div>
-        <div class="modal-body">
-            <p id="confirm-message" style="text-align:center;margin-bottom:20px"></p>
-            <div style="display:flex;gap:10px">
-                <button id="confirm-cancel" class="cancel-btn">Cancel</button>
-                <button id="confirm-ok" class="confirm-ad-btn">Confirm (AD)</button>
-            </div>
         </div>
     </div>
 </div>
