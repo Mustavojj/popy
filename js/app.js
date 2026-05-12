@@ -11,7 +11,6 @@ class App {
         this.deviceOwnerId = null;
         
         this.powerBalance = 0;
-        this.hashBalance = 0;
         this.tonBalance = 0;
         this.userLevel = 1;
         this.isVerified = false;
@@ -23,7 +22,7 @@ class App {
         this.miningEndTime = null;
         this.miningInterval = null;
         this.uiUpdateInterval = null;
-        this.pendingHashReward = 0;
+        this.pendingTonReward = 0;
         this.withdrawals = [];
         this.totalReferrals = 0;
         this.verifiedReferrals = 0;
@@ -32,10 +31,9 @@ class App {
         this.isTaskRunning = false;
         this.mainTasks = [];
         this.partnerTasks = [];
-        this.pendingExchange = null;
         
-        this.levelQuest = { id: 'level', target: 2, reward: 50, completed: false, claimed: false, currentTarget: 2 };
-        this.inviteQuest = { id: 'invite', target: 1, reward: 50, completed: false, claimed: false, currentTarget: 1 };
+        this.lastRewardAdTime = 0;
+        this.lastAdexoraAdTime = 0;
         
         this.vibrationEnabled = true;
         this.loadSettings();
@@ -110,47 +108,36 @@ class App {
         setTimeout(() => el.remove(), 3000);
     }
     
-    async showConfirmAd(message, action) {
-        return new Promise((resolve) => {
-            const modal = document.getElementById('confirm-modal');
-            const msgEl = document.getElementById('confirm-message');
-            const confirmBtn = document.getElementById('confirm-ok');
-            const cancelBtn = document.getElementById('confirm-cancel');
-            const closeBtn = document.getElementById('close-confirm');
-            
-            msgEl.innerText = message;
-            modal.style.display = 'flex';
-            
-            const handleConfirm = async () => {
-                modal.style.display = 'none';
-                cleanup();
-                const ad = await this.showAd('AdBlock2', action);
-                resolve(ad);
-            };
-            
-            const handleCancel = () => {
-                modal.style.display = 'none';
-                cleanup();
-                resolve(false);
-            };
-            
-            const cleanup = () => {
-                confirmBtn.removeEventListener('click', handleConfirm);
-                cancelBtn.removeEventListener('click', handleCancel);
-                closeBtn.removeEventListener('click', handleCancel);
-            };
-            
-            confirmBtn.addEventListener('click', handleConfirm);
-            cancelBtn.addEventListener('click', handleCancel);
-            closeBtn.addEventListener('click', handleCancel);
-        });
+    async showInterstitialAd() {
+        try {
+            const AdController = window.Adsgram.init({ blockId: APP_CONFIG.INTERSTITIAL_AD_BLOCK_ID });
+            await AdController.show();
+            return true;
+        } catch(e) {
+            return true;
+        }
     }
     
-    async showAd(block, action) {
+    async showRewardAd() {
         try {
-            if (window[block]) await window[block].show();
+            const AdController = window.Adsgram.init({ blockId: APP_CONFIG.REWARD_AD_BLOCK_ID });
+            await AdController.show();
             return true;
-        } catch(e) { return true; }
+        } catch(e) {
+            return true;
+        }
+    }
+    
+    async showAdexoraAd() {
+        try {
+            if (typeof window.showAdexora === 'function') {
+                await window.showAdexora();
+                return true;
+            }
+            return true;
+        } catch(e) {
+            return true;
+        }
     }
     
     getRequiredPowerForLevel(level) {
@@ -166,7 +153,6 @@ class App {
             this.userLevel = newLevel;
             this.showNotification('Level Up!', `Reached level ${this.userLevel}!`, 'success');
             this.vibrate('success');
-            this.updateLevelQuestProgress(true);
         }
         this.userLevel = newLevel;
         const levelSpan = document.getElementById('user-level');
@@ -175,137 +161,20 @@ class App {
         if (levelBadge) levelBadge.innerText = this.userLevel;
     }
     
-    updateLevelQuestProgress(showNotification = false) {
-        if (!this.levelQuest.claimed && this.userLevel >= this.levelQuest.currentTarget) {
-            this.levelQuest.completed = true;
-            if (showNotification) {
-                this.showNotification('Quest Complete!', `+${this.levelQuest.reward} Power available!`, 'success');
-            }
-            this.saveQuestCompletion('level', this.levelQuest.currentTarget);
-            this.renderEarn();
-        }
-    }
-    
-    updateInviteQuestProgress(showNotification = false) {
-        if (!this.inviteQuest.claimed && this.verifiedReferrals >= this.inviteQuest.currentTarget) {
-            this.inviteQuest.completed = true;
-            if (showNotification) {
-                this.showNotification('Quest Complete!', `+${this.inviteQuest.reward} Power available!`, 'success');
-            }
-            this.saveQuestCompletion('invite', this.inviteQuest.currentTarget);
-            this.renderEarn();
-        }
-    }
-    
-    async saveQuestCompletion(questId, target) {
-        if (!this.db) return;
-        await this.db.ref(`users/${this.tgUser.id}/completedQuests/${questId}_${target}`).set(true);
-    }
-    
-    async claimLevelQuest() {
-        if (!this.levelQuest.completed || this.levelQuest.claimed) return;
-        
-        this.powerBalance += this.levelQuest.reward;
-        this.levelQuest.claimed = true;
-        this.levelQuest.completed = false;
-        this.levelQuest.currentTarget++;
-        this.levelQuest.reward = Math.floor(this.levelQuest.reward * 1.5);
-        
-        await this.updateLevelFromPower();
-        await this.saveUserData();
-        this.renderEarn();
-        this.showNotification('Quest Reward Claimed!', `+${this.levelQuest.reward} Power`, 'success');
-        this.updateLevelQuestProgress(true);
-    }
-    
-    async claimInviteQuest() {
-        if (!this.inviteQuest.completed || this.inviteQuest.claimed) return;
-        
-        this.powerBalance += this.inviteQuest.reward;
-        this.inviteQuest.claimed = true;
-        this.inviteQuest.completed = false;
-        this.inviteQuest.currentTarget++;
-        this.inviteQuest.reward = Math.floor(this.inviteQuest.reward * 1.5);
-        
-        await this.updateLevelFromPower();
-        await this.saveUserData();
-        this.renderEarn();
-        this.showNotification('Quest Reward Claimed!', `+${this.inviteQuest.reward} Power`, 'success');
-        this.updateInviteQuestProgress(true);
-    }
-    
-    getMiningRate() {
-        return this.powerBalance * APP_CONFIG.POWER_PER_HASH_RATE;
-    }
-    
-    calculateEarnings() {
-        if (!this.miningStartTime || !this.miningEndTime) return 0;
-        const totalSeconds = APP_CONFIG.MINING_SESSION_HOURS * 3600;
-        const ratePerSecond = this.getMiningRate();
-        const totalHash = totalSeconds * ratePerSecond;
-        return totalHash / APP_CONFIG.HASH_PER_TON;
-    }
-    
-    getDailyEarnings() {
-        const ratePerSecond = this.getMiningRate();
-        const dailySeconds = 24 * 3600;
-        const dailyHash = dailySeconds * ratePerSecond;
-        return dailyHash / APP_CONFIG.HASH_PER_TON;
-    }
-    
-    getWeeklyEarnings() {
-        return this.getDailyEarnings() * 7;
-    }
-    
-    getMonthlyEarnings() {
-        return this.getDailyEarnings() * 30;
-    }
-    
-    async updateMiningHash(forceSave = false) {
-        if (!this.miningActive || !this.miningStartTime) return;
-        const currentServerTime = await this.getServerTime();
-        
-        if (currentServerTime >= this.miningEndTime) {
-            await this.stopMining();
-            return;
-        }
-        
-        const elapsedSeconds = Math.floor((currentServerTime - this.miningStartTime) / 1000);
-        const ratePerSecond = this.getMiningRate();
-        const newHashBalance = elapsedSeconds * ratePerSecond;
-        
-        if (Math.abs(this.hashBalance - newHashBalance) > 0.000001 || forceSave) {
-            this.hashBalance = newHashBalance;
-            await this.saveUserData();
-            this.updateMiningDisplay();
-        }
-    }
-    
-    updateMiningDisplay() {
-        const hashCard = document.querySelector('#mining-page .balance-card .icon.hash')?.parentElement;
-        if (hashCard) {
-            const valueEl = hashCard.querySelector('.value');
-            if (valueEl) valueEl.innerText = Math.floor(this.hashBalance).toLocaleString();
-        }
-        const dailyEl = document.getElementById('daily-earnings');
-        const weeklyEl = document.getElementById('weekly-earnings');
-        const monthlyEl = document.getElementById('monthly-earnings');
-        if (dailyEl) dailyEl.innerText = this.getDailyEarnings().toFixed(6) + ' TON';
-        if (weeklyEl) weeklyEl.innerText = this.getWeeklyEarnings().toFixed(6) + ' TON';
-        if (monthlyEl) monthlyEl.innerText = this.getMonthlyEarnings().toFixed(6) + ' TON';
+    getDailyTonRate() {
+        return this.powerBalance * APP_CONFIG.POWER_PER_TON_RATE * 24;
     }
     
     async startMining() {
-        const confirmed = await this.showConfirmAd('Watch an ad to start mining?', 'start mining');
-        if (!confirmed) return;
+        const adWatched = await this.showInterstitialAd();
+        if (!adWatched) return;
         
         const serverTime = await this.getServerTime();
         
         this.miningActive = true;
         this.miningStartTime = serverTime;
         this.miningEndTime = serverTime + (APP_CONFIG.MINING_SESSION_HOURS * 3600000);
-        this.hashBalance = 0;
-        this.pendingHashReward = 0;
+        this.pendingTonReward = 0;
         
         if (!this.hasStartedMining && this.db && this.tgUser) {
             this.hasStartedMining = true;
@@ -340,14 +209,13 @@ class App {
         await this.saveUserData();
         this.renderMining();
         this.startMiningLoop();
-        this.showNotification('Mining Started!', 'Your rig is now mining HASH', 'success');
+        this.showNotification('Mining Started!', 'Your rig is now mining TON', 'success');
     }
     
     async stopMining() {
         if (!this.miningActive) return;
         
-        await this.updateMiningHash(true);
-        this.pendingHashReward = this.hashBalance;
+        this.pendingTonReward = this.getDailyTonRate();
         this.miningActive = false;
         this.miningStartTime = null;
         this.miningEndTime = null;
@@ -364,15 +232,14 @@ class App {
             this.showNotification('Error', 'Mining still active!', 'error');
             return;
         }
-        if (this.pendingHashReward <= 0) {
+        if (this.pendingTonReward <= 0) {
             this.showNotification('Error', 'No rewards to claim', 'error');
             return;
         }
         
-        const tonAmount = this.pendingHashReward / APP_CONFIG.HASH_PER_TON;
         const modal = document.getElementById('claim-modal');
         const rewardEl = document.getElementById('claim-reward-amount');
-        rewardEl.innerText = tonAmount.toFixed(8) + ' TON';
+        rewardEl.innerText = this.pendingTonReward.toFixed(8) + ' TON';
         modal.style.display = 'flex';
         
         const confirmBtn = document.getElementById('confirm-claim-btn');
@@ -382,23 +249,17 @@ class App {
             modal.style.display = 'none';
             cleanup();
             
-            const adWatched = await this.showConfirmAd('Watch ad to claim your TON?', 'claim rewards');
-            if (!adWatched) return;
-            
-            this.tonBalance += tonAmount;
-            const previousHash = this.hashBalance;
-            this.hashBalance -= this.pendingHashReward;
-            if (this.hashBalance < 0) this.hashBalance = 0;
-            this.pendingHashReward = 0;
+            this.tonBalance += this.pendingTonReward;
+            this.pendingTonReward = 0;
             
             await this.saveUserData();
             
             if (this.db && this.tgUser.id) {
-                await this.addReferralEarnings(this.tgUser.id, tonAmount);
+                await this.addReferralEarnings(this.tgUser.id, this.pendingTonReward);
             }
             
             this.renderMining();
-            this.showNotification('Rewards Claimed!', `${tonAmount.toFixed(8)} TON added to balance`, 'success');
+            this.showNotification('Rewards Claimed!', `${this.pendingTonReward.toFixed(8)} TON added to balance`, 'success');
         };
         
         const handleClose = () => {
@@ -424,15 +285,12 @@ class App {
             const serverTime = await this.getServerTime();
             if (this.miningEndTime && serverTime >= this.miningEndTime) {
                 await this.stopMining();
-            } else {
-                await this.updateMiningHash(true);
             }
         }, 10000);
         
         this.uiUpdateInterval = setInterval(async () => {
             if (this.miningActive) {
                 await this.updateMiningTimerDisplay();
-                this.updateMiningDisplay();
             }
         }, 1000);
     }
@@ -473,6 +331,57 @@ class App {
                     referralTon: currentReferralTon + commission
                 });
             }
+        }
+    }
+    
+    async watchRewardAd() {
+        const now = Date.now();
+        const cooldown = APP_CONFIG.AD_COOLDOWN_REWARD * 1000;
+        if (now - this.lastRewardAdTime < cooldown) {
+            const remaining = Math.ceil((cooldown - (now - this.lastRewardAdTime)) / 1000);
+            this.showNotification('Cooldown', `Please wait ${remaining} seconds`, 'warning');
+            return;
+        }
+        
+        try {
+            const adController = window.Adsgram.init({ blockId: APP_CONFIG.REWARD_AD_BLOCK_ID });
+            await adController.show();
+            this.lastRewardAdTime = now;
+            this.powerBalance += 50;
+            await this.updateLevelFromPower();
+            await this.saveUserData();
+            this.renderMining();
+            this.renderEarn();
+            this.showNotification('Reward Claimed!', '+50 Power', 'success');
+        } catch(e) {
+            this.showNotification('Error', 'Failed to load ad', 'error');
+        }
+    }
+    
+    async watchAdexoraAd() {
+        const now = Date.now();
+        const cooldown = APP_CONFIG.AD_COOLDOWN_ADEXORA * 1000;
+        if (now - this.lastAdexoraAdTime < cooldown) {
+            const remaining = Math.ceil((cooldown - (now - this.lastAdexoraAdTime)) / 1000);
+            this.showNotification('Cooldown', `Please wait ${remaining} seconds`, 'warning');
+            return;
+        }
+        
+        try {
+            if (typeof window.showAdexora === 'function') {
+                await window.showAdexora();
+                this.lastAdexoraAdTime = now;
+                this.powerBalance += 50;
+                await this.updateLevelFromPower();
+                await this.saveUserData();
+                this.renderMining();
+                this.renderEarn();
+                this.showNotification('Reward Claimed!', '+50 Power', 'success');
+            } else {
+                this.showNotification('Error', 'Ad service unavailable', 'error');
+            }
+        } catch(e) {
+            this.showNotification('Error', 'Failed to load ad', 'error');
         }
     }
     
@@ -552,16 +461,13 @@ class App {
             this.powerBalance += promoData.power;
             await this.updateLevelFromPower();
         }
-        if (promoData.hash) {
-            this.hashBalance += promoData.hash;
-        }
         if (promoData.ton) {
             this.tonBalance += promoData.ton;
         }
         
         await this.saveUserData();
         this.renderMining();
-        this.showNotification('Code Applied!', `You received ${promoData.power ? promoData.power + ' Power' : promoData.hash ? promoData.hash.toLocaleString() + ' HASH' : promoData.ton + ' TON'}`, 'success');
+        this.showNotification('Code Applied!', `You received ${promoData.power ? promoData.power + ' Power' : promoData.ton + ' TON'}`, 'success');
         return true;
     }
     
@@ -574,8 +480,9 @@ class App {
             this.showNotification('Error', 'Invalid amount', 'error');
             return false;
         }
-        const confirmed = await this.showConfirmAd(`Withdraw ${amount.toFixed(5)} TON to ${wallet.slice(0,6)}...${wallet.slice(-4)}?`, 'withdraw TON');
-        if (!confirmed) return false;
+        
+        const adWatched = await this.showInterstitialAd();
+        if (!adWatched) return false;
         
         this.tonBalance -= amount;
         await this.saveUserData();
@@ -597,7 +504,7 @@ class App {
         this.showNotification('Withdrawn!', `${amount.toFixed(5)} TON requested`, 'success');
         return true;
     }
-
+    
     extractChatId(url) {
         const match = url.match(/t\.me\/([^\/\?]+)/);
         return match ? match[1] : null;
@@ -621,13 +528,13 @@ class App {
         const progressBar = document.getElementById('loader-progress-bar');
         const loaderText = document.getElementById('loader-text');
         
-        const updateProgress = (percent, text) => {
+        const updateProgress = (percent) => {
             if (progressBar) progressBar.style.width = percent + '%';
-            if (loaderText) loaderText.innerHTML = text + '<span class="dots">...</span>';
+            if (loaderText) loaderText.innerText = Math.floor(percent) + '%';
         };
         
         try {
-            updateProgress(5, 'Initializing Telegram');
+            updateProgress(5);
             if (!window.Telegram?.WebApp) throw new Error('Open from Telegram');
             this.tg = window.Telegram.WebApp;
             this.tgUser = this.tg.initDataUnsafe.user;
@@ -635,48 +542,42 @@ class App {
             this.tg.ready();
             this.tg.expand();
             
-            updateProgress(15, 'Connecting to Firebase');
+            updateProgress(15);
             await this.initFirebase();
             
-            updateProgress(35, 'Verifying device');
+            updateProgress(35);
             const existingOwner = await this.checkDevice();
             
-            updateProgress(50, 'Loading user data');
+            updateProgress(50);
             if (existingOwner && existingOwner !== this.tgUser.id) {
                 await this.loadUserById(existingOwner);
             } else {
                 await this.loadUserData();
             }
             
-            updateProgress(65, 'Loading tasks');
+            updateProgress(65);
             await this.loadCompletedTasks();
             await this.loadWithdrawals();
             await this.loadReferralStats();
             await this.loadPromoCodes();
             await this.loadTasks();
-            await this.loadQuestsState();
             
-            updateProgress(80, 'Checking mining status');
+            updateProgress(80);
             if (this.miningActive && this.miningEndTime) {
                 const serverTime = await this.getServerTime();
                 if (serverTime >= this.miningEndTime) {
                     this.miningActive = false;
                     this.miningStartTime = null;
                     this.miningEndTime = null;
-                    this.pendingHashReward = this.hashBalance;
-                    this.hashBalance = 0;
+                    this.pendingTonReward = this.getDailyTonRate();
                     await this.saveUserData();
                     this.renderMining();
                 } else {
-                    await this.updateMiningHash(true);
                     this.startMiningLoop();
                 }
-            } else if (this.miningActive) {
-                await this.updateMiningHash(true);
-                this.startMiningLoop();
             }
             
-            updateProgress(90, 'Applying welcome bonus');
+            updateProgress(90);
             if (!this.hasClaimedWelcome) {
                 this.powerBalance += APP_CONFIG.WELCOME_BONUS_POWER;
                 this.hasClaimedWelcome = true;
@@ -714,16 +615,14 @@ class App {
                 }
             }
             
-            updateProgress(95, 'Finalizing');
+            updateProgress(95);
             await this.loadReferralStats();
-            this.updateInviteQuestProgress(true);
-            this.updateLevelQuestProgress(true);
             
             this.setupEventListeners();
             this.renderUI();
             this.setupNavigation();
             
-            updateProgress(100, 'Ready');
+            updateProgress(100);
             
             setTimeout(() => {
                 const loader = document.getElementById('app-loader');
@@ -745,39 +644,12 @@ class App {
         }
     }
     
-    async loadQuestsState() {
-        if (!this.db) return;
-        const levelSnap = await this.db.ref(`users/${this.tgUser.id}/completedQuests/level_${this.levelQuest.currentTarget}`).once('value');
-        if (levelSnap.exists()) {
-            this.levelQuest.completed = true;
-            this.levelQuest.claimed = true;
-        } else {
-            const prevLevelSnap = await this.db.ref(`users/${this.tgUser.id}/completedQuests/level_${this.levelQuest.currentTarget - 1}`).once('value');
-            if (prevLevelSnap.exists()) {
-                this.levelQuest.completed = false;
-                this.levelQuest.claimed = false;
-            }
-        }
-        const inviteSnap = await this.db.ref(`users/${this.tgUser.id}/completedQuests/invite_${this.inviteQuest.currentTarget}`).once('value');
-        if (inviteSnap.exists()) {
-            this.inviteQuest.completed = true;
-            this.inviteQuest.claimed = true;
-        } else {
-            const prevInviteSnap = await this.db.ref(`users/${this.tgUser.id}/completedQuests/invite_${this.inviteQuest.currentTarget - 1}`).once('value');
-            if (prevInviteSnap.exists()) {
-                this.inviteQuest.completed = false;
-                this.inviteQuest.claimed = false;
-            }
-        }
-    }
-    
     async loadUserById(userId) {
         const ref = this.db.ref(`users/${userId}`);
         const snap = await ref.once('value');
         if (snap.exists()) {
             const d = snap.val();
             this.powerBalance = d.powerBalance ?? 0;
-            this.hashBalance = d.hashBalance ?? 0;
             this.tonBalance = d.tonBalance ?? 0;
             this.userLevel = d.level ?? 1;
             this.isVerified = d.isVerified ?? false;
@@ -786,7 +658,7 @@ class App {
             this.miningActive = d.miningActive ?? false;
             this.miningStartTime = d.miningStartTime ?? null;
             this.miningEndTime = d.miningEndTime ?? null;
-            this.pendingHashReward = d.pendingHashReward ?? 0;
+            this.pendingTonReward = d.pendingTonReward ?? 0;
             this.tgUser = { id: userId, first_name: d.firstName, username: d.username, photo_url: d.photoUrl };
             const nameSpan = document.getElementById('user-name');
             if (nameSpan) nameSpan.innerText = d.firstName;
@@ -816,7 +688,6 @@ class App {
         if (snap.exists()) {
             const d = snap.val();
             this.powerBalance = d.powerBalance ?? 0;
-            this.hashBalance = d.hashBalance ?? 0;
             this.tonBalance = d.tonBalance ?? 0;
             this.userLevel = d.level ?? 1;
             this.isVerified = d.isVerified ?? false;
@@ -825,7 +696,7 @@ class App {
             this.miningActive = d.miningActive ?? false;
             this.miningStartTime = d.miningStartTime ?? null;
             this.miningEndTime = d.miningEndTime ?? null;
-            this.pendingHashReward = d.pendingHashReward ?? 0;
+            this.pendingTonReward = d.pendingTonReward ?? 0;
         } else {
             const startParam = this.tg.initDataUnsafe?.start_param;
             let referredBy = (startParam && !isNaN(startParam)) ? parseInt(startParam) : null;
@@ -870,7 +741,6 @@ class App {
         if (!this.db) return;
         const updates = {};
         if (this.powerBalance !== undefined) updates.powerBalance = this.powerBalance;
-        if (this.hashBalance !== undefined) updates.hashBalance = this.hashBalance;
         if (this.tonBalance !== undefined) updates.tonBalance = this.tonBalance;
         if (this.userLevel !== undefined) updates.level = this.userLevel;
         if (this.isVerified !== undefined) updates.isVerified = this.isVerified;
@@ -879,7 +749,7 @@ class App {
         if (this.miningActive !== undefined) updates.miningActive = this.miningActive;
         if (this.miningStartTime !== undefined) updates.miningStartTime = this.miningStartTime;
         if (this.miningEndTime !== undefined) updates.miningEndTime = this.miningEndTime;
-        if (this.pendingHashReward !== undefined) updates.pendingHashReward = this.pendingHashReward;
+        if (this.pendingTonReward !== undefined) updates.pendingTonReward = this.pendingTonReward;
         await this.db.ref(`users/${this.tgUser.id}`).update(updates);
     }
     
@@ -922,7 +792,6 @@ class App {
             this.verifiedReferrals = d.verifiedReferrals ?? 0;
             this.referralPower = d.referralPower ?? 0;
             this.referralTon = d.referralTon ?? 0;
-            this.updateInviteQuestProgress(true);
         }
     }
     
@@ -971,26 +840,20 @@ class App {
         if (!el) return;
         const requiredPower = this.getRequiredPowerForLevel(this.userLevel + 1);
         const progress = Math.min((this.powerBalance / requiredPower) * 100, 100);
-        const ratePerSecond = this.getMiningRate();
+        const dailyRate = this.getDailyTonRate();
         
         el.innerHTML = `
             <div class="balance-cards">
                 <div class="balance-card"><div class="icon power"><i class="fas fa-bolt"></i></div><span class="label">Power</span><span class="value">${Math.floor(this.powerBalance).toLocaleString()}</span></div>
-                <div class="balance-card"><div class="icon hash"><i class="fas fa-microchip"></i></div><span class="label">HASH</span><span class="value">${Math.floor(this.hashBalance).toLocaleString()}</span></div>
+                <div class="balance-card"><div class="icon ton"><i class="fas fa-coins"></i></div><span class="label">TON</span><span class="value">${this.tonBalance.toFixed(6)}</span></div>
             </div>
             <div class="mining-card">
                 <div class="mining-icon"><i class="fas fa-microchip"></i></div>
                 <h3>Mining Rig Lv.${this.userLevel}</h3>
-                <div class="mining-rate"><i class="fas fa-star"></i> Rate: <span>${ratePerSecond.toFixed(6)} HASH/s</span></div>
-                <div class="mining-status ${this.miningActive ? 'active' : 'stopped'}">${this.miningActive ? '● ACTIVE' : '● STOPPED'}</div>
+                <div class="mining-rate"><i class="fas fa-chart-line"></i> Daily Rate: <span>${dailyRate.toFixed(6)} TON/day</span></div>
                 ${this.miningActive ? `<div class="mining-timer"><i class="fas fa-hourglass-half"></i> 00:00:00</div>` : ''}
-                ${!this.miningActive ? `<button id="start-mining-btn" class="mining-action-btn"><i class="fas fa-play"></i> Start Mining</button>` : ''}
-                ${!this.miningActive && this.pendingHashReward > 0 ? `<button id="claim-mining-btn" class="mining-claim-btn"><i class="fas fa-gift"></i> Claim Rewards</button>` : ''}
-            </div>
-            <div class="stats-row">
-                <div class="stat-card"><div class="stat-label">Daily</div><div class="stat-value" id="daily-earnings">${this.getDailyEarnings().toFixed(6)} TON</div></div>
-                <div class="stat-card"><div class="stat-label">Weekly</div><div class="stat-value" id="weekly-earnings">${this.getWeeklyEarnings().toFixed(6)} TON</div></div>
-                <div class="stat-card"><div class="stat-label">Monthly</div><div class="stat-value" id="monthly-earnings">${this.getMonthlyEarnings().toFixed(6)} TON</div></div>
+                ${!this.miningActive ? `<button id="start-mining-btn" class="mining-action-btn"><i class="fas fa-play"></i> START MINING</button>` : ''}
+                ${!this.miningActive && this.pendingTonReward > 0 ? `<button id="claim-mining-btn" class="mining-claim-btn"><i class="fas fa-gift"></i> CLAIM REWARD</button>` : ''}
             </div>
             <div class="level-progress"><div class="progress-header"><span>Level ${this.userLevel}</span><span>${Math.floor(this.powerBalance).toLocaleString()} / ${requiredPower.toLocaleString()} Power</span></div><div class="progress-bar"><div class="progress-fill" style="width: ${progress}%"></div></div></div>
         `;
@@ -1004,50 +867,16 @@ class App {
         const el = document.getElementById('earn-page');
         if (!el) return;
         
-        const mainTasksHtml = this.mainTasks && this.mainTasks.length ? this.mainTasks.map(t => {
-            const isCompleted = this.userCompletedTasks.has(t.id);
-            return `
-            <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> +${t.reward} Power</div></div>${!isCompleted ? `<button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button>` : `<button class="task-btn done" disabled>Done</button>`}</div>
-            `;
-        }).join('') : '<div class="no-data">No tasks available</div>';
+        const rewardAdCooldown = Math.max(0, APP_CONFIG.AD_COOLDOWN_REWARD - Math.floor((Date.now() - this.lastRewardAdTime) / 1000));
+        const adexoraCooldown = Math.max(0, APP_CONFIG.AD_COOLDOWN_ADEXORA - Math.floor((Date.now() - this.lastAdexoraAdTime) / 1000));
         
-        const partnerTasksHtml = this.partnerTasks && this.partnerTasks.length ? this.partnerTasks.map(t => {
-            const isCompleted = this.userCompletedTasks.has(t.id);
-            return `
-            <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> +${t.reward} Power</div></div>${!isCompleted ? `<button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button>` : `<button class="task-btn done" disabled>Done</button>`}</div>
-            `;
-        }).join('') : '<div class="no-data">No tasks available</div>';
+        const mainTasksHtml = this.mainTasks && this.mainTasks.length ? this.mainTasks.filter(t => !this.userCompletedTasks.has(t.id)).map(t => `
+            <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> +${t.reward} Power</div></div><button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button></div>
+        `).join('') : '<div class="no-data">No tasks available</div>';
         
-        const levelProgress = Math.min((this.userLevel / this.levelQuest.currentTarget) * 100, 100);
-        const inviteProgress = Math.min((this.verifiedReferrals / this.inviteQuest.currentTarget) * 100, 100);
-        
-        const levelQuestHtml = `
-            <div class="quest-card">
-                <div class="quest-header">
-                    <span class="quest-title">Up to Level ${this.levelQuest.currentTarget}</span>
-                    <span class="quest-reward"><i class="fas fa-bolt"></i> ${this.levelQuest.reward} Power</span>
-                </div>
-                <div class="quest-progress-bar"><div class="quest-progress-fill" style="width: ${levelProgress}%"></div></div>
-                <div class="quest-stats">
-                    <span>${this.userLevel}/${this.levelQuest.currentTarget}</span>
-                    ${this.levelQuest.completed && !this.levelQuest.claimed ? '<button class="quest-claim-btn" data-quest="level">Claim</button>' : this.levelQuest.claimed ? '<span>Completed ✓</span>' : '<span>In Progress</span>'}
-                </div>
-            </div>
-        `;
-        
-        const inviteQuestHtml = `
-            <div class="quest-card">
-                <div class="quest-header">
-                    <span class="quest-title">Invite ${this.inviteQuest.currentTarget} friend${this.inviteQuest.currentTarget > 1 ? 's' : ''}</span>
-                    <span class="quest-reward"><i class="fas fa-bolt"></i> ${this.inviteQuest.reward} Power</span>
-                </div>
-                <div class="quest-progress-bar"><div class="quest-progress-fill" style="width: ${inviteProgress}%"></div></div>
-                <div class="quest-stats">
-                    <span>${this.verifiedReferrals}/${this.inviteQuest.currentTarget}</span>
-                    ${this.inviteQuest.completed && !this.inviteQuest.claimed ? '<button class="quest-claim-btn" data-quest="invite">Claim</button>' : this.inviteQuest.claimed ? '<span>Completed ✓</span>' : '<span>In Progress</span>'}
-                </div>
-            </div>
-        `;
+        const partnerTasksHtml = this.partnerTasks && this.partnerTasks.length ? this.partnerTasks.filter(t => !this.userCompletedTasks.has(t.id)).map(t => `
+            <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> +${t.reward} Power</div></div><button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button></div>
+        `).join('') : '<div class="no-data">No tasks available</div>';
         
         el.innerHTML = `
             <div class="promo-card"><div class="promo-title"><i class="fas fa-gift"></i> Promo Code</div><div class="promo-input-group"><input type="text" id="promo-input" class="form-input" placeholder="Enter code" autocomplete="off"><button id="promo-submit" class="promo-submit-btn" disabled>Claim</button></div></div>
@@ -1055,8 +884,11 @@ class App {
             <div class="tasks-list">${mainTasksHtml}</div>
             <div class="section-title"><i class="fas fa-handshake"></i> Partner Tasks<button id="tasks-info-btn" class="info-icon-btn" style="margin-left:auto;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:#fff;cursor:pointer"><i class="fas fa-question"></i></button></div>
             <div class="tasks-list">${partnerTasksHtml}</div>
-            <div class="section-title"><i class="fas fa-trophy"></i> Quests</div>
-            <div class="quests-section">${levelQuestHtml}${inviteQuestHtml}</div>
+            <div class="section-title"><i class="fas fa-video"></i> Watch Ads</div>
+            <div class="ads-section">
+                <div class="ad-card"><div class="ad-info"><h4>Watch Reward AD</h4><div class="ad-reward"><i class="fas fa-bolt"></i> +50 Power</div>${rewardAdCooldown > 0 ? `<div class="ad-timer">Available in ${rewardAdCooldown}s</div>` : ''}</div><button class="watch-ad-btn" id="watch-reward-ad" ${rewardAdCooldown > 0 ? 'disabled' : ''}>Watch</button></div>
+                <div class="ad-card"><div class="ad-info"><h4>Watch Adexora AD</h4><div class="ad-reward"><i class="fas fa-bolt"></i> +50 Power</div>${adexoraCooldown > 0 ? `<div class="ad-timer">Available in ${adexoraCooldown}s</div>` : ''}</div><button class="watch-ad-btn" id="watch-adexora-ad" ${adexoraCooldown > 0 ? 'disabled' : ''}>Watch</button></div>
+            </div>
         `;
         
         const promoInput = document.getElementById('promo-input');
@@ -1078,6 +910,9 @@ class App {
         document.getElementById('tasks-info-btn')?.addEventListener('click', () => {
             document.getElementById('tasks-info-modal').style.display = 'flex';
         });
+        
+        document.getElementById('watch-reward-ad')?.addEventListener('click', () => this.watchRewardAd());
+        document.getElementById('watch-adexora-ad')?.addEventListener('click', () => this.watchAdexoraAd());
         
         document.querySelectorAll('.task-btn.start').forEach(btn => {
             btn.addEventListener('click', async () => {
@@ -1110,7 +945,7 @@ class App {
                             newBtn.classList.remove('check');
                             newBtn.classList.add('done');
                             newBtn.disabled = true;
-                            newBtn.style.cursor = 'default';
+                            newBtn.style.display = 'none';
                             this.isTaskRunning = false;
                             this.enableAllTaskButtons();
                             this.renderEarn();
@@ -1119,21 +954,13 @@ class App {
                 }, 1000);
             });
         });
-        
-        document.querySelectorAll('.quest-claim-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const questId = btn.dataset.quest;
-                if (questId === 'level') this.claimLevelQuest();
-                else if (questId === 'invite') this.claimInviteQuest();
-            });
-        });
     }
     
     renderTeam() {
         const el = document.getElementById('team-page');
         if (!el) return;
         const link = `https://t.me/Strzzbot/stars?startapp=${this.tgUser.id}`;
-        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Join me on Star Farmer and start mining HASH!')}`;
+        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Join me on Star Farmer and start mining TON!')}`;
         el.innerHTML = `
             <div class="team-benefits"><h3><i class="fas fa-gift"></i> Team Benefits</h3><div class="benefits-list"><div class="benefit-item"><i class="fas fa-coins"></i><div class="benefit-text">Earn 10% of your team members TON earnings</div></div><div class="benefit-item"><i class="fas fa-bolt"></i><div class="benefit-text">Get ${APP_CONFIG.REFERRAL_POWER_BONUS} Power per verified member</div></div></div></div>
             <div class="referral-card"><h4><i class="fas fa-share-alt"></i> SHARE & EARN</h4><div class="link-display">${link}</div><div class="referral-buttons"><button id="copyLink"><i class="fas fa-copy"></i> Copy</button><button id="shareLink"><i class="fab fa-telegram"></i> Share</button></div></div>
@@ -1179,7 +1006,7 @@ class App {
         
         maxBtn?.addEventListener('click', () => {
             if (amountInput) {
-                amountInput.value = this.tonBalance.toFixed(5);
+                amountInput.value = this.tonBalance.toFixed(6);
                 checkWithdrawReady();
             }
         });
