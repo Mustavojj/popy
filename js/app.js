@@ -129,15 +129,15 @@ class App {
     }
     
     async showAdexoraAd() {
-        try {
+        return new Promise((resolve) => {
             if (typeof window.showAdexora === 'function') {
-                await window.showAdexora();
-                return true;
+                window.showAdexora()
+                    .then(() => resolve(true))
+                    .catch(() => resolve(true));
+            } else {
+                setTimeout(() => resolve(true), 500);
             }
-            return true;
-        } catch(e) {
-            return true;
-        }
+        });
     }
     
     getRequiredPowerForLevel(level) {
@@ -146,10 +146,16 @@ class App {
     
     updateLevelFromPower() {
         let newLevel = 1;
+        let levelUpBonus = 0;
         while (this.powerBalance >= this.getRequiredPowerForLevel(newLevel + 1)) {
             newLevel++;
+            levelUpBonus += 50;
         }
         if (newLevel > this.userLevel) {
+            if (levelUpBonus > 0) {
+                this.powerBalance += levelUpBonus;
+                this.showNotification('Level Up!', `+${levelUpBonus} Power bonus for reaching level ${newLevel}!`, 'success');
+            }
             this.userLevel = newLevel;
             this.showNotification('Level Up!', `Reached level ${this.userLevel}!`, 'success');
             this.vibrate('success');
@@ -161,8 +167,16 @@ class App {
         if (levelBadge) levelBadge.innerText = this.userLevel;
     }
     
+    getHourlyTonRate() {
+        return this.powerBalance * APP_CONFIG.POWER_PER_TON_RATE;
+    }
+    
     getDailyTonRate() {
-        return this.powerBalance * APP_CONFIG.POWER_PER_TON_RATE * 24;
+        return this.getHourlyTonRate() * 24;
+    }
+    
+    getMonthlyTonRate() {
+        return this.getDailyTonRate() * 30;
     }
     
     async startMining() {
@@ -250,16 +264,17 @@ class App {
             cleanup();
             
             this.tonBalance += this.pendingTonReward;
+            const earnedAmount = this.pendingTonReward;
             this.pendingTonReward = 0;
             
             await this.saveUserData();
             
             if (this.db && this.tgUser.id) {
-                await this.addReferralEarnings(this.tgUser.id, this.pendingTonReward);
+                await this.addReferralEarnings(this.tgUser.id, earnedAmount);
             }
             
             this.renderMining();
-            this.showNotification('Rewards Claimed!', `${this.pendingTonReward.toFixed(8)} TON added to balance`, 'success');
+            this.showNotification('Rewards Claimed!', `${earnedAmount.toFixed(8)} TON added to balance`, 'success');
         };
         
         const handleClose = () => {
@@ -343,9 +358,8 @@ class App {
             return;
         }
         
-        try {
-            const adController = window.Adsgram.init({ blockId: APP_CONFIG.REWARD_AD_BLOCK_ID });
-            await adController.show();
+        const adWatched = await this.showRewardAd();
+        if (adWatched) {
             this.lastRewardAdTime = now;
             this.powerBalance += 50;
             await this.updateLevelFromPower();
@@ -353,8 +367,6 @@ class App {
             this.renderMining();
             this.renderEarn();
             this.showNotification('Reward Claimed!', '+50 Power', 'success');
-        } catch(e) {
-            this.showNotification('Error', 'Failed to load ad', 'error');
         }
     }
     
@@ -367,21 +379,15 @@ class App {
             return;
         }
         
-        try {
-            if (typeof window.showAdexora === 'function') {
-                await window.showAdexora();
-                this.lastAdexoraAdTime = now;
-                this.powerBalance += 50;
-                await this.updateLevelFromPower();
-                await this.saveUserData();
-                this.renderMining();
-                this.renderEarn();
-                this.showNotification('Reward Claimed!', '+50 Power', 'success');
-            } else {
-                this.showNotification('Error', 'Ad service unavailable', 'error');
-            }
-        } catch(e) {
-            this.showNotification('Error', 'Failed to load ad', 'error');
+        const adWatched = await this.showAdexoraAd();
+        if (adWatched) {
+            this.lastAdexoraAdTime = now;
+            this.powerBalance += 50;
+            await this.updateLevelFromPower();
+            await this.saveUserData();
+            this.renderMining();
+            this.renderEarn();
+            this.showNotification('Reward Claimed!', '+50 Power', 'success');
         }
     }
     
@@ -840,22 +846,33 @@ class App {
         if (!el) return;
         const requiredPower = this.getRequiredPowerForLevel(this.userLevel + 1);
         const progress = Math.min((this.powerBalance / requiredPower) * 100, 100);
+        const hourlyRate = this.getHourlyTonRate();
         const dailyRate = this.getDailyTonRate();
+        const monthlyRate = this.getMonthlyTonRate();
+        const nextLevelBonus = 50;
         
         el.innerHTML = `
             <div class="balance-cards">
                 <div class="balance-card"><div class="icon power"><i class="fas fa-bolt"></i></div><span class="label">Power</span><span class="value">${Math.floor(this.powerBalance).toLocaleString()}</span></div>
-                <div class="balance-card"><div class="icon ton"><i class="fas fa-coins"></i></div><span class="label">TON</span><span class="value">${this.tonBalance.toFixed(6)}</span></div>
+                <div class="balance-card"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" class="ton-icon-img"><span class="label">TON</span><span class="value">${this.tonBalance.toFixed(6)}</span></div>
             </div>
             <div class="mining-card">
-                <div class="mining-icon"><i class="fas fa-microchip"></i></div>
+                <div class="mining-fan"><i class="fas fa-microchip"></i></div>
                 <h3>Mining Rig Lv.${this.userLevel}</h3>
-                <div class="mining-rate"><i class="fas fa-chart-line"></i> Daily Rate: <span>${dailyRate.toFixed(6)} TON/day</span></div>
+                <div class="rate-stats">
+                    <div class="rate-stat"><div class="stat-label">Hourly</div><div class="stat-value">${hourlyRate.toFixed(6)} TON</div></div>
+                    <div class="rate-stat"><div class="stat-label">Daily</div><div class="stat-value">${dailyRate.toFixed(6)} TON</div></div>
+                    <div class="rate-stat"><div class="stat-label">Monthly</div><div class="stat-value">${monthlyRate.toFixed(6)} TON</div></div>
+                </div>
                 ${this.miningActive ? `<div class="mining-timer"><i class="fas fa-hourglass-half"></i> 00:00:00</div>` : ''}
                 ${!this.miningActive ? `<button id="start-mining-btn" class="mining-action-btn"><i class="fas fa-play"></i> START MINING</button>` : ''}
                 ${!this.miningActive && this.pendingTonReward > 0 ? `<button id="claim-mining-btn" class="mining-claim-btn"><i class="fas fa-gift"></i> CLAIM REWARD</button>` : ''}
             </div>
-            <div class="level-progress"><div class="progress-header"><span>Level ${this.userLevel}</span><span>${Math.floor(this.powerBalance).toLocaleString()} / ${requiredPower.toLocaleString()} Power</span></div><div class="progress-bar"><div class="progress-fill" style="width: ${progress}%"></div></div></div>
+            <div class="level-progress">
+                <div class="progress-header"><span>Level ${this.userLevel}</span><span>${Math.floor(this.powerBalance).toLocaleString()} / ${requiredPower.toLocaleString()} Power</span></div>
+                <div class="progress-bar"><div class="progress-fill" style="width: ${progress}%"></div></div>
+                <div class="level-reward"><i class="fas fa-gift"></i> Next level reward: +${nextLevelBonus} Power</div>
+            </div>
         `;
         
         document.getElementById('start-mining-btn')?.addEventListener('click', () => this.startMining());
@@ -870,21 +887,27 @@ class App {
         const rewardAdCooldown = Math.max(0, APP_CONFIG.AD_COOLDOWN_REWARD - Math.floor((Date.now() - this.lastRewardAdTime) / 1000));
         const adexoraCooldown = Math.max(0, APP_CONFIG.AD_COOLDOWN_ADEXORA - Math.floor((Date.now() - this.lastAdexoraAdTime) / 1000));
         
-        const mainTasksHtml = this.mainTasks && this.mainTasks.length ? this.mainTasks.filter(t => !this.userCompletedTasks.has(t.id)).map(t => `
-            <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> +${t.reward} Power</div></div><button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button></div>
-        `).join('') : '<div class="no-data">No tasks available</div>';
+        const availableMainTasks = this.mainTasks.filter(t => !this.userCompletedTasks.has(t.id));
+        const availablePartnerTasks = this.partnerTasks.filter(t => !this.userCompletedTasks.has(t.id));
         
-        const partnerTasksHtml = this.partnerTasks && this.partnerTasks.length ? this.partnerTasks.filter(t => !this.userCompletedTasks.has(t.id)).map(t => `
+        const mainTasksHtml = availableMainTasks.length > 0 ? availableMainTasks.map(t => `
             <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> +${t.reward} Power</div></div><button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button></div>
-        `).join('') : '<div class="no-data">No tasks available</div>';
+        `).join('') : '<div class="no-data"><i class="fas fa-check-circle"></i><p>All tasks completed!</p><small>Check back later for more</small></div>';
+        
+        const partnerTasksHtml = availablePartnerTasks.length > 0 ? availablePartnerTasks.map(t => `
+            <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> +${t.reward} Power</div></div><button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button></div>
+        `).join('') : '<div class="no-data"><i class="fas fa-handshake"></i><p>No partner tasks available</p><small>Check back later</small></div>';
         
         el.innerHTML = `
             <div class="promo-card"><div class="promo-title"><i class="fas fa-gift"></i> Promo Code</div><div class="promo-input-group"><input type="text" id="promo-input" class="form-input" placeholder="Enter code" autocomplete="off"><button id="promo-submit" class="promo-submit-btn" disabled>Claim</button></div></div>
-            <div class="section-title"><i class="fas fa-star"></i> Main Tasks</div>
+            
+            <div class="section-header"><h3><i class="fas fa-star"></i> Main Tasks</h3><p>Complete tasks to earn Power</p></div>
             <div class="tasks-list">${mainTasksHtml}</div>
-            <div class="section-title"><i class="fas fa-handshake"></i> Partner Tasks<button id="tasks-info-btn" class="info-icon-btn" style="margin-left:auto;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:#fff;cursor:pointer"><i class="fas fa-question"></i></button></div>
+            
+            <div class="section-header"><h3><i class="fas fa-handshake"></i> Partner Tasks</h3><p>Special offers from our partners<button id="tasks-info-btn" class="info-icon-btn" style="margin-left:8px;background:none;border:none;color:var(--primary);cursor:pointer"><i class="fas fa-question-circle"></i></button></p></div>
             <div class="tasks-list">${partnerTasksHtml}</div>
-            <div class="section-title"><i class="fas fa-video"></i> Watch Ads</div>
+            
+            <div class="section-header"><h3><i class="fas fa-video"></i> Watch Ads</h3><p>Earn bonus Power</p></div>
             <div class="ads-section">
                 <div class="ad-card"><div class="ad-info"><h4>Watch Reward AD</h4><div class="ad-reward"><i class="fas fa-bolt"></i> +50 Power</div>${rewardAdCooldown > 0 ? `<div class="ad-timer">Available in ${rewardAdCooldown}s</div>` : ''}</div><button class="watch-ad-btn" id="watch-reward-ad" ${rewardAdCooldown > 0 ? 'disabled' : ''}>Watch</button></div>
                 <div class="ad-card"><div class="ad-info"><h4>Watch Adexora AD</h4><div class="ad-reward"><i class="fas fa-bolt"></i> +50 Power</div>${adexoraCooldown > 0 ? `<div class="ad-timer">Available in ${adexoraCooldown}s</div>` : ''}</div><button class="watch-ad-btn" id="watch-adexora-ad" ${adexoraCooldown > 0 ? 'disabled' : ''}>Watch</button></div>
@@ -978,10 +1001,10 @@ class App {
     renderWithdraw() {
         const el = document.getElementById('withdraw-page');
         if (!el) return;
-        const historyHtml = this.withdrawals && this.withdrawals.length ? this.withdrawals.map(w => `<div class="history-item"><div><small>${new Date(w.timestamp).toLocaleDateString()}</small><br><small>${w.wallet?.slice(0,6)}...${w.wallet?.slice(-4)}</small></div><div class="history-amount">💰 ${w.amount.toFixed(5)} TON</div><div class="history-status ${w.status}">${w.status}</div></div>`).join('') : '<div class="no-data">No withdrawals yet</div>';
+        const historyHtml = this.withdrawals && this.withdrawals.length ? this.withdrawals.map(w => `<div class="history-item"><div><small>${new Date(w.timestamp).toLocaleDateString()}</small><br><small>${w.wallet?.slice(0,6)}...${w.wallet?.slice(-4)}</small></div><div class="history-amount"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" style="width:16px;height:16px"> ${w.amount.toFixed(5)} TON</div><div class="history-status ${w.status}">${w.status}</div></div>`).join('') : '<div class="no-data"><i class="fas fa-history"></i><p>No withdrawals yet</p><small>Your withdrawal history will appear here</small></div>';
         
         el.innerHTML = `
-            <div class="withdraw-card"><h3><i class="fas fa-wallet"></i> Withdraw TON</h3><div class="withdraw-balance">💰 Available: ${this.tonBalance.toFixed(6)} TON</div>
+            <div class="withdraw-card"><h3><i class="fas fa-wallet"></i> Withdraw TON</h3><div class="withdraw-balance"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" style="width:28px;height:28px"> Available: ${this.tonBalance.toFixed(6)} TON</div>
             <div class="form-group"><label class="form-label">TON Wallet</label><div class="input-wrapper"><input type="text" id="wallet-addr" class="form-input" placeholder="UQ..."></div></div>
             <div class="form-group"><label class="form-label">Amount</label><div class="input-wrapper"><input type="number" id="withdraw-amount" class="form-input" placeholder="Min: ${APP_CONFIG.MINIMUM_WITHDRAW} TON" step="0.00001"><button id="max-amount" class="action-btn">MAX</button></div></div>
             <div class="withdraw-note"><i class="fas fa-info-circle"></i> Minimum withdrawal: ${APP_CONFIG.MINIMUM_WITHDRAW} TON</div>
