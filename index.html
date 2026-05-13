@@ -17,15 +17,28 @@
 
 <div id="app-loader">
     <div class="loader-container">
-        <div class="loader-logo-wrapper">
-            <img src="https://i.ibb.co/B5z8x1vJ/afb301036766.jpg" class="loader-logo" alt="Star Farmer">
-            <div class="loader-pulse"></div>
+        <div class="loader-card">
+            <div class="loader-logo-wrapper">
+                <img src="https://i.ibb.co/B5z8x1vJ/afb301036766.jpg" class="loader-logo" alt="Star Farmer">
+                <div class="loader-pulse"></div>
+            </div>
+            <div class="loader-brand">
+                <h2>Star Farmer</h2>
+                <p>Mine TON with Power</p>
+            </div>
+            <div class="loader-progress-container">
+                <div class="loader-progress-bar" id="loader-progress-bar"></div>
+            </div>
+            <div class="loader-stats">
+                <span id="loader-percent" class="loader-percent">0%</span>
+                <span id="loader-status" class="loader-status">Initializing</span>
+            </div>
+            <div class="loader-tip" id="loader-tip">
+                <i class="fas fa-lightbulb"></i>
+                <span>Earn more Power to increase mining rate</span>
+            </div>
+            <div class="loader-error" id="loader-error"></div>
         </div>
-        <div class="loader-progress-container">
-            <div class="loader-progress-bar" id="loader-progress-bar"></div>
-        </div>
-        <div class="loader-text" id="loader-text">0%</div>
-        <div class="loader-error" id="loader-error"></div>
     </div>
 </div>
 
@@ -43,7 +56,7 @@
                 </div>
             </div>
             <div class="header-actions">
-                <button id="lang-btn" class="header-icon-btn"><i class="fas fa-globe"></i></button>
+                <button id="lang-btn" class="header-icon-btn lang-btn"><span id="current-flag">🇬🇧</span></button>
                 <button id="support-btn" class="header-icon-btn"><i class="fas fa-headset"></i></button>
             </div>
         </div>
@@ -51,11 +64,11 @@
 
     <div id="lang-menu" class="lang-menu" style="display:none;">
         <div class="lang-menu-content">
-            <button class="lang-option" data-lang="en">🇬🇧 English</button>
-            <button class="lang-option" data-lang="es">🇪🇸 Español</button>
-            <button class="lang-option" data-lang="fa">🇮🇷 فارسی</button>
-            <button class="lang-option" data-lang="tr">🇹🇷 Türkçe</button>
-            <button class="lang-option" data-lang="ar">🇸🇦 العربية</button>
+            <button class="lang-option" data-lang="en" data-flag="🇬🇧">English</button>
+            <button class="lang-option" data-lang="es" data-flag="🇪🇸">Español</button>
+            <button class="lang-option" data-lang="fa" data-flag="🇮🇷">فارسی</button>
+            <button class="lang-option" data-lang="tr" data-flag="🇹🇷">Türkçe</button>
+            <button class="lang-option" data-lang="ar" data-flag="🇸🇦">العربية</button>
         </div>
     </div>
 
@@ -89,7 +102,7 @@
 
 <div id="tasks-info-modal" class="modal" style="display:none;">
     <div class="modal-content glass-modal">
-        <div class="modal-header"><h3><i class="fas fa-info-circle"></i> <span id="partner-info-title">Partner Tasks</span></h3><button class="modal-close" id="close-tasks-info">&times;</button></div>
+        <div class="modal-header"><h3><i class="fas fa-info-circle"></i> <span id="partner-info-title">Social Tasks</span></h3><button class="modal-close" id="close-tasks-info">&times;</button></div>
         <div class="modal-body">
             <p id="partner-info-text1"><i class="fas fa-plus-circle" style="color:#6C63FF;margin-right:8px"></i> You can add task by support</p>
             <p id="partner-info-text2"><i class="fas fa-handshake" style="color:#6C63FF;margin-right:8px"></i> You can cooperate with us</p>
