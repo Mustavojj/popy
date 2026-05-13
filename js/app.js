@@ -1,5 +1,93 @@
 import { APP_CONFIG } from './data.js';
 
+const translations = {
+    en: {
+        level: "Level", mining_rig: "Mining Rig Lv.", hourly: "Hourly", daily: "Daily", monthly: "Monthly",
+        start_mining: "START MINING", claim_reward: "CLAIM REWARD", mining_note: "Rewards can be collected after mining session ends",
+        next_level_reward: "Next level reward", power: "Power", ton: "TON", promo_code: "Promo Code",
+        enter_code: "Enter code", claim: "Claim", main_tasks: "Main Tasks", partner_tasks: "Partner Tasks",
+        watch_ad: "Watch Reward AD", reward_amount: "Reward", available_in: "Available in", seconds: "s",
+        watch: "Watch", all_tasks_completed: "All tasks completed!", check_later: "Check back later for more",
+        no_tasks: "No tasks available", team_benefits: "Team Benefits", share_earn: "SHARE & EARN",
+        copy: "Copy", share: "Share", total_members: "Total Members", verified_members: "Verified Members",
+        power_earnings: "Power Earnings", ton_earnings: "TON Earnings", withdraw: "Withdraw TON",
+        available: "Available", ton_wallet: "TON Wallet", amount: "Amount", min_withdraw: "Minimum withdrawal",
+        confirm_withdrawal: "Confirm Withdrawal", withdrawal_history: "Withdrawal History", no_withdrawals: "No withdrawals yet",
+        pending: "pending", completed: "completed", claim_mining_title: "Claim Mining Rewards", claim_btn: "Claim Rewards",
+        partner_info_title: "Partner Tasks", partner_text1: "You can add task by support", partner_text2: "You can cooperate with us",
+        partner_text3: "Contact support for details", contact_support: "Contact Support", mining: "Mining", earn: "Earn",
+        team: "Team", copy_success: "Copied!", link_copied: "Link copied to clipboard"
+    },
+    es: {
+        level: "Nivel", mining_rig: "Equipo de Minería Nv.", hourly: "Por hora", daily: "Diario", monthly: "Mensual",
+        start_mining: "INICIAR MINERÍA", claim_reward: "RECLAMAR RECOMPENSA", mining_note: "Las recompensas se pueden recolectar después de la sesión de minería",
+        next_level_reward: "Recompensa del próximo nivel", power: "Energía", ton: "TON", promo_code: "Código Promocional",
+        enter_code: "Ingrese código", claim: "Reclamar", main_tasks: "Tareas Principales", partner_tasks: "Tareas de Socios",
+        watch_ad: "Ver Anuncio Recompensa", reward_amount: "Recompensa", available_in: "Disponible en", seconds: "s",
+        watch: "Ver", all_tasks_completed: "¡Todas las tareas completadas!", check_later: "Vuelve más tarde para más",
+        no_tasks: "No hay tareas disponibles", team_benefits: "Beneficios del Equipo", share_earn: "COMPARTIR Y GANAR",
+        copy: "Copiar", share: "Compartir", total_members: "Miembros Totales", verified_members: "Miembros Verificados",
+        power_earnings: "Ganancias de Energía", ton_earnings: "Ganancias en TON", withdraw: "Retirar TON",
+        available: "Disponible", ton_wallet: "Billetera TON", amount: "Cantidad", min_withdraw: "Retiro mínimo",
+        confirm_withdrawal: "Confirmar Retiro", withdrawal_history: "Historial de Retiros", no_withdrawals: "Sin retiros aún",
+        pending: "pendiente", completed: "completado", claim_mining_title: "Reclamar Recompensas de Minería", claim_btn: "Reclamar Recompensas",
+        partner_info_title: "Tareas de Socios", partner_text1: "Puedes agregar tareas con soporte", partner_text2: "Puedes cooperar con nosotros",
+        partner_text3: "Contacta con soporte para detalles", contact_support: "Contactar Soporte", mining: "Minería", earn: "Ganar",
+        team: "Equipo", copy_success: "¡Copiado!", link_copied: "Enlace copiado al portapapeles"
+    },
+    fa: {
+        level: "سطح", mining_rig: "دستگاه استخراج سطح", hourly: "ساعتی", daily: "روزانه", monthly: "ماهانه",
+        start_mining: "شروع استخراج", claim_reward: "دریافت پاداش", mining_note: "پاداش‌ها پس از پایان جلسه استخراج قابل دریافت هستند",
+        next_level_reward: "پاداش سطح بعدی", power: "انرژی", ton: "تون", promo_code: "کد تخفیف",
+        enter_code: "ورود کد", claim: "دریافت", main_tasks: "وظایف اصلی", partner_tasks: "وظایف همکاران",
+        watch_ad: "تماشای تبلیغ جایزه‌دار", reward_amount: "پاداش", available_in: "موجود در", seconds: "ثانیه",
+        watch: "تماشا", all_tasks_completed: "تمام وظایف انجام شد!", check_later: "بعداً برای موارد بیشتر مراجعه کنید",
+        no_tasks: "هیچ وظیفه‌ای موجود نیست", team_benefits: "مزایای تیم", share_earn: "اشتراک‌گذاری و درآمدزایی",
+        copy: "کپی", share: "اشتراک‌گذاری", total_members: "کل اعضا", verified_members: "اعضای تأیید شده",
+        power_earnings: "درآمد انرژی", ton_earnings: "درآمد تون", withdraw: "برداشت تون",
+        available: "موجودی", ton_wallet: "کیف پول تون", amount: "مقدار", min_withdraw: "حداقل برداشت",
+        confirm_withdrawal: "تأیید برداشت", withdrawal_history: "تاریخچه برداشت", no_withdrawals: "هنوز برداشتی انجام نشده",
+        pending: "در انتظار", completed: "تکمیل شده", claim_mining_title: "دریافت پاداش استخراج", claim_btn: "دریافت پاداش",
+        partner_info_title: "وظایف همکاران", partner_text1: "می‌توانید وظیفه را با پشتیبانی اضافه کنید", partner_text2: "می‌توانید با ما همکاری کنید",
+        partner_text3: "برای جزئیات با پشتیبانی تماس بگیرید", contact_support: "تماس با پشتیبانی", mining: "استخراج", earn: "درآمد",
+        team: "تیم", copy_success: "کپی شد!", link_copied: "لینک در کلیپ‌بورد کپی شد"
+    },
+    tr: {
+        level: "Seviye", mining_rig: "Madenci Seviye", hourly: "Saatlik", daily: "Günlük", monthly: "Aylık",
+        start_mining: "MADENCİLİĞE BAŞLA", claim_reward: "ÖDÜLÜ AL", mining_note: "Ödüller madencilik oturumu bittikten sonra toplanabilir",
+        next_level_reward: "Sonraki seviye ödülü", power: "Güç", ton: "TON", promo_code: "Promosyon Kodu",
+        enter_code: "Kodu girin", claim: "Al", main_tasks: "Ana Görevler", partner_tasks: "Ortak Görevleri",
+        watch_ad: "Ödüllü Reklam İzle", reward_amount: "Ödül", available_in: "Kalan süre", seconds: "sn",
+        watch: "İzle", all_tasks_completed: "Tüm görevler tamamlandı!", check_later: "Daha fazlası için daha sonra kontrol edin",
+        no_tasks: "Görev yok", team_benefits: "Takım Avantajları", share_earn: "PAYLAŞ VE KAZAN",
+        copy: "Kopyala", share: "Paylaş", total_members: "Toplam Üye", verified_members: "Doğrulanmış Üye",
+        power_earnings: "Güç Kazancı", ton_earnings: "TON Kazancı", withdraw: "TON Çek",
+        available: "Mevcut", ton_wallet: "TON Cüzdanı", amount: "Miktar", min_withdraw: "Minimum çekim",
+        confirm_withdrawal: "Çekimi Onayla", withdrawal_history: "Çekim Geçmişi", no_withdrawals: "Henüz çekim yok",
+        pending: "beklemede", completed: "tamamlandı", claim_mining_title: "Madencilik Ödüllerini Al", claim_btn: "Ödülleri Al",
+        partner_info_title: "Ortak Görevleri", partner_text1: "Destek ile görev ekleyebilirsiniz", partner_text2: "Bizimle işbirliği yapabilirsiniz",
+        partner_text3: "Detaylar için desteğe başvurun", contact_support: "Desteğe Başvur", mining: "Madencilik", earn: "Kazan",
+        team: "Takım", copy_success: "Kopyalandı!", link_copied: "Bağlantı panoya kopyalandı"
+    },
+    ar: {
+        level: "مستوى", mining_rig: "جهاز التعدين مستوى", hourly: "كل ساعة", daily: "يومي", monthly: "شهري",
+        start_mining: "بدء التعدين", claim_reward: "استلام المكافأة", mining_note: "يمكن جمع المكافآت بعد انتهاء جلسة التعدين",
+        next_level_reward: "مكافأة المستوى التالي", power: "الطاقة", ton: "تون", promo_code: "رمز ترويجي",
+        enter_code: "أدخل الرمز", claim: "استلام", main_tasks: "المهام الرئيسية", partner_tasks: "مهام الشركاء",
+        watch_ad: "مشاهدة إعلان مكافأة", reward_amount: "المكافأة", available_in: "متاح بعد", seconds: "ثانية",
+        watch: "مشاهدة", all_tasks_completed: "جميع المهام مكتملة!", check_later: "تحقق لاحقاً للمزيد",
+        no_tasks: "لا توجد مهام متاحة", team_benefits: "مزايا الفريق", share_earn: "شارك واربح",
+        copy: "نسخ", share: "مشاركة", total_members: "إجمالي الأعضاء", verified_members: "الأعضاء الموثقين",
+        power_earnings: "أرباح الطاقة", ton_earnings: "أرباح التون", withdraw: "سحب تون",
+        available: "الرصيد المتوفر", ton_wallet: "محفظة تون", amount: "المبلغ", min_withdraw: "الحد الأدنى للسحب",
+        confirm_withdrawal: "تأكيد السحب", withdrawal_history: "سجل السحوبات", no_withdrawals: "لا توجد سحوبات بعد",
+        pending: "قيد الانتظار", completed: "مكتمل", claim_mining_title: "استلام مكافآت التعدين", claim_btn: "استلام المكافآت",
+        partner_info_title: "مهام الشركاء", partner_text1: "يمكنك إضافة مهمة عن طريق الدعم", partner_text2: "يمكنك التعاون معنا",
+        partner_text3: "اتصل بالدعم للتفاصيل", contact_support: "اتصل بالدعم", mining: "التعدين", earn: "الأرباح",
+        team: "الفريق", copy_success: "تم النسخ!", link_copied: "تم نسخ الرابط"
+    }
+};
+
 class App {
     constructor() {
         this.tg = null;
@@ -33,10 +121,14 @@ class App {
         this.partnerTasks = [];
         
         this.lastRewardAdTime = 0;
-        this.lastAdexoraAdTime = 0;
+        this.lang = 'en';
         
         this.vibrationEnabled = true;
         this.loadSettings();
+    }
+    
+    t(key) {
+        return translations[this.lang]?.[key] || translations.en[key] || key;
     }
     
     async getDeviceFingerprint() {
@@ -128,18 +220,6 @@ class App {
         }
     }
     
-    async showAdexoraAd() {
-        return new Promise((resolve) => {
-            if (typeof window.showAdexora === 'function') {
-                window.showAdexora()
-                    .then(() => resolve(true))
-                    .catch(() => resolve(true));
-            } else {
-                setTimeout(() => resolve(true), 500);
-            }
-        });
-    }
-    
     getRequiredPowerForLevel(level) {
         return Math.floor(APP_CONFIG.LEVEL_FORMULA.base * Math.pow(APP_CONFIG.LEVEL_FORMULA.multiplier, level - 1));
     }
@@ -154,10 +234,10 @@ class App {
         if (newLevel > this.userLevel) {
             if (levelUpBonus > 0) {
                 this.powerBalance += levelUpBonus;
-                this.showNotification('Level Up!', `+${levelUpBonus} Power bonus for reaching level ${newLevel}!`, 'success');
+                this.showNotification(this.t('level') + ' Up!', `+${levelUpBonus} Power bonus for reaching level ${newLevel}!`, 'success');
             }
             this.userLevel = newLevel;
-            this.showNotification('Level Up!', `Reached level ${this.userLevel}!`, 'success');
+            this.showNotification(this.t('level') + ' Up!', `Reached level ${this.userLevel}!`, 'success');
             this.vibrate('success');
         }
         this.userLevel = newLevel;
@@ -223,9 +303,9 @@ class App {
         await this.saveUserData();
         this.renderMining();
         this.startMiningLoop();
-        this.showNotification('Mining Started!', 'Your rig is now mining TON', 'success');
+        this.showNotification(this.t('start_mining'), 'Your rig is now mining TON', 'success');
     }
-    
+
     async stopMining() {
         if (!this.miningActive) return;
         
@@ -354,7 +434,7 @@ class App {
         const cooldown = APP_CONFIG.AD_COOLDOWN_REWARD * 1000;
         if (now - this.lastRewardAdTime < cooldown) {
             const remaining = Math.ceil((cooldown - (now - this.lastRewardAdTime)) / 1000);
-            this.showNotification('Cooldown', `Please wait ${remaining} seconds`, 'warning');
+            this.showNotification('Cooldown', `${this.t('available_in')} ${remaining} ${this.t('seconds')}`, 'warning');
             return;
         }
         
@@ -366,28 +446,7 @@ class App {
             await this.saveUserData();
             this.renderMining();
             this.renderEarn();
-            this.showNotification('Reward Claimed!', '+50 Power', 'success');
-        }
-    }
-    
-    async watchAdexoraAd() {
-        const now = Date.now();
-        const cooldown = APP_CONFIG.AD_COOLDOWN_ADEXORA * 1000;
-        if (now - this.lastAdexoraAdTime < cooldown) {
-            const remaining = Math.ceil((cooldown - (now - this.lastAdexoraAdTime)) / 1000);
-            this.showNotification('Cooldown', `Please wait ${remaining} seconds`, 'warning');
-            return;
-        }
-        
-        const adWatched = await this.showAdexoraAd();
-        if (adWatched) {
-            this.lastAdexoraAdTime = now;
-            this.powerBalance += 50;
-            await this.updateLevelFromPower();
-            await this.saveUserData();
-            this.renderMining();
-            this.renderEarn();
-            this.showNotification('Reward Claimed!', '+50 Power', 'success');
+            this.showNotification('Reward Claimed!', '50 Power', 'success');
         }
     }
     
@@ -421,7 +480,7 @@ class App {
         }
         this.renderMining();
         this.renderEarn();
-        this.showNotification('Task Completed!', `+${rewardPower} Power`, 'success');
+        this.showNotification('Task Completed!', `${rewardPower} Power`, 'success');
         this.vibrate('success');
         this.isTaskRunning = false;
         this.enableAllTaskButtons();
@@ -853,30 +912,35 @@ class App {
         
         el.innerHTML = `
             <div class="balance-cards">
-                <div class="balance-card"><div class="icon power"><i class="fas fa-bolt"></i></div><span class="label">Power</span><span class="value">${Math.floor(this.powerBalance).toLocaleString()}</span></div>
-                <div class="balance-card"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" class="ton-icon-img"><span class="label">TON</span><span class="value">${this.tonBalance.toFixed(6)}</span></div>
+                <div class="balance-card"><div class="icon power"><i class="fas fa-bolt"></i></div><span class="label">${this.t('power')}</span><span class="value">${Math.floor(this.powerBalance).toLocaleString()}</span></div>
+                <div class="balance-card"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" class="ton-icon-img"><span class="label">${this.t('ton')}</span><span class="value">${this.tonBalance.toFixed(6)}</span></div>
             </div>
             <div class="mining-card">
                 <div class="mining-fan"><i class="fas fa-microchip"></i></div>
-                <h3>Mining Rig Lv.${this.userLevel}</h3>
+                <h3>${this.t('mining_rig')}${this.userLevel}</h3>
                 <div class="rate-stats">
-                    <div class="rate-stat"><div class="stat-label">Hourly</div><div class="stat-value">${hourlyRate.toFixed(6)} TON</div></div>
-                    <div class="rate-stat"><div class="stat-label">Daily</div><div class="stat-value">${dailyRate.toFixed(6)} TON</div></div>
-                    <div class="rate-stat"><div class="stat-label">Monthly</div><div class="stat-value">${monthlyRate.toFixed(6)} TON</div></div>
+                    <div class="rate-stat"><div class="stat-label">${this.t('hourly')}</div><div class="stat-value">${hourlyRate.toFixed(6)} TON</div></div>
+                    <div class="rate-stat"><div class="stat-label">${this.t('daily')}</div><div class="stat-value">${dailyRate.toFixed(6)} TON</div></div>
+                    <div class="rate-stat"><div class="stat-label">${this.t('monthly')}</div><div class="stat-value">${monthlyRate.toFixed(6)} TON</div></div>
                 </div>
-                ${this.miningActive ? `<div class="mining-timer"><i class="fas fa-hourglass-half"></i> 00:00:00</div>` : ''}
-                ${!this.miningActive ? `<button id="start-mining-btn" class="mining-action-btn"><i class="fas fa-play"></i> START MINING</button>` : ''}
-                ${!this.miningActive && this.pendingTonReward > 0 ? `<button id="claim-mining-btn" class="mining-claim-btn"><i class="fas fa-gift"></i> CLAIM REWARD</button>` : ''}
+                ${this.miningActive ? `<div class="mining-timer"><i class="fas fa-hourglass-half"></i> 00:00:00</div><div class="mining-note">${this.t('mining_note')}</div>` : ''}
+                ${!this.miningActive ? `<button id="start-mining-btn" class="mining-action-btn"><i class="fas fa-play"></i> ${this.t('start_mining')}</button>` : ''}
+                ${!this.miningActive && this.pendingTonReward > 0 ? `<button id="claim-mining-btn" class="mining-claim-btn"><i class="fas fa-gift"></i> ${this.t('claim_reward')}</button>` : ''}
             </div>
             <div class="level-progress">
-                <div class="progress-header"><span>Level ${this.userLevel}</span><span>${Math.floor(this.powerBalance).toLocaleString()} / ${requiredPower.toLocaleString()} Power</span></div>
+                <div class="progress-header"><span>${this.t('level')} ${this.userLevel}</span><span>${Math.floor(this.powerBalance).toLocaleString()} / ${requiredPower.toLocaleString()} ${this.t('power')}</span></div>
                 <div class="progress-bar"><div class="progress-fill" style="width: ${progress}%"></div></div>
-                <div class="level-reward"><i class="fas fa-gift"></i> Next level reward: +${nextLevelBonus} Power</div>
+                <div class="level-reward"><i class="fas fa-gift"></i> ${this.t('next_level_reward')}: ${nextLevelBonus} ${this.t('power')}</div>
+            </div>
+            <div class="ad-card">
+                <div class="ad-info"><h4>${this.t('watch_ad')}</h4><div class="ad-reward"><i class="fas fa-bolt"></i> 50 ${this.t('power')}</div></div>
+                <button id="mining-reward-ad" class="watch-ad-btn">${this.t('watch')}</button>
             </div>
         `;
         
         document.getElementById('start-mining-btn')?.addEventListener('click', () => this.startMining());
         document.getElementById('claim-mining-btn')?.addEventListener('click', () => this.claimMiningRewards());
+        document.getElementById('mining-reward-ad')?.addEventListener('click', () => this.watchRewardAd());
         if (this.miningActive) this.updateMiningTimerDisplay();
     }
     
@@ -884,34 +948,25 @@ class App {
         const el = document.getElementById('earn-page');
         if (!el) return;
         
-        const rewardAdCooldown = Math.max(0, APP_CONFIG.AD_COOLDOWN_REWARD - Math.floor((Date.now() - this.lastRewardAdTime) / 1000));
-        const adexoraCooldown = Math.max(0, APP_CONFIG.AD_COOLDOWN_ADEXORA - Math.floor((Date.now() - this.lastAdexoraAdTime) / 1000));
-        
         const availableMainTasks = this.mainTasks.filter(t => !this.userCompletedTasks.has(t.id));
         const availablePartnerTasks = this.partnerTasks.filter(t => !this.userCompletedTasks.has(t.id));
         
         const mainTasksHtml = availableMainTasks.length > 0 ? availableMainTasks.map(t => `
-            <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> +${t.reward} Power</div></div><button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button></div>
-        `).join('') : '<div class="no-data"><i class="fas fa-check-circle"></i><p>All tasks completed!</p><small>Check back later for more</small></div>';
+            <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div></div><button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button></div>
+        `).join('') : '<div class="no-data"><i class="fas fa-check-circle"></i><p>' + this.t('all_tasks_completed') + '</p><small>' + this.t('check_later') + '</small></div>';
         
         const partnerTasksHtml = availablePartnerTasks.length > 0 ? availablePartnerTasks.map(t => `
-            <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> +${t.reward} Power</div></div><button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button></div>
-        `).join('') : '<div class="no-data"><i class="fas fa-handshake"></i><p>No partner tasks available</p><small>Check back later</small></div>';
+            <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div></div><button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button></div>
+        `).join('') : '<div class="no-data"><i class="fas fa-handshake"></i><p>' + this.t('no_tasks') + '</p><small>' + this.t('check_later') + '</small></div>';
         
         el.innerHTML = `
-            <div class="promo-card"><div class="promo-title"><i class="fas fa-gift"></i> Promo Code</div><div class="promo-input-group"><input type="text" id="promo-input" class="form-input" placeholder="Enter code" autocomplete="off"><button id="promo-submit" class="promo-submit-btn" disabled>Claim</button></div></div>
+            <div class="promo-card"><div class="promo-title"><i class="fas fa-gift"></i> ${this.t('promo_code')}</div><div class="promo-input-group"><input type="text" id="promo-input" class="form-input" placeholder="${this.t('enter_code')}" autocomplete="off"><button id="promo-submit" class="promo-submit-btn" disabled>${this.t('claim')}</button></div></div>
             
-            <div class="section-header"><h3><i class="fas fa-star"></i> Main Tasks</h3><p>Complete tasks to earn Power</p></div>
+            <div class="section-header"><h3><i class="fas fa-star"></i> ${this.t('main_tasks')}</h3></div>
             <div class="tasks-list">${mainTasksHtml}</div>
             
-            <div class="section-header"><h3><i class="fas fa-handshake"></i> Partner Tasks</h3><p>Special offers from our partners<button id="tasks-info-btn" class="info-icon-btn" style="margin-left:8px;background:none;border:none;color:var(--primary);cursor:pointer"><i class="fas fa-question-circle"></i></button></p></div>
+            <div class="section-header"><h3><i class="fas fa-handshake"></i> ${this.t('partner_tasks')} <button id="tasks-info-btn" class="info-icon-btn" style="margin-left:8px;background:none;border:none;color:var(--primary);cursor:pointer"><i class="fas fa-question-circle"></i></button></h3></div>
             <div class="tasks-list">${partnerTasksHtml}</div>
-            
-            <div class="section-header"><h3><i class="fas fa-video"></i> Watch Ads</h3><p>Earn bonus Power</p></div>
-            <div class="ads-section">
-                <div class="ad-card"><div class="ad-info"><h4>Watch Reward AD</h4><div class="ad-reward"><i class="fas fa-bolt"></i> +50 Power</div>${rewardAdCooldown > 0 ? `<div class="ad-timer">Available in ${rewardAdCooldown}s</div>` : ''}</div><button class="watch-ad-btn" id="watch-reward-ad" ${rewardAdCooldown > 0 ? 'disabled' : ''}>Watch</button></div>
-                <div class="ad-card"><div class="ad-info"><h4>Watch Adexora AD</h4><div class="ad-reward"><i class="fas fa-bolt"></i> +50 Power</div>${adexoraCooldown > 0 ? `<div class="ad-timer">Available in ${adexoraCooldown}s</div>` : ''}</div><button class="watch-ad-btn" id="watch-adexora-ad" ${adexoraCooldown > 0 ? 'disabled' : ''}>Watch</button></div>
-            </div>
         `;
         
         const promoInput = document.getElementById('promo-input');
@@ -932,10 +987,8 @@ class App {
         
         document.getElementById('tasks-info-btn')?.addEventListener('click', () => {
             document.getElementById('tasks-info-modal').style.display = 'flex';
+            this.updateModalTranslations();
         });
-        
-        document.getElementById('watch-reward-ad')?.addEventListener('click', () => this.watchRewardAd());
-        document.getElementById('watch-adexora-ad')?.addEventListener('click', () => this.watchAdexoraAd());
         
         document.querySelectorAll('.task-btn.start').forEach(btn => {
             btn.addEventListener('click', async () => {
@@ -982,16 +1035,16 @@ class App {
     renderTeam() {
         const el = document.getElementById('team-page');
         if (!el) return;
-        const link = `https://t.me/Strzzbot/stars?startapp=${this.tgUser.id}`;
+        const link = APP_CONFIG.BOT_LINK + this.tgUser.id;
         const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Join me on Star Farmer and start mining TON!')}`;
         el.innerHTML = `
-            <div class="team-benefits"><h3><i class="fas fa-gift"></i> Team Benefits</h3><div class="benefits-list"><div class="benefit-item"><i class="fas fa-coins"></i><div class="benefit-text">Earn 10% of your team members TON earnings</div></div><div class="benefit-item"><i class="fas fa-bolt"></i><div class="benefit-text">Get ${APP_CONFIG.REFERRAL_POWER_BONUS} Power per verified member</div></div></div></div>
-            <div class="referral-card"><h4><i class="fas fa-share-alt"></i> SHARE & EARN</h4><div class="link-display">${link}</div><div class="referral-buttons"><button id="copyLink"><i class="fas fa-copy"></i> Copy</button><button id="shareLink"><i class="fab fa-telegram"></i> Share</button></div></div>
-            <div class="stats-grid"><div class="stat-mini"><span class="stat-label">Total Members</span><span class="stat-number">${this.totalReferrals}</span></div><div class="stat-mini"><span class="stat-label">Verified Members</span><span class="stat-number">${this.verifiedReferrals}</span></div><div class="stat-mini"><span class="stat-label">Power Earnings</span><span class="stat-number">${Math.floor(this.referralPower).toLocaleString()}</span></div><div class="stat-mini"><span class="stat-label">TON Earnings</span><span class="stat-number">${this.referralTon.toFixed(6)}</span></div></div>
+            <div class="team-benefits"><h3><i class="fas fa-gift"></i> ${this.t('team_benefits')}</h3><div class="benefits-list"><div class="benefit-item"><i class="fas fa-coins"></i><div class="benefit-text">Earn 10% of your team members TON earnings</div></div><div class="benefit-item"><i class="fas fa-bolt"></i><div class="benefit-text">Get ${APP_CONFIG.REFERRAL_POWER_BONUS} Power per verified member</div></div></div></div>
+            <div class="referral-card"><h4><i class="fas fa-share-alt"></i> ${this.t('share_earn')}</h4><div class="link-display">${link}</div><div class="referral-buttons"><button id="copyLink"><i class="fas fa-copy"></i> ${this.t('copy')}</button><button id="shareLink"><i class="fab fa-telegram"></i> ${this.t('share')}</button></div></div>
+            <div class="stats-grid"><div class="stat-mini"><span class="stat-label">${this.t('total_members')}</span><span class="stat-number">${this.totalReferrals}</span></div><div class="stat-mini"><span class="stat-label">${this.t('verified_members')}</span><span class="stat-number">${this.verifiedReferrals}</span></div><div class="stat-mini"><span class="stat-label">${this.t('power_earnings')}</span><span class="stat-number">${Math.floor(this.referralPower).toLocaleString()}</span></div><div class="stat-mini"><span class="stat-label">${this.t('ton_earnings')}</span><span class="stat-number">${this.referralTon.toFixed(6)}</span></div></div>
         `;
         document.getElementById('copyLink')?.addEventListener('click', () => {
             navigator.clipboard.writeText(link);
-            this.showNotification('Copied!', 'Link copied to clipboard', 'success');
+            this.showNotification(this.t('copy_success'), this.t('link_copied'), 'success');
         });
         document.getElementById('shareLink')?.addEventListener('click', () => {
             window.open(shareUrl, '_blank');
@@ -1001,15 +1054,15 @@ class App {
     renderWithdraw() {
         const el = document.getElementById('withdraw-page');
         if (!el) return;
-        const historyHtml = this.withdrawals && this.withdrawals.length ? this.withdrawals.map(w => `<div class="history-item"><div><small>${new Date(w.timestamp).toLocaleDateString()}</small><br><small>${w.wallet?.slice(0,6)}...${w.wallet?.slice(-4)}</small></div><div class="history-amount"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" style="width:16px;height:16px"> ${w.amount.toFixed(5)} TON</div><div class="history-status ${w.status}">${w.status}</div></div>`).join('') : '<div class="no-data"><i class="fas fa-history"></i><p>No withdrawals yet</p><small>Your withdrawal history will appear here</small></div>';
+        const historyHtml = this.withdrawals && this.withdrawals.length ? this.withdrawals.map(w => `<div class="history-item"><div><small>${new Date(w.timestamp).toLocaleDateString()}</small><br><small>${w.wallet?.slice(0,6)}...${w.wallet?.slice(-4)}</small></div><div class="history-amount"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" style="width:16px;height:16px"> ${w.amount.toFixed(5)} TON</div><div class="history-status ${w.status}">${w.status === 'pending' ? this.t('pending') : this.t('completed')}</div></div>`).join('') : '<div class="no-data"><i class="fas fa-history"></i><p>' + this.t('no_withdrawals') + '</p><small>' + this.t('check_later') + '</small></div>';
         
         el.innerHTML = `
-            <div class="withdraw-card"><h3><i class="fas fa-wallet"></i> Withdraw TON</h3><div class="withdraw-balance"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" style="width:28px;height:28px"> Available: ${this.tonBalance.toFixed(6)} TON</div>
-            <div class="form-group"><label class="form-label">TON Wallet</label><div class="input-wrapper"><input type="text" id="wallet-addr" class="form-input" placeholder="UQ..."></div></div>
-            <div class="form-group"><label class="form-label">Amount</label><div class="input-wrapper"><input type="number" id="withdraw-amount" class="form-input" placeholder="Min: ${APP_CONFIG.MINIMUM_WITHDRAW} TON" step="0.00001"><button id="max-amount" class="action-btn">MAX</button></div></div>
-            <div class="withdraw-note"><i class="fas fa-info-circle"></i> Minimum withdrawal: ${APP_CONFIG.MINIMUM_WITHDRAW} TON</div>
-            <button id="withdraw-btn" class="withdraw-confirm-btn disabled">Confirm Withdrawal</button></div>
-            <div class="history-list"><h4><i class="fas fa-history"></i> Withdrawal History</h4>${historyHtml}</div>
+            <div class="withdraw-card"><h3><i class="fas fa-wallet"></i> ${this.t('withdraw')}</h3><div class="withdraw-balance"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" style="width:28px;height:28px"> ${this.t('available')}: ${this.tonBalance.toFixed(6)} TON</div>
+            <div class="form-group"><label class="form-label">${this.t('ton_wallet')}</label><div class="input-wrapper"><input type="text" id="wallet-addr" class="form-input" placeholder="UQ..."></div></div>
+            <div class="form-group"><label class="form-label">${this.t('amount')}</label><div class="input-wrapper"><input type="number" id="withdraw-amount" class="form-input" placeholder="${this.t('min_withdraw')}: ${APP_CONFIG.MINIMUM_WITHDRAW} TON" step="0.00001"><button id="max-amount" class="action-btn">MAX</button></div></div>
+            <div class="withdraw-note"><i class="fas fa-info-circle"></i> ${this.t('min_withdraw')}: ${APP_CONFIG.MINIMUM_WITHDRAW} TON</div>
+            <button id="withdraw-btn" class="withdraw-confirm-btn disabled">${this.t('confirm_withdrawal')}</button></div>
+            <div class="history-list"><h4><i class="fas fa-history"></i> ${this.t('withdrawal_history')}</h4>${historyHtml}</div>
         `;
         
         const walletInput = document.getElementById('wallet-addr');
@@ -1045,6 +1098,30 @@ class App {
         });
     }
     
+    updateModalTranslations() {
+        const titleEl = document.querySelector('#tasks-info-modal .modal-header h3');
+        if (titleEl) titleEl.innerHTML = `<i class="fas fa-info-circle"></i> ${this.t('partner_info_title')}`;
+        const text1 = document.getElementById('partner-info-text1');
+        const text2 = document.getElementById('partner-info-text2');
+        const text3 = document.getElementById('partner-info-text3');
+        const contactBtn = document.getElementById('contact-support-modal');
+        if (text1) text1.innerHTML = `<i class="fas fa-plus-circle" style="color:#6C63FF;margin-right:8px"></i> ${this.t('partner_text1')}`;
+        if (text2) text2.innerHTML = `<i class="fas fa-handshake" style="color:#6C63FF;margin-right:8px"></i> ${this.t('partner_text2')}`;
+        if (text3) text3.innerHTML = `<i class="fas fa-headset" style="color:#6C63FF;margin-right:8px"></i> ${this.t('partner_text3')}`;
+        if (contactBtn) contactBtn.innerHTML = `<i class="fas fa-headset"></i> ${this.t('contact_support')}`;
+        
+        const claimTitle = document.getElementById('claim-title');
+        if (claimTitle) claimTitle.innerHTML = `<i class="fas fa-gift"></i> ${this.t('claim_mining_title')}`;
+        const claimBtn = document.getElementById('confirm-claim-btn');
+        if (claimBtn) claimBtn.innerText = this.t('claim_btn');
+        
+        document.getElementById('nav-mining').innerText = this.t('mining');
+        document.getElementById('nav-earn').innerText = this.t('earn');
+        document.getElementById('nav-team').innerText = this.t('team');
+        document.getElementById('nav-withdraw').innerText = this.t('withdraw');
+        document.getElementById('user-level-text').innerText = this.t('level');
+    }
+    
     setupEventListeners() {
         document.getElementById('support-btn').onclick = () => window.open(APP_CONFIG.SUPPORT_LINK, '_blank');
         document.getElementById('close-tasks-info')?.addEventListener('click', () => {
@@ -1056,10 +1133,34 @@ class App {
         window.addEventListener('beforeunload', () => {
             if (this.miningActive) this.saveUserData();
         });
+        
+        const langBtn = document.getElementById('lang-btn');
+        const langMenu = document.getElementById('lang-menu');
+        langBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            langMenu.style.display = langMenu.style.display === 'none' ? 'block' : 'none';
+        });
+        
+        document.querySelectorAll('.lang-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                this.lang = opt.dataset.lang;
+                localStorage.setItem('star_farmer_lang', this.lang);
+                langMenu.style.display = 'none';
+                this.renderUI();
+                this.updateModalTranslations();
+                this.showNotification('Language', `Changed to ${opt.innerText}`, 'success');
+            });
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (!langBtn?.contains(e.target) && !langMenu?.contains(e.target)) {
+                if (langMenu) langMenu.style.display = 'none';
+            }
+        });
     }
     
     saveSettings() {
-        localStorage.setItem('star_farmer_settings', JSON.stringify({ vibration: this.vibrationEnabled }));
+        localStorage.setItem('star_farmer_settings', JSON.stringify({ vibration: this.vibrationEnabled, lang: this.lang }));
     }
     
     loadSettings() {
@@ -1067,7 +1168,10 @@ class App {
         if (saved) {
             const s = JSON.parse(saved);
             this.vibrationEnabled = s.vibration !== false;
+            this.lang = s.lang || 'en';
         }
+        const savedLang = localStorage.getItem('star_farmer_lang');
+        if (savedLang) this.lang = savedLang;
     }
     
     setupNavigation() {
@@ -1091,6 +1195,7 @@ class App {
         this.renderEarn();
         this.renderTeam();
         this.renderWithdraw();
+        this.updateModalTranslations();
     }
 }
 
