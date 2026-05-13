@@ -1158,3 +1158,24 @@ body {
     from { opacity: 0; transform: translateX(-50%) translateY(-30px); }
     to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+
+    .history-amount {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.history-amount img {
+    width: 20px;
+    height: 20px;
+    pointer-events: none;
+}
+
+.history-status {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+} 
