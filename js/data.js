@@ -1,6 +1,6 @@
 export const APP_CONFIG = {
     APP_NAME: "Star Farmer",
-    BOT_USERNAME: "Strzzbot",
+    BOT_USERNAME: "Veltrxbot",
     SUPPORT_LINK: "https://t.me/Supports",
     MINIMUM_WITHDRAW: 0.1,
     REFERRAL_PERCENTAGE: 10,
@@ -13,8 +13,7 @@ export const APP_CONFIG = {
     BOT_AVATAR: "https://i.ibb.co/XxXhyZYf/file-000000006f8c720e9ab4c76b6e560062.png",
     LEVEL_FORMULA: { base: 1000, multiplier: 1.2 },
     AD_COOLDOWN_REWARD: 300,
-    AD_COOLDOWN_ADEXORA: 300,
     REWARD_AD_BLOCK_ID: "30072",
     INTERSTITIAL_AD_BLOCK_ID: "int-30073",
-    ADEXORA_AD_ID: "2067"
+    BOT_LINK: "https://t.me/Veltrxbot/velt?startapp="
 };
