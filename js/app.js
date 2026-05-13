@@ -6,7 +6,7 @@ const translations = {
         start_mining: "START MINING", claim_reward: "CLAIM REWARD", mining_note: "Rewards can be collected after mining session ends",
         next_level_reward: "Next level reward", power: "Power", ton: "TON", promo_code: "Promo Code",
         enter_code: "Enter code", claim: "Claim", main_tasks: "Main Tasks", partner_tasks: "Social Tasks",
-        watch_ad: "Watch Reward AD", reward_amount: "Reward", available_in: "Available in", seconds: "s",
+        watch_ad: "Watch Reward AD", reward_amount: "Reward", available_in: "Available in", hours: "h",
         watch: "Watch", all_tasks_completed: "All tasks completed!", check_later: "Check back later for more",
         no_tasks: "No tasks available", team_benefits: "Team Benefits", share_earn: "SHARE & EARN",
         copy: "Copy", share: "Share", total_members: "Total Members", verified_members: "Verified Members",
@@ -20,14 +20,15 @@ const translations = {
         complete_tasks: "Complete Tasks", go: "GO", invite_frens: "Invite Frens", ad_reward: "Watch AD", loading: "Loading",
         init_telegram: "Connecting to Telegram", init_firebase: "Connecting to Firebase", verify_device: "Verifying device",
         load_user: "Loading user data", load_tasks: "Loading tasks", check_mining: "Checking mining status",
-        apply_bonus: "Applying welcome bonus", finalizing: "Finalizing", ready: "Ready"
+        apply_bonus: "Applying welcome bonus", finalizing: "Finalizing", ready: "Ready", mining_active: "MINING ACTIVE",
+        reward_collect: "Reward ready to collect"
     },
     es: {
         level: "Nivel", mining_rig: "Equipo de Minería Nv.", hourly: "Por hora", daily: "Diario", monthly: "Mensual",
         start_mining: "INICIAR MINERÍA", claim_reward: "RECLAMAR RECOMPENSA", mining_note: "Las recompensas se pueden recolectar después de la sesión de minería",
         next_level_reward: "Recompensa del próximo nivel", power: "Energía", ton: "TON", promo_code: "Código Promocional",
         enter_code: "Ingrese código", claim: "Reclamar", main_tasks: "Tareas Principales", partner_tasks: "Tareas Sociales",
-        watch_ad: "Ver Anuncio Recompensa", reward_amount: "Recompensa", available_in: "Disponible en", seconds: "s",
+        watch_ad: "Ver Anuncio Recompensa", reward_amount: "Recompensa", available_in: "Disponible en", hours: "h",
         watch: "Ver", all_tasks_completed: "¡Todas las tareas completadas!", check_later: "Vuelve más tarde para más",
         no_tasks: "No hay tareas disponibles", team_benefits: "Beneficios del Equipo", share_earn: "COMPARTIR Y GANAR",
         copy: "Copiar", share: "Compartir", total_members: "Miembros Totales", verified_members: "Miembros Verificados",
@@ -41,14 +42,15 @@ const translations = {
         complete_tasks: "Completar Tareas", go: "IR", invite_frens: "Invitar Amigos", ad_reward: "Ver Anuncio", loading: "Cargando",
         init_telegram: "Conectando a Telegram", init_firebase: "Conectando a Firebase", verify_device: "Verificando dispositivo",
         load_user: "Cargando datos", load_tasks: "Cargando tareas", check_mining: "Verificando minería",
-        apply_bonus: "Aplicando bonificación", finalizing: "Finalizando", ready: "Listo"
+        apply_bonus: "Aplicando bonificación", finalizing: "Finalizando", ready: "Listo", mining_active: "MINERÍA ACTIVA",
+        reward_collect: "Recompensa lista para recoger"
     },
     fa: {
         level: "سطح", mining_rig: "دستگاه استخراج سطح", hourly: "ساعتی", daily: "روزانه", monthly: "ماهانه",
         start_mining: "شروع استخراج", claim_reward: "دریافت پاداش", mining_note: "پاداش‌ها پس از پایان جلسه استخراج قابل دریافت هستند",
         next_level_reward: "پاداش سطح بعدی", power: "انرژی", ton: "تون", promo_code: "کد تخفیف",
         enter_code: "ورود کد", claim: "دریافت", main_tasks: "وظایف اصلی", partner_tasks: "وظایف اجتماعی",
-        watch_ad: "تماشای تبلیغ جایزه‌دار", reward_amount: "پاداش", available_in: "موجود در", seconds: "ثانیه",
+        watch_ad: "تماشای تبلیغ جایزه‌دار", reward_amount: "پاداش", available_in: "موجود در", hours: "ساعت",
         watch: "تماشا", all_tasks_completed: "تمام وظایف انجام شد!", check_later: "بعداً برای موارد بیشتر مراجعه کنید",
         no_tasks: "هیچ وظیفه‌ای موجود نیست", team_benefits: "مزایای تیم", share_earn: "اشتراک‌گذاری و درآمدزایی",
         copy: "کپی", share: "اشتراک‌گذاری", total_members: "کل اعضا", verified_members: "اعضای تأیید شده",
@@ -62,14 +64,15 @@ const translations = {
         complete_tasks: "تکمیل وظایف", go: "برو", invite_frens: "دعوت از دوستان", ad_reward: "تماشای تبلیغ", loading: "در حال بارگذاری",
         init_telegram: "اتصال به تلگرام", init_firebase: "اتصال به فایربیس", verify_device: "بررسی دستگاه",
         load_user: "بارگذاری اطلاعات", load_tasks: "بارگذاری وظایف", check_mining: "بررسی وضعیت استخراج",
-        apply_bonus: "اعمال پاداش خوش آمدگویی", finalizing: "نهایی سازی", ready: "آماده"
+        apply_bonus: "اعمال پاداش خوش آمدگویی", finalizing: "نهایی سازی", ready: "آماده", mining_active: "استخراج فعال",
+        reward_collect: "پاداش آماده دریافت"
     },
     tr: {
         level: "Seviye", mining_rig: "Madenci Seviye", hourly: "Saatlik", daily: "Günlük", monthly: "Aylık",
         start_mining: "MADENCİLİĞE BAŞLA", claim_reward: "ÖDÜLÜ AL", mining_note: "Ödüller madencilik oturumu bittikten sonra toplanabilir",
         next_level_reward: "Sonraki seviye ödülü", power: "Güç", ton: "TON", promo_code: "Promosyon Kodu",
         enter_code: "Kodu girin", claim: "Al", main_tasks: "Ana Görevler", partner_tasks: "Sosyal Görevler",
-        watch_ad: "Ödüllü Reklam İzle", reward_amount: "Ödül", available_in: "Kalan süre", seconds: "sn",
+        watch_ad: "Ödüllü Reklam İzle", reward_amount: "Ödül", available_in: "Kalan süre", hours: "sa",
         watch: "İzle", all_tasks_completed: "Tüm görevler tamamlandı!", check_later: "Daha fazlası için daha sonra kontrol edin",
         no_tasks: "Görev yok", team_benefits: "Takım Avantajları", share_earn: "PAYLAŞ VE KAZAN",
         copy: "Kopyala", share: "Paylaş", total_members: "Toplam Üye", verified_members: "Doğrulanmış Üye",
@@ -81,16 +84,17 @@ const translations = {
         partner_text3: "Detaylar için desteğe başvurun", contact_support: "Desteğe Başvur", mining: "Madencilik", earn: "Kazan",
         team: "Takım", copy_success: "Kopyalandı!", link_copied: "Bağlantı panoya kopyalandı", earn_more: "Daha Fazla Güç Kazan",
         complete_tasks: "Görevleri Tamamla", go: "GİT", invite_frens: "Arkadaşları Davet Et", ad_reward: "Reklam İzle", loading: "Yükleniyor",
-        init_telegram: "Telegram\'a Bağlanıyor", init_firebase: "Firebase\'e Bağlanıyor", verify_device: "Cihaz Doğrulanıyor",
+        init_telegram: "Telegram'a Bağlanıyor", init_firebase: "Firebase'e Bağlanıyor", verify_device: "Cihaz Doğrulanıyor",
         load_user: "Kullanıcı Verileri Yükleniyor", load_tasks: "Görevler Yükleniyor", check_mining: "Madencilik Durumu Kontrol Ediliyor",
-        apply_bonus: "Hoş Geldin Bonusu Uygulanıyor", finalizing: "Sonlandırılıyor", ready: "Hazır"
+        apply_bonus: "Hoş Geldin Bonusu Uygulanıyor", finalizing: "Sonlandırılıyor", ready: "Hazır", mining_active: "MADENCİLİK AKTİF",
+        reward_collect: "Ödül toplanmaya hazır"
     },
     ar: {
         level: "مستوى", mining_rig: "جهاز التعدين مستوى", hourly: "كل ساعة", daily: "يومي", monthly: "شهري",
         start_mining: "بدء التعدين", claim_reward: "استلام المكافأة", mining_note: "يمكن جمع المكافآت بعد انتهاء جلسة التعدين",
         next_level_reward: "مكافأة المستوى التالي", power: "الطاقة", ton: "تون", promo_code: "رمز ترويجي",
         enter_code: "أدخل الرمز", claim: "استلام", main_tasks: "المهام الرئيسية", partner_tasks: "المهام الاجتماعية",
-        watch_ad: "مشاهدة إعلان مكافأة", reward_amount: "المكافأة", available_in: "متاح بعد", seconds: "ثانية",
+        watch_ad: "مشاهدة إعلان مكافأة", reward_amount: "المكافأة", available_in: "متاح بعد", hours: "ساعة",
         watch: "مشاهدة", all_tasks_completed: "جميع المهام مكتملة!", check_later: "تحقق لاحقاً للمزيد",
         no_tasks: "لا توجد مهام متاحة", team_benefits: "مزايا الفريق", share_earn: "شارك واربح",
         copy: "نسخ", share: "مشاركة", total_members: "إجمالي الأعضاء", verified_members: "الأعضاء الموثقين",
@@ -104,7 +108,8 @@ const translations = {
         complete_tasks: "إكمال المهام", go: "اذهب", invite_frens: "دعوة الأصدقاء", ad_reward: "مشاهدة إعلان", loading: "جاري التحميل",
         init_telegram: "الاتصال بتلغرام", init_firebase: "الاتصال بقاعدة البيانات", verify_device: "التحقق من الجهاز",
         load_user: "تحميل بيانات المستخدم", load_tasks: "تحميل المهام", check_mining: "التحقق من حالة التعدين",
-        apply_bonus: "تطبيق مكافأة الترحيب", finalizing: "إنهاء", ready: "جاهز"
+        apply_bonus: "تطبيق مكافأة الترحيب", finalizing: "إنهاء", ready: "جاهز", mining_active: "التعدين نشط",
+        reward_collect: "المكافأة جاهزة للاستلام"
     }
 };
 
@@ -131,6 +136,7 @@ class App {
         this.miningInterval = null;
         this.uiUpdateInterval = null;
         this.pendingTonReward = 0;
+        this.miningSessionHours = 0;
         this.withdrawals = [];
         this.totalReferrals = 0;
         this.verifiedReferrals = 0;
@@ -153,19 +159,23 @@ class App {
     }
     
     formatNumber(num) {
-        return num.toLocaleString('en-US');
-    }
-    
-    getDailyTonRate() {
-        return (this.powerBalance / 1000) * APP_CONFIG.POWER_PER_TON_RATE;
+        return num.toLocaleString('en');
     }
     
     getHourlyTonRate() {
-        return this.getDailyTonRate() / 24;
+        return (this.powerBalance / 1000) * APP_CONFIG.POWER_PER_TON_RATE;
+    }
+    
+    getDailyTonRate() {
+        return this.getHourlyTonRate() * 24;
     }
     
     getMonthlyTonRate() {
         return this.getDailyTonRate() * 30;
+    }
+    
+    calculateRewardForHours(hours) {
+        return this.getHourlyTonRate() * hours;
     }
     
     async getDeviceFingerprint() {
@@ -293,6 +303,7 @@ class App {
         this.miningActive = true;
         this.miningStartTime = serverTime;
         this.miningEndTime = serverTime + (APP_CONFIG.MINING_SESSION_HOURS * 3600000);
+        this.miningSessionHours = APP_CONFIG.MINING_SESSION_HOURS;
         this.pendingTonReward = 0;
         
         if (!this.hasStartedMining && this.db && this.tgUser) {
@@ -334,7 +345,12 @@ class App {
     async stopMining() {
         if (!this.miningActive) return;
         
-        this.pendingTonReward = this.getDailyTonRate();
+        const currentServerTime = await this.getServerTime();
+        const elapsedSeconds = (currentServerTime - this.miningStartTime) / 1000;
+        const elapsedHours = elapsedSeconds / 3600;
+        const actualHours = Math.min(elapsedHours, this.miningSessionHours);
+        
+        this.pendingTonReward = this.calculateRewardForHours(actualHours);
         this.miningActive = false;
         this.miningStartTime = null;
         this.miningEndTime = null;
@@ -343,12 +359,12 @@ class App {
         this.renderMining();
         if (this.miningInterval) clearInterval(this.miningInterval);
         if (this.uiUpdateInterval) clearInterval(this.uiUpdateInterval);
-        this.showNotification('Mining Stopped', 'Claim your rewards!', 'success');
+        this.showNotification('Mining Stopped', `${this.pendingTonReward.toFixed(8)} TON ready to claim!`, 'success');
     }
     
     async claimMiningRewards() {
         if (this.miningActive) {
-            this.showNotification('Error', 'Mining still active!', 'error');
+            this.showNotification('Error', 'Complete mining session first!', 'error');
             return;
         }
         if (this.pendingTonReward <= 0) {
@@ -434,6 +450,14 @@ class App {
         if (timerEl) {
             timerEl.innerHTML = `<i class="fas fa-hourglass-half"></i> ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
+        
+        const elapsedSeconds = (currentServerTime - this.miningStartTime) / 1000;
+        const elapsedHours = elapsedSeconds / 3600;
+        const currentReward = this.calculateRewardForHours(Math.min(elapsedHours, this.miningSessionHours));
+        const rewardPreviewEl = document.querySelector('.reward-preview');
+        if (rewardPreviewEl) {
+            rewardPreviewEl.innerHTML = `<i class="fas fa-coins"></i> Pending: ${currentReward.toFixed(8)} TON`;
+        }
     }
     
     updateAdCooldownDisplay() {
@@ -442,18 +466,16 @@ class App {
         const remaining = Math.max(0, cooldownMs - (now - this.lastRewardAdTime));
         
         const adBtn = document.getElementById('mining-reward-ad');
-        const adTimer = document.getElementById('ad-timer');
         
-        if (adBtn && adTimer) {
+        if (adBtn) {
             if (remaining > 0) {
                 const hours = Math.floor(remaining / 3600000);
                 const minutes = Math.floor((remaining % 3600000) / 60000);
-                const seconds = Math.floor((remaining % 60000) / 1000);
-                adTimer.innerText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                adBtn.innerHTML = `${hours}h ${minutes}m`;
                 adBtn.disabled = true;
                 adBtn.classList.add('disabled');
             } else {
-                adTimer.innerText = this.t('watch');
+                adBtn.innerHTML = this.t('watch');
                 adBtn.disabled = false;
                 adBtn.classList.remove('disabled');
             }
@@ -462,7 +484,7 @@ class App {
     
     startCooldownTimer() {
         if (this.cooldownInterval) clearInterval(this.cooldownInterval);
-        this.cooldownInterval = setInterval(() => this.updateAdCooldownDisplay(), 1000);
+        this.cooldownInterval = setInterval(() => this.updateAdCooldownDisplay(), 60000);
     }
     
     async addReferralEarnings(userId, tonAmount) {
@@ -560,7 +582,7 @@ class App {
         });
     }
 
-    async applyPromoCode(code) {
+            async applyPromoCode(code) {
         if (!this.db) return false;
         const codeSnap = await this.db.ref(`promoCodes/${code}`).once('value');
         if (!codeSnap.exists()) {
@@ -701,15 +723,19 @@ class App {
             if (this.miningActive && this.miningEndTime) {
                 const serverTime = await this.getServerTime();
                 if (serverTime >= this.miningEndTime) {
+                    const elapsedSeconds = (serverTime - this.miningStartTime) / 1000;
+                    const elapsedHours = elapsedSeconds / 3600;
+                    this.pendingTonReward = this.calculateRewardForHours(Math.min(elapsedHours, this.miningSessionHours));
                     this.miningActive = false;
                     this.miningStartTime = null;
                     this.miningEndTime = null;
-                    this.pendingTonReward = this.getDailyTonRate();
                     await this.saveUserData();
                     this.renderMining();
                 } else {
                     this.startMiningLoop();
                 }
+            } else if (this.pendingTonReward > 0 && !this.miningActive) {
+                this.renderMining();
             }
             
             updateProgress(90, 'apply_bonus');
@@ -797,6 +823,7 @@ class App {
             this.miningStartTime = d.miningStartTime ?? null;
             this.miningEndTime = d.miningEndTime ?? null;
             this.pendingTonReward = d.pendingTonReward ?? 0;
+            this.miningSessionHours = d.miningSessionHours ?? APP_CONFIG.MINING_SESSION_HOURS;
             this.tgUser = { id: userId, first_name: d.firstName, username: d.username, photo_url: d.photoUrl };
             const nameSpan = document.getElementById('user-name');
             if (nameSpan) nameSpan.innerText = d.firstName;
@@ -835,6 +862,7 @@ class App {
             this.miningStartTime = d.miningStartTime ?? null;
             this.miningEndTime = d.miningEndTime ?? null;
             this.pendingTonReward = d.pendingTonReward ?? 0;
+            this.miningSessionHours = d.miningSessionHours ?? APP_CONFIG.MINING_SESSION_HOURS;
         } else {
             const startParam = this.tg.initDataUnsafe?.start_param;
             let referredBy = (startParam && !isNaN(startParam)) ? parseInt(startParam) : null;
@@ -845,7 +873,8 @@ class App {
                 firstName: this.tgUser.first_name || 'User',
                 photoUrl: this.tgUser.photo_url || APP_CONFIG.DEFAULT_USER_AVATAR,
                 referredBy: referredBy,
-                createdAt: await this.getServerTime()
+                createdAt: await this.getServerTime(),
+                miningSessionHours: APP_CONFIG.MINING_SESSION_HOURS
             });
             
             if (referredBy && referredBy !== this.tgUser.id) {
@@ -888,6 +917,7 @@ class App {
         if (this.miningStartTime !== undefined) updates.miningStartTime = this.miningStartTime;
         if (this.miningEndTime !== undefined) updates.miningEndTime = this.miningEndTime;
         if (this.pendingTonReward !== undefined) updates.pendingTonReward = this.pendingTonReward;
+        if (this.miningSessionHours !== undefined) updates.miningSessionHours = this.miningSessionHours;
         await this.db.ref(`users/${this.tgUser.id}`).update(updates);
     }
     
@@ -983,9 +1013,9 @@ class App {
         const monthlyRate = this.getMonthlyTonRate();
         const nextLevelBonus = 50;
         
-        const cooldownMs = APP_CONFIG.AD_COOLDOWN_HOURS * 3600000;
-        const remaining = Math.max(0, cooldownMs - (Date.now() - this.lastRewardAdTime));
-        const hasCooldown = remaining > 0;
+        const showStartButton = !this.miningActive && this.pendingTonReward <= 0;
+        const showClaimButton = !this.miningActive && this.pendingTonReward > 0;
+        const showMiningActive = this.miningActive;
         
         el.innerHTML = `
             <div class="balance-cards">
@@ -1000,9 +1030,11 @@ class App {
                     <div class="rate-stat"><div class="stat-label">${this.t('daily')}</div><div class="stat-value">${dailyRate.toFixed(8)} TON</div></div>
                     <div class="rate-stat"><div class="stat-label">${this.t('monthly')}</div><div class="stat-value">${monthlyRate.toFixed(8)} TON</div></div>
                 </div>
-                ${this.miningActive ? `<div class="mining-timer"><i class="fas fa-hourglass-half"></i> 00:00:00</div><div class="mining-note">${this.t('mining_note')}</div>` : ''}
-                ${!this.miningActive ? `<button id="start-mining-btn" class="mining-action-btn"><i class="fas fa-play"></i> ${this.t('start_mining')}</button>` : ''}
-                ${!this.miningActive && this.pendingTonReward > 0 ? `<button id="claim-mining-btn" class="mining-claim-btn"><i class="fas fa-gift"></i> ${this.t('claim_reward')}</button>` : ''}
+                ${showMiningActive ? `<div class="mining-timer"><i class="fas fa-hourglass-half"></i> 00:00:00</div><div class="reward-preview"><i class="fas fa-coins"></i> Pending: 0.00000000 TON</div><div class="mining-note">${this.t('mining_note')}</div>` : ''}
+                ${showStartButton ? `<button id="start-mining-btn" class="mining-action-btn"><i class="fas fa-play"></i> ${this.t('start_mining')}</button>` : ''}
+                ${showClaimButton ? `<button id="claim-mining-btn" class="mining-claim-btn"><i class="fas fa-gift"></i> ${this.t('claim_reward')}</button>` : ''}
+                ${showMiningActive ? `<div class="mining-note mining-active-note"><i class="fas fa-circle" style="color:#2ecc71;font-size:0.6rem"></i> ${this.t('mining_active')}</div>` : ''}
+                ${showClaimButton ? `<div class="mining-note reward-ready"><i class="fas fa-gift" style="color:#f39c12"></i> ${this.t('reward_collect')}</div>` : ''}
             </div>
             <div class="level-progress">
                 <div class="progress-header"><span>${this.t('level')} ${this.userLevel}</span><span>${this.formatNumber(Math.floor(this.powerBalance))} / ${this.formatNumber(requiredPower)} ${this.t('power')}</span></div>
@@ -1026,7 +1058,27 @@ class App {
         document.getElementById('go-team-btn')?.addEventListener('click', () => {
             document.querySelector('.nav-btn[data-page="team-page"]').click();
         });
-        if (this.miningActive) this.updateMiningTimerDisplay();
+        
+        if (this.miningActive) {
+            this.updateMiningTimerDisplay();
+            const updateRewardPreview = async () => {
+                const currentServerTime = await this.getServerTime();
+                const elapsedSeconds = (currentServerTime - this.miningStartTime) / 1000;
+                const elapsedHours = elapsedSeconds / 3600;
+                const currentReward = this.calculateRewardForHours(Math.min(elapsedHours, this.miningSessionHours));
+                const rewardPreviewEl = document.querySelector('.reward-preview');
+                if (rewardPreviewEl) {
+                    rewardPreviewEl.innerHTML = `<i class="fas fa-coins"></i> Pending: ${currentReward.toFixed(8)} TON`;
+                }
+            };
+            updateRewardPreview();
+            if (this.rewardPreviewInterval) clearInterval(this.rewardPreviewInterval);
+            this.rewardPreviewInterval = setInterval(updateRewardPreview, 1000);
+        } else if (this.rewardPreviewInterval) {
+            clearInterval(this.rewardPreviewInterval);
+            this.rewardPreviewInterval = null;
+        }
+        
         this.updateAdCooldownDisplay();
     }
     
