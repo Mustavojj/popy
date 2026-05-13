@@ -326,8 +326,8 @@ class App {
         this.startMiningLoop();
         this.showNotification(this.t('start_mining'), 'Your rig is now mining TON', 'success');
     }
-    
-    async stopMining() {
+
+async stopMining() {
         if (!this.miningActive) return;
         
         const currentServerTime = await this.getServerTime();
@@ -508,7 +508,7 @@ class App {
             this.showNotification('Reward Claimed!', '50 Power', 'success');
         }
     }
-
+    
     async completeTask(taskId, rewardPower, url, verification, btnElement) {
         if (this.userCompletedTasks.has(taskId)) return false;
         if (verification) {
@@ -988,7 +988,7 @@ class App {
         el.innerHTML = `
             <div class="balance-cards">
                 <div class="balance-card"><div class="icon power"><i class="fas fa-bolt"></i></div><span class="label">${this.t('power')}</span><span class="value">${this.formatNumber(Math.floor(this.powerBalance))}</span></div>
-                <div class="balance-card"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%230088CC'/%3E%3Ctext x='50' y='67' text-anchor='middle' fill='white' font-size='28' font-weight='bold' font-family='Arial'%3ET%3C/text%3E%3C/svg%3E" class="ton-icon-img"><span class="label">${this.t('ton')}</span><span class="value">${this.tonBalance.toFixed(6)}</span></div>
+                <div class="balance-card"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" class="ton-icon-img"><span class="label">${this.t('ton')}</span><span class="value">${this.tonBalance.toFixed(6)}</span></div>
             </div>
             <div class="mining-card">
                 <div class="mining-icon"><i class="fas fa-microchip"></i></div>
@@ -1141,10 +1141,10 @@ class App {
     renderWithdraw() {
         const el = document.getElementById('withdraw-page');
         if (!el) return;
-        const historyHtml = this.withdrawals && this.withdrawals.length ? this.withdrawals.map(w => `<div class="history-item"><div><small>${new Date(w.timestamp).toLocaleDateString()}</small><br><small>${w.wallet?.slice(0,6)}...${w.wallet?.slice(-4)}</small></div><div class="history-amount"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%230088CC'/%3E%3Ctext x='50' y='67' text-anchor='middle' fill='white' font-size='28' font-weight='bold' font-family='Arial'%3ET%3C/text%3E%3C/svg%3E" style="width:16px;height:16px"> ${w.amount.toFixed(5)} TON</div><div class="history-status ${w.status}">${w.status === 'pending' ? this.t('pending') : this.t('completed')}</div></div>`).join('') : '<div class="no-data"><i class="fas fa-history"></i><p>' + this.t('no_withdrawals') + '</p><small>' + this.t('check_later') + '</small></div>';
+        const historyHtml = this.withdrawals && this.withdrawals.length ? this.withdrawals.map(w => `<div class="history-item"><div><small>${new Date(w.timestamp).toLocaleDateString()}</small><br><small>${w.wallet?.slice(0,6)}...${w.wallet?.slice(-4)}</small></div><div class="history-amount"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" style="width:16px;height:16px"> ${w.amount.toFixed(5)} TON</div><div class="history-status ${w.status}">${w.status === 'pending' ? this.t('pending') : this.t('completed')}</div></div>`).join('') : '<div class="no-data"><i class="fas fa-history"></i><p>' + this.t('no_withdrawals') + '</p><small>' + this.t('check_later') + '</small></div>';
         
         el.innerHTML = `
-            <div class="withdraw-card"><h3><i class="fas fa-wallet"></i> ${this.t('withdraw')}</h3><div class="withdraw-balance"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%230088CC'/%3E%3Ctext x='50' y='67' text-anchor='middle' fill='white' font-size='28' font-weight='bold' font-family='Arial'%3ET%3C/text%3E%3C/svg%3E" style="width:28px;height:28px"> ${this.t('available')}: ${this.tonBalance.toFixed(6)} TON</div>
+            <div class="withdraw-card"><h3><i class="fas fa-wallet"></i> ${this.t('withdraw')}</h3><div class="withdraw-balance"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" style="width:28px;height:28px"> ${this.t('available')}: ${this.tonBalance.toFixed(6)} TON</div>
             <div class="form-group"><label class="form-label">${this.t('ton_wallet')}</label><div class="input-wrapper"><input type="text" id="wallet-addr" class="form-input" placeholder="UQ..."></div></div>
             <div class="form-group"><label class="form-label">${this.t('amount')}</label><div class="input-wrapper"><input type="number" id="withdraw-amount" class="form-input" placeholder="${this.t('min_withdraw')}: ${APP_CONFIG.MINIMUM_WITHDRAW} TON" step="0.00001"><button id="max-amount" class="action-btn">MAX</button></div></div>
             <div class="withdraw-note"><i class="fas fa-info-circle"></i> ${this.t('min_withdraw')}: ${APP_CONFIG.MINIMUM_WITHDRAW} TON</div>
