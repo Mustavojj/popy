@@ -5,7 +5,7 @@ const translations = {
         level: "Level", mining_rig: "Mining Rig Lv.", hourly: "Hourly", daily: "Daily", monthly: "Monthly",
         start_mining: "START MINING", claim_reward: "CLAIM REWARD", mining_note: "Rewards can be collected after mining session ends",
         next_level_reward: "Next level reward", power: "Power", ton: "TON", promo_code: "Promo Code",
-        enter_code: "Enter code", claim: "Claim", main_tasks: "Main Tasks", partner_tasks: "Partner Tasks",
+        enter_code: "Enter code", claim: "Claim", main_tasks: "Main Tasks", partner_tasks: "Social Tasks",
         watch_ad: "Watch Reward AD", reward_amount: "Reward", available_in: "Available in", seconds: "s",
         watch: "Watch", all_tasks_completed: "All tasks completed!", check_later: "Check back later for more",
         no_tasks: "No tasks available", team_benefits: "Team Benefits", share_earn: "SHARE & EARN",
@@ -14,15 +14,19 @@ const translations = {
         available: "Available", ton_wallet: "TON Wallet", amount: "Amount", min_withdraw: "Minimum withdrawal",
         confirm_withdrawal: "Confirm Withdrawal", withdrawal_history: "Withdrawal History", no_withdrawals: "No withdrawals yet",
         pending: "pending", completed: "completed", claim_mining_title: "Claim Mining Rewards", claim_btn: "Claim Rewards",
-        partner_info_title: "Partner Tasks", partner_text1: "You can add task by support", partner_text2: "You can cooperate with us",
+        partner_info_title: "Social Tasks", partner_text1: "You can add task by support", partner_text2: "You can cooperate with us",
         partner_text3: "Contact support for details", contact_support: "Contact Support", mining: "Mining", earn: "Earn",
-        team: "Team", copy_success: "Copied!", link_copied: "Link copied to clipboard"
+        team: "Team", copy_success: "Copied!", link_copied: "Link copied to clipboard", earn_more: "Earn More Power",
+        complete_tasks: "Complete Tasks", go: "GO", invite_frens: "Invite Frens", ad_reward: "Watch AD", loading: "Loading",
+        init_telegram: "Connecting to Telegram", init_firebase: "Connecting to Firebase", verify_device: "Verifying device",
+        load_user: "Loading user data", load_tasks: "Loading tasks", check_mining: "Checking mining status",
+        apply_bonus: "Applying welcome bonus", finalizing: "Finalizing", ready: "Ready"
     },
     es: {
         level: "Nivel", mining_rig: "Equipo de Minería Nv.", hourly: "Por hora", daily: "Diario", monthly: "Mensual",
         start_mining: "INICIAR MINERÍA", claim_reward: "RECLAMAR RECOMPENSA", mining_note: "Las recompensas se pueden recolectar después de la sesión de minería",
         next_level_reward: "Recompensa del próximo nivel", power: "Energía", ton: "TON", promo_code: "Código Promocional",
-        enter_code: "Ingrese código", claim: "Reclamar", main_tasks: "Tareas Principales", partner_tasks: "Tareas de Socios",
+        enter_code: "Ingrese código", claim: "Reclamar", main_tasks: "Tareas Principales", partner_tasks: "Tareas Sociales",
         watch_ad: "Ver Anuncio Recompensa", reward_amount: "Recompensa", available_in: "Disponible en", seconds: "s",
         watch: "Ver", all_tasks_completed: "¡Todas las tareas completadas!", check_later: "Vuelve más tarde para más",
         no_tasks: "No hay tareas disponibles", team_benefits: "Beneficios del Equipo", share_earn: "COMPARTIR Y GANAR",
@@ -31,15 +35,19 @@ const translations = {
         available: "Disponible", ton_wallet: "Billetera TON", amount: "Cantidad", min_withdraw: "Retiro mínimo",
         confirm_withdrawal: "Confirmar Retiro", withdrawal_history: "Historial de Retiros", no_withdrawals: "Sin retiros aún",
         pending: "pendiente", completed: "completado", claim_mining_title: "Reclamar Recompensas de Minería", claim_btn: "Reclamar Recompensas",
-        partner_info_title: "Tareas de Socios", partner_text1: "Puedes agregar tareas con soporte", partner_text2: "Puedes cooperar con nosotros",
+        partner_info_title: "Tareas Sociales", partner_text1: "Puedes agregar tareas con soporte", partner_text2: "Puedes cooperar con nosotros",
         partner_text3: "Contacta con soporte para detalles", contact_support: "Contactar Soporte", mining: "Minería", earn: "Ganar",
-        team: "Equipo", copy_success: "¡Copiado!", link_copied: "Enlace copiado al portapapeles"
+        team: "Equipo", copy_success: "¡Copiado!", link_copied: "Enlace copiado al portapapeles", earn_more: "Gana Más Energía",
+        complete_tasks: "Completar Tareas", go: "IR", invite_frens: "Invitar Amigos", ad_reward: "Ver Anuncio", loading: "Cargando",
+        init_telegram: "Conectando a Telegram", init_firebase: "Conectando a Firebase", verify_device: "Verificando dispositivo",
+        load_user: "Cargando datos", load_tasks: "Cargando tareas", check_mining: "Verificando minería",
+        apply_bonus: "Aplicando bonificación", finalizing: "Finalizando", ready: "Listo"
     },
     fa: {
         level: "سطح", mining_rig: "دستگاه استخراج سطح", hourly: "ساعتی", daily: "روزانه", monthly: "ماهانه",
         start_mining: "شروع استخراج", claim_reward: "دریافت پاداش", mining_note: "پاداش‌ها پس از پایان جلسه استخراج قابل دریافت هستند",
         next_level_reward: "پاداش سطح بعدی", power: "انرژی", ton: "تون", promo_code: "کد تخفیف",
-        enter_code: "ورود کد", claim: "دریافت", main_tasks: "وظایف اصلی", partner_tasks: "وظایف همکاران",
+        enter_code: "ورود کد", claim: "دریافت", main_tasks: "وظایف اصلی", partner_tasks: "وظایف اجتماعی",
         watch_ad: "تماشای تبلیغ جایزه‌دار", reward_amount: "پاداش", available_in: "موجود در", seconds: "ثانیه",
         watch: "تماشا", all_tasks_completed: "تمام وظایف انجام شد!", check_later: "بعداً برای موارد بیشتر مراجعه کنید",
         no_tasks: "هیچ وظیفه‌ای موجود نیست", team_benefits: "مزایای تیم", share_earn: "اشتراک‌گذاری و درآمدزایی",
@@ -48,15 +56,19 @@ const translations = {
         available: "موجودی", ton_wallet: "کیف پول تون", amount: "مقدار", min_withdraw: "حداقل برداشت",
         confirm_withdrawal: "تأیید برداشت", withdrawal_history: "تاریخچه برداشت", no_withdrawals: "هنوز برداشتی انجام نشده",
         pending: "در انتظار", completed: "تکمیل شده", claim_mining_title: "دریافت پاداش استخراج", claim_btn: "دریافت پاداش",
-        partner_info_title: "وظایف همکاران", partner_text1: "می‌توانید وظیفه را با پشتیبانی اضافه کنید", partner_text2: "می‌توانید با ما همکاری کنید",
+        partner_info_title: "وظایف اجتماعی", partner_text1: "می‌توانید وظیفه را با پشتیبانی اضافه کنید", partner_text2: "می‌توانید با ما همکاری کنید",
         partner_text3: "برای جزئیات با پشتیبانی تماس بگیرید", contact_support: "تماس با پشتیبانی", mining: "استخراج", earn: "درآمد",
-        team: "تیم", copy_success: "کپی شد!", link_copied: "لینک در کلیپ‌بورد کپی شد"
+        team: "تیم", copy_success: "کپی شد!", link_copied: "لینک در کلیپ‌بورد کپی شد", earn_more: "انرژی بیشتر کسب کنید",
+        complete_tasks: "تکمیل وظایف", go: "برو", invite_frens: "دعوت از دوستان", ad_reward: "تماشای تبلیغ", loading: "در حال بارگذاری",
+        init_telegram: "اتصال به تلگرام", init_firebase: "اتصال به فایربیس", verify_device: "بررسی دستگاه",
+        load_user: "بارگذاری اطلاعات", load_tasks: "بارگذاری وظایف", check_mining: "بررسی وضعیت استخراج",
+        apply_bonus: "اعمال پاداش خوش آمدگویی", finalizing: "نهایی سازی", ready: "آماده"
     },
     tr: {
         level: "Seviye", mining_rig: "Madenci Seviye", hourly: "Saatlik", daily: "Günlük", monthly: "Aylık",
         start_mining: "MADENCİLİĞE BAŞLA", claim_reward: "ÖDÜLÜ AL", mining_note: "Ödüller madencilik oturumu bittikten sonra toplanabilir",
         next_level_reward: "Sonraki seviye ödülü", power: "Güç", ton: "TON", promo_code: "Promosyon Kodu",
-        enter_code: "Kodu girin", claim: "Al", main_tasks: "Ana Görevler", partner_tasks: "Ortak Görevleri",
+        enter_code: "Kodu girin", claim: "Al", main_tasks: "Ana Görevler", partner_tasks: "Sosyal Görevler",
         watch_ad: "Ödüllü Reklam İzle", reward_amount: "Ödül", available_in: "Kalan süre", seconds: "sn",
         watch: "İzle", all_tasks_completed: "Tüm görevler tamamlandı!", check_later: "Daha fazlası için daha sonra kontrol edin",
         no_tasks: "Görev yok", team_benefits: "Takım Avantajları", share_earn: "PAYLAŞ VE KAZAN",
@@ -65,15 +77,19 @@ const translations = {
         available: "Mevcut", ton_wallet: "TON Cüzdanı", amount: "Miktar", min_withdraw: "Minimum çekim",
         confirm_withdrawal: "Çekimi Onayla", withdrawal_history: "Çekim Geçmişi", no_withdrawals: "Henüz çekim yok",
         pending: "beklemede", completed: "tamamlandı", claim_mining_title: "Madencilik Ödüllerini Al", claim_btn: "Ödülleri Al",
-        partner_info_title: "Ortak Görevleri", partner_text1: "Destek ile görev ekleyebilirsiniz", partner_text2: "Bizimle işbirliği yapabilirsiniz",
+        partner_info_title: "Sosyal Görevler", partner_text1: "Destek ile görev ekleyebilirsiniz", partner_text2: "Bizimle işbirliği yapabilirsiniz",
         partner_text3: "Detaylar için desteğe başvurun", contact_support: "Desteğe Başvur", mining: "Madencilik", earn: "Kazan",
-        team: "Takım", copy_success: "Kopyalandı!", link_copied: "Bağlantı panoya kopyalandı"
+        team: "Takım", copy_success: "Kopyalandı!", link_copied: "Bağlantı panoya kopyalandı", earn_more: "Daha Fazla Güç Kazan",
+        complete_tasks: "Görevleri Tamamla", go: "GİT", invite_frens: "Arkadaşları Davet Et", ad_reward: "Reklam İzle", loading: "Yükleniyor",
+        init_telegram: "Telegram\'a Bağlanıyor", init_firebase: "Firebase\'e Bağlanıyor", verify_device: "Cihaz Doğrulanıyor",
+        load_user: "Kullanıcı Verileri Yükleniyor", load_tasks: "Görevler Yükleniyor", check_mining: "Madencilik Durumu Kontrol Ediliyor",
+        apply_bonus: "Hoş Geldin Bonusu Uygulanıyor", finalizing: "Sonlandırılıyor", ready: "Hazır"
     },
     ar: {
         level: "مستوى", mining_rig: "جهاز التعدين مستوى", hourly: "كل ساعة", daily: "يومي", monthly: "شهري",
         start_mining: "بدء التعدين", claim_reward: "استلام المكافأة", mining_note: "يمكن جمع المكافآت بعد انتهاء جلسة التعدين",
         next_level_reward: "مكافأة المستوى التالي", power: "الطاقة", ton: "تون", promo_code: "رمز ترويجي",
-        enter_code: "أدخل الرمز", claim: "استلام", main_tasks: "المهام الرئيسية", partner_tasks: "مهام الشركاء",
+        enter_code: "أدخل الرمز", claim: "استلام", main_tasks: "المهام الرئيسية", partner_tasks: "المهام الاجتماعية",
         watch_ad: "مشاهدة إعلان مكافأة", reward_amount: "المكافأة", available_in: "متاح بعد", seconds: "ثانية",
         watch: "مشاهدة", all_tasks_completed: "جميع المهام مكتملة!", check_later: "تحقق لاحقاً للمزيد",
         no_tasks: "لا توجد مهام متاحة", team_benefits: "مزايا الفريق", share_earn: "شارك واربح",
@@ -82,9 +98,13 @@ const translations = {
         available: "الرصيد المتوفر", ton_wallet: "محفظة تون", amount: "المبلغ", min_withdraw: "الحد الأدنى للسحب",
         confirm_withdrawal: "تأكيد السحب", withdrawal_history: "سجل السحوبات", no_withdrawals: "لا توجد سحوبات بعد",
         pending: "قيد الانتظار", completed: "مكتمل", claim_mining_title: "استلام مكافآت التعدين", claim_btn: "استلام المكافآت",
-        partner_info_title: "مهام الشركاء", partner_text1: "يمكنك إضافة مهمة عن طريق الدعم", partner_text2: "يمكنك التعاون معنا",
+        partner_info_title: "المهام الاجتماعية", partner_text1: "يمكنك إضافة مهمة عن طريق الدعم", partner_text2: "يمكنك التعاون معنا",
         partner_text3: "اتصل بالدعم للتفاصيل", contact_support: "اتصل بالدعم", mining: "التعدين", earn: "الأرباح",
-        team: "الفريق", copy_success: "تم النسخ!", link_copied: "تم نسخ الرابط"
+        team: "الفريق", copy_success: "تم النسخ!", link_copied: "تم نسخ الرابط", earn_more: "احصل على طاقة أكثر",
+        complete_tasks: "إكمال المهام", go: "اذهب", invite_frens: "دعوة الأصدقاء", ad_reward: "مشاهدة إعلان", loading: "جاري التحميل",
+        init_telegram: "الاتصال بتلغرام", init_firebase: "الاتصال بقاعدة البيانات", verify_device: "التحقق من الجهاز",
+        load_user: "تحميل بيانات المستخدم", load_tasks: "تحميل المهام", check_mining: "التحقق من حالة التعدين",
+        apply_bonus: "تطبيق مكافأة الترحيب", finalizing: "إنهاء", ready: "جاهز"
     }
 };
 
@@ -122,6 +142,7 @@ class App {
         
         this.lastRewardAdTime = 0;
         this.lang = 'en';
+        this.cooldownInterval = null;
         
         this.vibrationEnabled = true;
         this.loadSettings();
@@ -129,6 +150,22 @@ class App {
     
     t(key) {
         return translations[this.lang]?.[key] || translations.en[key] || key;
+    }
+    
+    formatNumber(num) {
+        return num.toLocaleString('en-US');
+    }
+    
+    getDailyTonRate() {
+        return (this.powerBalance / 1000) * APP_CONFIG.POWER_PER_TON_RATE;
+    }
+    
+    getHourlyTonRate() {
+        return this.getDailyTonRate() / 24;
+    }
+    
+    getMonthlyTonRate() {
+        return this.getDailyTonRate() * 30;
     }
     
     async getDeviceFingerprint() {
@@ -234,7 +271,7 @@ class App {
         if (newLevel > this.userLevel) {
             if (levelUpBonus > 0) {
                 this.powerBalance += levelUpBonus;
-                this.showNotification(this.t('level') + ' Up!', `+${levelUpBonus} Power bonus for reaching level ${newLevel}!`, 'success');
+                this.showNotification(this.t('level') + ' Up!', `+${this.formatNumber(levelUpBonus)} ${this.t('power')} bonus for reaching level ${newLevel}!`, 'success');
             }
             this.userLevel = newLevel;
             this.showNotification(this.t('level') + ' Up!', `Reached level ${this.userLevel}!`, 'success');
@@ -245,18 +282,6 @@ class App {
         const levelBadge = document.getElementById('user-level-badge');
         if (levelSpan) levelSpan.innerText = this.userLevel;
         if (levelBadge) levelBadge.innerText = this.userLevel;
-    }
-    
-    getHourlyTonRate() {
-        return this.powerBalance * APP_CONFIG.POWER_PER_TON_RATE;
-    }
-    
-    getDailyTonRate() {
-        return this.getHourlyTonRate() * 24;
-    }
-    
-    getMonthlyTonRate() {
-        return this.getDailyTonRate() * 30;
     }
     
     async startMining() {
@@ -305,7 +330,7 @@ class App {
         this.startMiningLoop();
         this.showNotification(this.t('start_mining'), 'Your rig is now mining TON', 'success');
     }
-
+    
     async stopMining() {
         if (!this.miningActive) return;
         
@@ -411,6 +436,35 @@ class App {
         }
     }
     
+    updateAdCooldownDisplay() {
+        const now = Date.now();
+        const cooldownMs = APP_CONFIG.AD_COOLDOWN_HOURS * 3600000;
+        const remaining = Math.max(0, cooldownMs - (now - this.lastRewardAdTime));
+        
+        const adBtn = document.getElementById('mining-reward-ad');
+        const adTimer = document.getElementById('ad-timer');
+        
+        if (adBtn && adTimer) {
+            if (remaining > 0) {
+                const hours = Math.floor(remaining / 3600000);
+                const minutes = Math.floor((remaining % 3600000) / 60000);
+                const seconds = Math.floor((remaining % 60000) / 1000);
+                adTimer.innerText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                adBtn.disabled = true;
+                adBtn.classList.add('disabled');
+            } else {
+                adTimer.innerText = this.t('watch');
+                adBtn.disabled = false;
+                adBtn.classList.remove('disabled');
+            }
+        }
+    }
+    
+    startCooldownTimer() {
+        if (this.cooldownInterval) clearInterval(this.cooldownInterval);
+        this.cooldownInterval = setInterval(() => this.updateAdCooldownDisplay(), 1000);
+    }
+    
     async addReferralEarnings(userId, tonAmount) {
         const userSnap = await this.db.ref(`users/${userId}`).once('value');
         const referredBy = userSnap.val()?.referredBy;
@@ -431,10 +485,10 @@ class App {
     
     async watchRewardAd() {
         const now = Date.now();
-        const cooldown = APP_CONFIG.AD_COOLDOWN_REWARD * 1000;
-        if (now - this.lastRewardAdTime < cooldown) {
-            const remaining = Math.ceil((cooldown - (now - this.lastRewardAdTime)) / 1000);
-            this.showNotification('Cooldown', `${this.t('available_in')} ${remaining} ${this.t('seconds')}`, 'warning');
+        const cooldownMs = APP_CONFIG.AD_COOLDOWN_HOURS * 3600000;
+        if (now - this.lastRewardAdTime < cooldownMs) {
+            const remaining = Math.ceil((cooldownMs - (now - this.lastRewardAdTime)) / 3600000);
+            this.showNotification('Cooldown', `${this.t('available_in')} ${remaining} ${this.t('hours')}`, 'warning');
             return;
         }
         
@@ -446,6 +500,7 @@ class App {
             await this.saveUserData();
             this.renderMining();
             this.renderEarn();
+            this.updateAdCooldownDisplay();
             this.showNotification('Reward Claimed!', '50 Power', 'success');
         }
     }
@@ -480,7 +535,7 @@ class App {
         }
         this.renderMining();
         this.renderEarn();
-        this.showNotification('Task Completed!', `${rewardPower} Power`, 'success');
+        this.showNotification('Task Completed!', `${rewardPower} ${this.t('power')}`, 'success');
         this.vibrate('success');
         this.isTaskRunning = false;
         this.enableAllTaskButtons();
@@ -504,7 +559,7 @@ class App {
             }
         });
     }
-    
+
     async applyPromoCode(code) {
         if (!this.db) return false;
         const codeSnap = await this.db.ref(`promoCodes/${code}`).once('value');
@@ -532,7 +587,7 @@ class App {
         
         await this.saveUserData();
         this.renderMining();
-        this.showNotification('Code Applied!', `You received ${promoData.power ? promoData.power + ' Power' : promoData.ton + ' TON'}`, 'success');
+        this.showNotification('Code Applied!', `You received ${promoData.power ? this.formatNumber(promoData.power) + ' Power' : promoData.ton + ' TON'}`, 'success');
         return true;
     }
     
@@ -591,15 +646,30 @@ class App {
     
     async initialize() {
         const progressBar = document.getElementById('loader-progress-bar');
-        const loaderText = document.getElementById('loader-text');
+        const loaderPercent = document.getElementById('loader-percent');
+        const loaderStatus = document.getElementById('loader-status');
+        const loaderTip = document.getElementById('loader-tip');
         
-        const updateProgress = (percent) => {
+        const tips = [
+            "Earn more Power to increase mining rate",
+            "Invite friends to earn bonus Power",
+            "Complete tasks to get free Power",
+            "Watch ads to earn extra Power",
+            "Higher level = better mining rate"
+        ];
+        
+        const updateProgress = (percent, statusKey) => {
             if (progressBar) progressBar.style.width = percent + '%';
-            if (loaderText) loaderText.innerText = Math.floor(percent) + '%';
+            if (loaderPercent) loaderPercent.innerText = Math.floor(percent) + '%';
+            if (loaderStatus) loaderStatus.innerText = this.t(statusKey);
+            if (loaderTip && Math.random() > 0.7) {
+                const randomTip = tips[Math.floor(Math.random() * tips.length)];
+                loaderTip.querySelector('span').innerText = randomTip;
+            }
         };
         
         try {
-            updateProgress(5);
+            updateProgress(5, 'init_telegram');
             if (!window.Telegram?.WebApp) throw new Error('Open from Telegram');
             this.tg = window.Telegram.WebApp;
             this.tgUser = this.tg.initDataUnsafe.user;
@@ -607,27 +677,27 @@ class App {
             this.tg.ready();
             this.tg.expand();
             
-            updateProgress(15);
+            updateProgress(15, 'init_firebase');
             await this.initFirebase();
             
-            updateProgress(35);
+            updateProgress(35, 'verify_device');
             const existingOwner = await this.checkDevice();
             
-            updateProgress(50);
+            updateProgress(50, 'load_user');
             if (existingOwner && existingOwner !== this.tgUser.id) {
                 await this.loadUserById(existingOwner);
             } else {
                 await this.loadUserData();
             }
             
-            updateProgress(65);
+            updateProgress(65, 'load_tasks');
             await this.loadCompletedTasks();
             await this.loadWithdrawals();
             await this.loadReferralStats();
             await this.loadPromoCodes();
             await this.loadTasks();
             
-            updateProgress(80);
+            updateProgress(80, 'check_mining');
             if (this.miningActive && this.miningEndTime) {
                 const serverTime = await this.getServerTime();
                 if (serverTime >= this.miningEndTime) {
@@ -642,7 +712,7 @@ class App {
                 }
             }
             
-            updateProgress(90);
+            updateProgress(90, 'apply_bonus');
             if (!this.hasClaimedWelcome) {
                 this.powerBalance += APP_CONFIG.WELCOME_BONUS_POWER;
                 this.hasClaimedWelcome = true;
@@ -680,14 +750,15 @@ class App {
                 }
             }
             
-            updateProgress(95);
+            updateProgress(95, 'finalizing');
             await this.loadReferralStats();
             
             this.setupEventListeners();
             this.renderUI();
             this.setupNavigation();
+            this.startCooldownTimer();
             
-            updateProgress(100);
+            updateProgress(100, 'ready');
             
             setTimeout(() => {
                 const loader = document.getElementById('app-loader');
@@ -696,9 +767,11 @@ class App {
                     setTimeout(() => {
                         loader.style.display = 'none';
                         document.getElementById('app').style.display = 'block';
+                        this.updateAdCooldownDisplay();
                     }, 500);
                 } else {
                     document.getElementById('app').style.display = 'block';
+                    this.updateAdCooldownDisplay();
                 }
             }, 500);
             this.isInitialized = true;
@@ -895,7 +968,7 @@ class App {
         }
         if (!this.partnerTasks.length) {
             this.partnerTasks = [
-                { id: 'partner_1', name: 'Partner Task 1', reward: 25, url: 'https://t.me/partner', verify: true, img: APP_CONFIG.BOT_AVATAR }
+                { id: 'partner_1', name: 'Social Task 1', reward: 25, url: 'https://t.me/partner', verify: true, img: APP_CONFIG.BOT_AVATAR }
             ];
         }
     }
@@ -910,38 +983,51 @@ class App {
         const monthlyRate = this.getMonthlyTonRate();
         const nextLevelBonus = 50;
         
+        const cooldownMs = APP_CONFIG.AD_COOLDOWN_HOURS * 3600000;
+        const remaining = Math.max(0, cooldownMs - (Date.now() - this.lastRewardAdTime));
+        const hasCooldown = remaining > 0;
+        
         el.innerHTML = `
             <div class="balance-cards">
-                <div class="balance-card"><div class="icon power"><i class="fas fa-bolt"></i></div><span class="label">${this.t('power')}</span><span class="value">${Math.floor(this.powerBalance).toLocaleString()}</span></div>
+                <div class="balance-card"><div class="icon power"><i class="fas fa-bolt"></i></div><span class="label">${this.t('power')}</span><span class="value">${this.formatNumber(Math.floor(this.powerBalance))}</span></div>
                 <div class="balance-card"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" class="ton-icon-img"><span class="label">${this.t('ton')}</span><span class="value">${this.tonBalance.toFixed(6)}</span></div>
             </div>
             <div class="mining-card">
-                <div class="mining-fan"><i class="fas fa-microchip"></i></div>
+                <div class="mining-icon"><i class="fas fa-microchip"></i></div>
                 <h3>${this.t('mining_rig')}${this.userLevel}</h3>
                 <div class="rate-stats">
-                    <div class="rate-stat"><div class="stat-label">${this.t('hourly')}</div><div class="stat-value">${hourlyRate.toFixed(6)} TON</div></div>
-                    <div class="rate-stat"><div class="stat-label">${this.t('daily')}</div><div class="stat-value">${dailyRate.toFixed(6)} TON</div></div>
-                    <div class="rate-stat"><div class="stat-label">${this.t('monthly')}</div><div class="stat-value">${monthlyRate.toFixed(6)} TON</div></div>
+                    <div class="rate-stat"><div class="stat-label">${this.t('hourly')}</div><div class="stat-value">${hourlyRate.toFixed(8)} TON</div></div>
+                    <div class="rate-stat"><div class="stat-label">${this.t('daily')}</div><div class="stat-value">${dailyRate.toFixed(8)} TON</div></div>
+                    <div class="rate-stat"><div class="stat-label">${this.t('monthly')}</div><div class="stat-value">${monthlyRate.toFixed(8)} TON</div></div>
                 </div>
                 ${this.miningActive ? `<div class="mining-timer"><i class="fas fa-hourglass-half"></i> 00:00:00</div><div class="mining-note">${this.t('mining_note')}</div>` : ''}
                 ${!this.miningActive ? `<button id="start-mining-btn" class="mining-action-btn"><i class="fas fa-play"></i> ${this.t('start_mining')}</button>` : ''}
                 ${!this.miningActive && this.pendingTonReward > 0 ? `<button id="claim-mining-btn" class="mining-claim-btn"><i class="fas fa-gift"></i> ${this.t('claim_reward')}</button>` : ''}
             </div>
             <div class="level-progress">
-                <div class="progress-header"><span>${this.t('level')} ${this.userLevel}</span><span>${Math.floor(this.powerBalance).toLocaleString()} / ${requiredPower.toLocaleString()} ${this.t('power')}</span></div>
+                <div class="progress-header"><span>${this.t('level')} ${this.userLevel}</span><span>${this.formatNumber(Math.floor(this.powerBalance))} / ${this.formatNumber(requiredPower)} ${this.t('power')}</span></div>
                 <div class="progress-bar"><div class="progress-fill" style="width: ${progress}%"></div></div>
                 <div class="level-reward"><i class="fas fa-gift"></i> ${this.t('next_level_reward')}: ${nextLevelBonus} ${this.t('power')}</div>
             </div>
-            <div class="ad-card">
-                <div class="ad-info"><h4>${this.t('watch_ad')}</h4><div class="ad-reward"><i class="fas fa-bolt"></i> 50 ${this.t('power')}</div></div>
-                <button id="mining-reward-ad" class="watch-ad-btn">${this.t('watch')}</button>
+            <div class="earn-more-title"><i class="fas fa-chart-line"></i> ${this.t('earn_more')}</div>
+            <div class="earn-cards">
+                <div class="earn-card"><div class="earn-card-info"><h4>${this.t('watch_ad')}</h4><p>50 ${this.t('power')}</p></div><button id="mining-reward-ad" class="earn-card-btn">${this.t('watch')}</button></div>
+                <div class="earn-card"><div class="earn-card-info"><h4>${this.t('complete_tasks')}</h4><p>${this.t('power')}</p></div><button id="go-tasks-btn" class="earn-card-btn">${this.t('go')}</button></div>
+                <div class="earn-card"><div class="earn-card-info"><h4>${this.t('invite_frens')}</h4><p>${this.t('power_earnings')}</p></div><button id="go-team-btn" class="earn-card-btn">${this.t('go')}</button></div>
             </div>
         `;
         
         document.getElementById('start-mining-btn')?.addEventListener('click', () => this.startMining());
         document.getElementById('claim-mining-btn')?.addEventListener('click', () => this.claimMiningRewards());
         document.getElementById('mining-reward-ad')?.addEventListener('click', () => this.watchRewardAd());
+        document.getElementById('go-tasks-btn')?.addEventListener('click', () => {
+            document.querySelector('.nav-btn[data-page="earn-page"]').click();
+        });
+        document.getElementById('go-team-btn')?.addEventListener('click', () => {
+            document.querySelector('.nav-btn[data-page="team-page"]').click();
+        });
         if (this.miningActive) this.updateMiningTimerDisplay();
+        this.updateAdCooldownDisplay();
     }
     
     renderEarn() {
@@ -1038,9 +1124,9 @@ class App {
         const link = APP_CONFIG.BOT_LINK + this.tgUser.id;
         const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Join me on Star Farmer and start mining TON!')}`;
         el.innerHTML = `
-            <div class="team-benefits"><h3><i class="fas fa-gift"></i> ${this.t('team_benefits')}</h3><div class="benefits-list"><div class="benefit-item"><i class="fas fa-coins"></i><div class="benefit-text">Earn 10% of your team members TON earnings</div></div><div class="benefit-item"><i class="fas fa-bolt"></i><div class="benefit-text">Get ${APP_CONFIG.REFERRAL_POWER_BONUS} Power per verified member</div></div></div></div>
+            <div class="team-benefits"><h3><i class="fas fa-gift"></i> ${this.t('team_benefits')}</h3><div class="benefits-list"><div class="benefit-item"><i class="fas fa-coins"></i><div class="benefit-text">Earn 10% of your team members TON earnings</div></div><div class="benefit-item"><i class="fas fa-bolt"></i><div class="benefit-text">Get ${this.formatNumber(APP_CONFIG.REFERRAL_POWER_BONUS)} Power per verified member</div></div></div></div>
             <div class="referral-card"><h4><i class="fas fa-share-alt"></i> ${this.t('share_earn')}</h4><div class="link-display">${link}</div><div class="referral-buttons"><button id="copyLink"><i class="fas fa-copy"></i> ${this.t('copy')}</button><button id="shareLink"><i class="fab fa-telegram"></i> ${this.t('share')}</button></div></div>
-            <div class="stats-grid"><div class="stat-mini"><span class="stat-label">${this.t('total_members')}</span><span class="stat-number">${this.totalReferrals}</span></div><div class="stat-mini"><span class="stat-label">${this.t('verified_members')}</span><span class="stat-number">${this.verifiedReferrals}</span></div><div class="stat-mini"><span class="stat-label">${this.t('power_earnings')}</span><span class="stat-number">${Math.floor(this.referralPower).toLocaleString()}</span></div><div class="stat-mini"><span class="stat-label">${this.t('ton_earnings')}</span><span class="stat-number">${this.referralTon.toFixed(6)}</span></div></div>
+            <div class="stats-grid"><div class="stat-mini"><span class="stat-label">${this.t('total_members')}</span><span class="stat-number">${this.totalReferrals}</span></div><div class="stat-mini"><span class="stat-label">${this.t('verified_members')}</span><span class="stat-number">${this.verifiedReferrals}</span></div><div class="stat-mini"><span class="stat-label">${this.t('power_earnings')}</span><span class="stat-number">${this.formatNumber(Math.floor(this.referralPower))}</span></div><div class="stat-mini"><span class="stat-label">${this.t('ton_earnings')}</span><span class="stat-number">${this.referralTon.toFixed(6)}</span></div></div>
         `;
         document.getElementById('copyLink')?.addEventListener('click', () => {
             navigator.clipboard.writeText(link);
@@ -1120,6 +1206,9 @@ class App {
         document.getElementById('nav-team').innerText = this.t('team');
         document.getElementById('nav-withdraw').innerText = this.t('withdraw');
         document.getElementById('user-level-text').innerText = this.t('level');
+        
+        const currentFlag = this.lang === 'en' ? '🇬🇧' : this.lang === 'es' ? '🇪🇸' : this.lang === 'fa' ? '🇮🇷' : this.lang === 'tr' ? '🇹🇷' : '🇸🇦';
+        document.getElementById('current-flag').innerText = currentFlag;
     }
     
     setupEventListeners() {
@@ -1145,9 +1234,13 @@ class App {
             opt.addEventListener('click', () => {
                 this.lang = opt.dataset.lang;
                 localStorage.setItem('star_farmer_lang', this.lang);
+                const settings = JSON.parse(localStorage.getItem('star_farmer_settings') || '{}');
+                settings.lang = this.lang;
+                localStorage.setItem('star_farmer_settings', JSON.stringify(settings));
                 langMenu.style.display = 'none';
                 this.renderUI();
                 this.updateModalTranslations();
+                this.updateAdCooldownDisplay();
                 this.showNotification('Language', `Changed to ${opt.innerText}`, 'success');
             });
         });
@@ -1168,10 +1261,21 @@ class App {
         if (saved) {
             const s = JSON.parse(saved);
             this.vibrationEnabled = s.vibration !== false;
-            this.lang = s.lang || 'en';
+            this.lang = s.lang || this.getDeviceLanguage();
+        } else {
+            this.lang = this.getDeviceLanguage();
         }
         const savedLang = localStorage.getItem('star_farmer_lang');
         if (savedLang) this.lang = savedLang;
+    }
+    
+    getDeviceLanguage() {
+        const userLang = navigator.language || navigator.userLanguage;
+        if (userLang.startsWith('es')) return 'es';
+        if (userLang.startsWith('fa')) return 'fa';
+        if (userLang.startsWith('tr')) return 'tr';
+        if (userLang.startsWith('ar')) return 'ar';
+        return 'en';
     }
     
     setupNavigation() {
