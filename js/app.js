@@ -52,29 +52,39 @@ class App {
     calculateRewardForHours(hours) { return this.getHourlyTonRate() * hours; }
     getRequiredPowerForLevel(level) { return Math.floor(1000 * Math.pow(1.2, level - 1)); }
     
-    async apiCall(action, data = {}) {
-        if (!this.apiToken) await this.authenticate();
-        const response = await fetch('/api/db', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.apiToken}` },
-            body: JSON.stringify({ action, data })
-        });
-        if (response.status === 401) { await this.authenticate(); return this.apiCall(action, data); }
-        const result = await response.json();
-        if (result.error) throw new Error(result.error);
-        return result;
+    async apiCall(type, data = {}) {
+    if (!this.apiToken && type !== 'auth') {
+        await this.authenticate();
     }
     
-    async authenticate() {
-        const initData = window.Telegram.WebApp.initData;
-        const response = await fetch('/api/auth', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ initData, userId: this.tgUser.id })
-        });
-        const { token } = await response.json();
-        this.apiToken = token;
+    const response = await fetch('/api', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(this.apiToken && { 'Authorization': `Bearer ${this.apiToken}` })
+        },
+        body: JSON.stringify({ type, data })
+    });
+    
+    if (response.status === 401) {
+        await this.authenticate();
+        return this.apiCall(type, data);
     }
+    
+    const result = await response.json();
+    if (result.error) throw new Error(result.error);
+    return result;
+}
+
+async authenticate() {
+    const result = await this.apiCall('auth', {
+        initData: window.Telegram.WebApp.initData,
+        userId: this.tgUser.id
+    });
+    this.apiToken = result.token;
+}
+    
+    
     
     async getServerTime() { return Date.now(); }
     
