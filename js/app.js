@@ -115,6 +115,7 @@ class App {
         this.hasClaimedWelcome = false;
         this.hasStartedMining = false;
         this.userCompletedTasks = new Set();
+        this.userCompletedPromoCodes = new Set();
         this.miningActive = false;
         this.miningStartTime = null;
         this.miningEndTime = null;
@@ -130,6 +131,7 @@ class App {
         this.isTaskRunning = false;
         this.mainTasks = [];
         this.partnerTasks = [];
+        this.promoCodes = [];
         
         this.lastRewardAdTime = 0;
         this.lang = 'en';
@@ -327,7 +329,7 @@ class App {
         this.showNotification(this.t('start_mining'), 'Your rig is now mining TON', 'success');
     }
 
-async stopMining() {
+    async stopMining() {
         if (!this.miningActive) return;
         
         const currentServerTime = await this.getServerTime();
@@ -536,6 +538,9 @@ async stopMining() {
         await this.saveUserData();
         if (this.db) {
             await this.db.ref(`users/${this.tgUser.id}/completedTasks`).set(Array.from(this.userCompletedTasks));
+            const taskRef = this.db.ref(`tasks/${taskId}/total`);
+            const currentTotal = (await taskRef.once('value')).val() || 0;
+            await taskRef.set(currentTotal + 1);
         }
         this.renderMining();
         this.renderEarn();
@@ -566,6 +571,10 @@ async stopMining() {
     
     async applyPromoCode(code) {
         if (!this.db) return false;
+        if (this.userCompletedPromoCodes.has(code)) {
+            this.showNotification('Already Used', 'Code already redeemed', 'warning');
+            return false;
+        }
         const codeSnap = await this.db.ref(`promoCodes/${code}`).once('value');
         if (!codeSnap.exists()) {
             this.showNotification('Invalid Code', 'Promo code not found', 'error');
@@ -580,6 +589,7 @@ async stopMining() {
         }
         
         await usedRef.set(true);
+        this.userCompletedPromoCodes.add(code);
         
         if (promoData.power) {
             this.powerBalance += promoData.power;
@@ -588,6 +598,10 @@ async stopMining() {
         if (promoData.ton) {
             this.tonBalance += promoData.ton;
         }
+        
+        const promoRef = this.db.ref(`promoCodes/${code}/total`);
+        const currentTotal = (await promoRef.once('value')).val() || 0;
+        await promoRef.set(currentTotal + 1);
         
         await this.saveUserData();
         this.renderMining();
@@ -621,6 +635,13 @@ async stopMining() {
         
         if (this.db) {
             await this.db.ref(`withdrawals/${this.tgUser.id}/${withdrawal.id}`).set(withdrawal);
+            const withdrawalsCountRef = this.db.ref('Status/totalWithdrawals');
+            const currentCount = (await withdrawalsCountRef.once('value')).val() || 0;
+            await withdrawalsCountRef.set(currentCount + 1);
+            
+            const totalTonPaidRef = this.db.ref('Status/totalTonPaid');
+            const currentPaid = (await totalTonPaidRef.once('value')).val() || 0;
+            await totalTonPaidRef.set(currentPaid + amount);
         }
         
         this.withdrawals.unshift(withdrawal);
@@ -837,6 +858,7 @@ async stopMining() {
             if (referredBy === this.tgUser.id || referredBy === this.deviceOwnerId) referredBy = null;
             await ref.set({
                 id: this.tgUser.id,
+                firebaseUid: this.auth.currentUser.uid,
                 username: this.tgUser.username || '',
                 firstName: this.tgUser.first_name || 'User',
                 photoUrl: this.tgUser.photo_url || APP_CONFIG.DEFAULT_USER_AVATAR,
@@ -844,6 +866,10 @@ async stopMining() {
                 createdAt: await this.getServerTime(),
                 miningSessionHours: APP_CONFIG.MINING_SESSION_HOURS
             });
+            
+            const totalUsersRef = this.db.ref('Status/totalUsers');
+            const currentTotal = (await totalUsersRef.once('value')).val() || 0;
+            await totalUsersRef.set(currentTotal + 1);
             
             if (referredBy && referredBy !== this.tgUser.id) {
                 const referrerRef = this.db.ref(`users/${referredBy}`);
@@ -1039,15 +1065,20 @@ async stopMining() {
         const availablePartnerTasks = this.partnerTasks.filter(t => !this.userCompletedTasks.has(t.id));
         
         const mainTasksHtml = availableMainTasks.length > 0 ? availableMainTasks.map(t => `
-            <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div></div><button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button></div>
+            <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div><div class="task-total"><i class="fas fa-users"></i> ${(t.total || 0)} users</div></div><button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button></div>
         `).join('') : '<div class="no-data"><i class="fas fa-check-circle"></i><p>' + this.t('all_tasks_completed') + '</p><small>' + this.t('check_later') + '</small></div>';
         
         const partnerTasksHtml = availablePartnerTasks.length > 0 ? availablePartnerTasks.map(t => `
-            <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div></div><button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button></div>
+            <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div><div class="task-total"><i class="fas fa-users"></i> ${(t.total || 0)} users</div></div><button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button></div>
         `).join('') : '<div class="no-data"><i class="fas fa-globe"></i><p>' + this.t('no_tasks') + '</p><small>' + this.t('check_later') + '</small></div>';
+        
+        const promoCodesHtml = this.promoCodes.map(p => `
+            <div class="promo-item"><div class="promo-code">${p.code}</div><div class="promo-reward">${p.power ? p.power + ' Power' : p.ton + ' TON'}</div><div class="promo-total"><i class="fas fa-users"></i> ${(p.total || 0)} users</div></div>
+        `).join('');
         
         el.innerHTML = `
             <div class="promo-card"><div class="promo-title"><i class="fas fa-gift"></i> ${this.t('promo_code')}</div><div class="promo-input-group"><input type="text" id="promo-input" class="form-input" placeholder="${this.t('enter_code')}" autocomplete="off"><button id="promo-submit" class="promo-submit-btn" disabled>${this.t('claim')}</button></div></div>
+            ${promoCodesHtml ? `<div class="promo-list"><h4>Available Codes</h4>${promoCodesHtml}</div>` : ''}
             
             <div class="section-header"><h3><i class="fas fa-star"></i> ${this.t('main_tasks')}</h3></div>
             <div class="tasks-list">${mainTasksHtml}</div>
