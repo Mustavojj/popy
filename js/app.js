@@ -201,7 +201,10 @@ class App {
                 this.deviceOwnerId = this.tgUser.id;
                 return null;
             }
-        } catch(e) { return null; }
+        } catch(e) { 
+            console.warn('Device check failed:', e);
+            return null; 
+        }
     }
     
     async getServerTime() {
@@ -693,10 +696,17 @@ class App {
             const existingOwner = await this.checkDevice();
             
             updateProgress(70);
-            if (existingOwner && existingOwner !== this.tgUser.id) {
-                await this.loadUserById(existingOwner);
-            } else {
-                await this.loadUserData();
+            // محاولة تحميل البيانات مع التعامل مع أخطاء الصلاحيات
+            try {
+                if (existingOwner && existingOwner !== this.tgUser.id) {
+                    await this.loadUserById(existingOwner);
+                } else {
+                    await this.loadUserData();
+                }
+            } catch (permError) {
+                console.warn('Permission error, retrying with fresh user data...', permError);
+                // إذا حدث خطأ صلاحيات، نعيد محاولة إنشاء المستخدم
+                await this.forceCreateUserData();
             }
             
             updateProgress(85);
@@ -792,36 +802,124 @@ class App {
             
         } catch(err) {
             console.error('Initialization error:', err);
-            document.getElementById('loader-error').textContent = err.message;
-            document.getElementById('loader-error').style.display = 'block';
+            const errorEl = document.getElementById('loader-error');
+            if (errorEl) {
+                errorEl.textContent = err.message;
+                errorEl.style.display = 'block';
+            }
         }
     }
     
+    // دالة جديدة لإجبار إنشاء بيانات المستخدم عند حدوث خطأ صلاحيات
+    async forceCreateUserData() {
+        console.log('Force creating user data...');
+        const startParam = this.tg.initDataUnsafe?.start_param;
+        let referredBy = (startParam && !isNaN(startParam)) ? parseInt(startParam) : null;
+        if (referredBy === this.tgUser.id || referredBy === this.deviceOwnerId) referredBy = null;
+        
+        const userData = {
+            id: this.tgUser.id,
+            firebaseUid: this.auth.currentUser.uid,
+            username: this.tgUser.username || '',
+            firstName: this.tgUser.first_name || 'User',
+            photoUrl: this.tgUser.photo_url || APP_CONFIG.DEFAULT_USER_AVATAR,
+            referredBy: referredBy,
+            createdAt: await this.getServerTime(),
+            miningSessionHours: APP_CONFIG.MINING_SESSION_HOURS,
+            powerBalance: 0,
+            tonBalance: 0,
+            level: 1,
+            isVerified: false,
+            hasClaimedWelcome: false,
+            hasStartedMining: false,
+            miningActive: false,
+            miningStartTime: null,
+            miningEndTime: null,
+            pendingTonReward: 0,
+            totalReferrals: 0,
+            verifiedReferrals: 0,
+            referralPower: 0,
+            referralTon: 0
+        };
+        
+        await this.db.ref(`users/${this.tgUser.id}`).set(userData);
+        
+        const totalUsersRef = this.db.ref('Status/totalUsers');
+        const currentTotal = (await totalUsersRef.once('value')).val() || 0;
+        await totalUsersRef.set(currentTotal + 1);
+        
+        if (referredBy && referredBy !== this.tgUser.id) {
+            const referrerRef = this.db.ref(`users/${referredBy}`);
+            const referrerSnap = await referrerRef.once('value');
+            if (referrerSnap.exists()) {
+                const currentTotal = referrerSnap.val().totalReferrals ?? 0;
+                await referrerRef.update({ totalReferrals: currentTotal + 1 });
+                
+                await this.db.ref(`referrals/${referredBy}/${this.tgUser.id}`).set({
+                    userId: this.tgUser.id,
+                    userName: this.tgUser.first_name,
+                    userPhoto: this.tgUser.photo_url,
+                    state: 'Not Verified',
+                    joinedAt: await this.getServerTime()
+                });
+            }
+        }
+        
+        // تحديث المتغيرات المحلية
+        this.powerBalance = 0;
+        this.tonBalance = 0;
+        this.userLevel = 1;
+        this.isVerified = false;
+        this.hasClaimedWelcome = false;
+        this.hasStartedMining = false;
+        this.miningActive = false;
+        this.miningStartTime = null;
+        this.miningEndTime = null;
+        this.pendingTonReward = 0;
+        this.miningSessionHours = APP_CONFIG.MINING_SESSION_HOURS;
+        
+        const nameSpan = document.getElementById('user-name');
+        if (nameSpan) nameSpan.innerText = this.tgUser.first_name || 'User';
+        const levelSpan = document.getElementById('user-level');
+        if (levelSpan) levelSpan.innerText = this.userLevel;
+        const levelBadge = document.getElementById('user-level-badge');
+        if (levelBadge) levelBadge.innerText = this.userLevel;
+        const photoImg = document.getElementById('user-photo');
+        if (photoImg) photoImg.src = this.tgUser.photo_url || APP_CONFIG.DEFAULT_USER_AVATAR;
+    }
+    
     async loadUserById(userId) {
-        const ref = this.db.ref(`users/${userId}`);
-        const snap = await ref.once('value');
-        if (snap.exists()) {
-            const d = snap.val();
-            this.powerBalance = d.powerBalance ?? 0;
-            this.tonBalance = d.tonBalance ?? 0;
-            this.userLevel = d.level ?? 1;
-            this.isVerified = d.isVerified ?? false;
-            this.hasClaimedWelcome = d.hasClaimedWelcome ?? false;
-            this.hasStartedMining = d.hasStartedMining ?? false;
-            this.miningActive = d.miningActive ?? false;
-            this.miningStartTime = d.miningStartTime ?? null;
-            this.miningEndTime = d.miningEndTime ?? null;
-            this.pendingTonReward = d.pendingTonReward ?? 0;
-            this.miningSessionHours = d.miningSessionHours ?? APP_CONFIG.MINING_SESSION_HOURS;
-            this.tgUser = { id: userId, first_name: d.firstName, username: d.username, photo_url: d.photoUrl };
-            const nameSpan = document.getElementById('user-name');
-            if (nameSpan) nameSpan.innerText = d.firstName;
-            const photoImg = document.getElementById('user-photo');
-            if (photoImg) photoImg.src = d.photoUrl || APP_CONFIG.DEFAULT_USER_AVATAR;
-            const levelSpan = document.getElementById('user-level');
-            if (levelSpan) levelSpan.innerText = this.userLevel;
-            const levelBadge = document.getElementById('user-level-badge');
-            if (levelBadge) levelBadge.innerText = this.userLevel;
+        try {
+            const ref = this.db.ref(`users/${userId}`);
+            const snap = await ref.once('value');
+            if (snap.exists()) {
+                const d = snap.val();
+                this.powerBalance = d.powerBalance ?? 0;
+                this.tonBalance = d.tonBalance ?? 0;
+                this.userLevel = d.level ?? 1;
+                this.isVerified = d.isVerified ?? false;
+                this.hasClaimedWelcome = d.hasClaimedWelcome ?? false;
+                this.hasStartedMining = d.hasStartedMining ?? false;
+                this.miningActive = d.miningActive ?? false;
+                this.miningStartTime = d.miningStartTime ?? null;
+                this.miningEndTime = d.miningEndTime ?? null;
+                this.pendingTonReward = d.pendingTonReward ?? 0;
+                this.miningSessionHours = d.miningSessionHours ?? APP_CONFIG.MINING_SESSION_HOURS;
+                this.tgUser = { id: userId, first_name: d.firstName, username: d.username, photo_url: d.photoUrl };
+                const nameSpan = document.getElementById('user-name');
+                if (nameSpan) nameSpan.innerText = d.firstName;
+                const photoImg = document.getElementById('user-photo');
+                if (photoImg) photoImg.src = d.photoUrl || APP_CONFIG.DEFAULT_USER_AVATAR;
+                const levelSpan = document.getElementById('user-level');
+                if (levelSpan) levelSpan.innerText = this.userLevel;
+                const levelBadge = document.getElementById('user-level-badge');
+                if (levelBadge) levelBadge.innerText = this.userLevel;
+            } else {
+                await this.forceCreateUserData();
+            }
+        } catch (error) {
+            console.error('loadUserById error:', error);
+            await this.forceCreateUserData();
         }
     }
     
@@ -837,71 +935,30 @@ class App {
     }
     
     async loadUserData() {
-        const ref = this.db.ref(`users/${this.tgUser.id}`);
-        const snap = await ref.once('value');
-        if (snap.exists()) {
-            const d = snap.val();
-            this.powerBalance = d.powerBalance ?? 0;
-            this.tonBalance = d.tonBalance ?? 0;
-            this.userLevel = d.level ?? 1;
-            this.isVerified = d.isVerified ?? false;
-            this.hasClaimedWelcome = d.hasClaimedWelcome ?? false;
-            this.hasStartedMining = d.hasStartedMining ?? false;
-            this.miningActive = d.miningActive ?? false;
-            this.miningStartTime = d.miningStartTime ?? null;
-            this.miningEndTime = d.miningEndTime ?? null;
-            this.pendingTonReward = d.pendingTonReward ?? 0;
-            this.miningSessionHours = d.miningSessionHours ?? APP_CONFIG.MINING_SESSION_HOURS;
-        } else {
-            const startParam = this.tg.initDataUnsafe?.start_param;
-            let referredBy = (startParam && !isNaN(startParam)) ? parseInt(startParam) : null;
-            if (referredBy === this.tgUser.id || referredBy === this.deviceOwnerId) referredBy = null;
-            await ref.set({
-                id: this.tgUser.id,
-                firebaseUid: this.auth.currentUser.uid,
-                username: this.tgUser.username || '',
-                firstName: this.tgUser.first_name || 'User',
-                photoUrl: this.tgUser.photo_url || APP_CONFIG.DEFAULT_USER_AVATAR,
-                referredBy: referredBy,
-                createdAt: await this.getServerTime(),
-                miningSessionHours: APP_CONFIG.MINING_SESSION_HOURS,
-                powerBalance: 0,
-                tonBalance: 0,
-                level: 1,
-                isVerified: false,
-                hasClaimedWelcome: false,
-                hasStartedMining: false,
-                miningActive: false,
-                miningStartTime: null,
-                miningEndTime: null,
-                pendingTonReward: 0,
-                totalReferrals: 0,
-                verifiedReferrals: 0,
-                referralPower: 0,
-                referralTon: 0
-            });
-            
-            const totalUsersRef = this.db.ref('Status/totalUsers');
-            const currentTotal = (await totalUsersRef.once('value')).val() || 0;
-            await totalUsersRef.set(currentTotal + 1);
-            
-            if (referredBy && referredBy !== this.tgUser.id) {
-                const referrerRef = this.db.ref(`users/${referredBy}`);
-                const referrerSnap = await referrerRef.once('value');
-                if (referrerSnap.exists()) {
-                    const currentTotal = referrerSnap.val().totalReferrals ?? 0;
-                    await referrerRef.update({ totalReferrals: currentTotal + 1 });
-                    
-                    await this.db.ref(`referrals/${referredBy}/${this.tgUser.id}`).set({
-                        userId: this.tgUser.id,
-                        userName: this.tgUser.first_name,
-                        userPhoto: this.tgUser.photo_url,
-                        state: 'Not Verified',
-                        joinedAt: await this.getServerTime()
-                    });
-                }
+        try {
+            const ref = this.db.ref(`users/${this.tgUser.id}`);
+            const snap = await ref.once('value');
+            if (snap.exists()) {
+                const d = snap.val();
+                this.powerBalance = d.powerBalance ?? 0;
+                this.tonBalance = d.tonBalance ?? 0;
+                this.userLevel = d.level ?? 1;
+                this.isVerified = d.isVerified ?? false;
+                this.hasClaimedWelcome = d.hasClaimedWelcome ?? false;
+                this.hasStartedMining = d.hasStartedMining ?? false;
+                this.miningActive = d.miningActive ?? false;
+                this.miningStartTime = d.miningStartTime ?? null;
+                this.miningEndTime = d.miningEndTime ?? null;
+                this.pendingTonReward = d.pendingTonReward ?? 0;
+                this.miningSessionHours = d.miningSessionHours ?? APP_CONFIG.MINING_SESSION_HOURS;
+            } else {
+                await this.forceCreateUserData();
             }
+        } catch (error) {
+            console.error('loadUserData error:', error);
+            await this.forceCreateUserData();
         }
+        
         const nameSpan = document.getElementById('user-name');
         if (nameSpan) nameSpan.innerText = this.tgUser.first_name || 'User';
         const levelSpan = document.getElementById('user-level');
@@ -913,20 +970,24 @@ class App {
     }
     
     async saveUserData() {
-        if (!this.db) return;
-        const updates = {};
-        if (this.powerBalance !== undefined) updates.powerBalance = this.powerBalance;
-        if (this.tonBalance !== undefined) updates.tonBalance = this.tonBalance;
-        if (this.userLevel !== undefined) updates.level = this.userLevel;
-        if (this.isVerified !== undefined) updates.isVerified = this.isVerified;
-        if (this.hasClaimedWelcome !== undefined) updates.hasClaimedWelcome = this.hasClaimedWelcome;
-        if (this.hasStartedMining !== undefined) updates.hasStartedMining = this.hasStartedMining;
-        if (this.miningActive !== undefined) updates.miningActive = this.miningActive;
-        if (this.miningStartTime !== undefined) updates.miningStartTime = this.miningStartTime;
-        if (this.miningEndTime !== undefined) updates.miningEndTime = this.miningEndTime;
-        if (this.pendingTonReward !== undefined) updates.pendingTonReward = this.pendingTonReward;
-        if (this.miningSessionHours !== undefined) updates.miningSessionHours = this.miningSessionHours;
-        await this.db.ref(`users/${this.tgUser.id}`).update(updates);
+        if (!this.db || !this.tgUser) return;
+        try {
+            const updates = {};
+            if (this.powerBalance !== undefined) updates.powerBalance = this.powerBalance;
+            if (this.tonBalance !== undefined) updates.tonBalance = this.tonBalance;
+            if (this.userLevel !== undefined) updates.level = this.userLevel;
+            if (this.isVerified !== undefined) updates.isVerified = this.isVerified;
+            if (this.hasClaimedWelcome !== undefined) updates.hasClaimedWelcome = this.hasClaimedWelcome;
+            if (this.hasStartedMining !== undefined) updates.hasStartedMining = this.hasStartedMining;
+            if (this.miningActive !== undefined) updates.miningActive = this.miningActive;
+            if (this.miningStartTime !== undefined) updates.miningStartTime = this.miningStartTime;
+            if (this.miningEndTime !== undefined) updates.miningEndTime = this.miningEndTime;
+            if (this.pendingTonReward !== undefined) updates.pendingTonReward = this.pendingTonReward;
+            if (this.miningSessionHours !== undefined) updates.miningSessionHours = this.miningSessionHours;
+            await this.db.ref(`users/${this.tgUser.id}`).update(updates);
+        } catch (error) {
+            console.warn('Failed to save user data:', error);
+        }
     }
     
     async loadCompletedTasks() {
@@ -934,8 +995,13 @@ class App {
             this.userCompletedTasks = new Set();
             return;
         }
-        const snap = await this.db.ref(`users/${this.tgUser.id}/completedTasks`).once('value');
-        this.userCompletedTasks = snap.exists() ? new Set(snap.val()) : new Set();
+        try {
+            const snap = await this.db.ref(`users/${this.tgUser.id}/completedTasks`).once('value');
+            this.userCompletedTasks = snap.exists() ? new Set(snap.val()) : new Set();
+        } catch (error) {
+            console.warn('Failed to load completed tasks:', error);
+            this.userCompletedTasks = new Set();
+        }
     }
     
     async loadWithdrawals() {
@@ -943,13 +1009,18 @@ class App {
             this.withdrawals = [];
             return;
         }
-        const snap = await this.db.ref(`withdrawals/${this.tgUser.id}`).once('value');
-        this.withdrawals = [];
-        if (snap.exists()) {
-            snap.forEach(c => {
-                this.withdrawals.push({ id: c.key, ...c.val() });
-            });
-            this.withdrawals.sort((a,b) => b.timestamp - a.timestamp);
+        try {
+            const snap = await this.db.ref(`withdrawals/${this.tgUser.id}`).once('value');
+            this.withdrawals = [];
+            if (snap.exists()) {
+                snap.forEach(c => {
+                    this.withdrawals.push({ id: c.key, ...c.val() });
+                });
+                this.withdrawals.sort((a,b) => b.timestamp - a.timestamp);
+            }
+        } catch (error) {
+            console.warn('Failed to load withdrawals:', error);
+            this.withdrawals = [];
         }
     }
     
@@ -961,24 +1032,33 @@ class App {
             this.referralTon = 0;
             return;
         }
-        const snap = await this.db.ref(`users/${this.tgUser.id}`).once('value');
-        if (snap.exists()) {
-            const d = snap.val();
-            this.totalReferrals = d.totalReferrals ?? 0;
-            this.verifiedReferrals = d.verifiedReferrals ?? 0;
-            this.referralPower = d.referralPower ?? 0;
-            this.referralTon = d.referralTon ?? 0;
+        try {
+            const snap = await this.db.ref(`users/${this.tgUser.id}`).once('value');
+            if (snap.exists()) {
+                const d = snap.val();
+                this.totalReferrals = d.totalReferrals ?? 0;
+                this.verifiedReferrals = d.verifiedReferrals ?? 0;
+                this.referralPower = d.referralPower ?? 0;
+                this.referralTon = d.referralTon ?? 0;
+            }
+        } catch (error) {
+            console.warn('Failed to load referral stats:', error);
         }
     }
     
     async loadPromoCodes() {
         if (!this.db) return;
-        const snap = await this.db.ref('promoCodes').once('value');
-        this.promoCodes = [];
-        if (snap.exists()) {
-            snap.forEach(c => {
-                this.promoCodes.push({ code: c.key, ...c.val() });
-            });
+        try {
+            const snap = await this.db.ref('promoCodes').once('value');
+            this.promoCodes = [];
+            if (snap.exists()) {
+                snap.forEach(c => {
+                    this.promoCodes.push({ code: c.key, ...c.val() });
+                });
+            }
+        } catch (error) {
+            console.warn('Failed to load promo codes:', error);
+            this.promoCodes = [];
         }
     }
     
@@ -988,16 +1068,21 @@ class App {
             this.partnerTasks = [];
             return;
         }
-        const snap = await this.db.ref('tasks').once('value');
-        this.mainTasks = [];
-        this.partnerTasks = [];
-        if (snap.exists()) {
-            snap.forEach(c => {
-                const task = { id: c.key, ...c.val() };
-                if (task.category === 'main') this.mainTasks.push(task);
-                else if (task.category === 'partner') this.partnerTasks.push(task);
-            });
+        try {
+            const snap = await this.db.ref('tasks').once('value');
+            this.mainTasks = [];
+            this.partnerTasks = [];
+            if (snap.exists()) {
+                snap.forEach(c => {
+                    const task = { id: c.key, ...c.val() };
+                    if (task.category === 'main') this.mainTasks.push(task);
+                    else if (task.category === 'partner') this.partnerTasks.push(task);
+                });
+            }
+        } catch (error) {
+            console.warn('Failed to load tasks:', error);
         }
+        
         if (!this.mainTasks.length) {
             this.mainTasks = [
                 { id: 'main_1', name: 'Join Telegram Channel', reward: 50, url: 'https://t.me/STARZ_NEW', verify: true, img: APP_CONFIG.BOT_AVATAR, category: 'main' },
