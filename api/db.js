@@ -1,33 +1,22 @@
 import jwt from 'jsonwebtoken';
 
-let db = null;
+const FB_API_KEY = 'AIzaSyDefaultKey123'; 
 
-function initFirebase() {
-    if (db) return db;
+async function firebaseRest(action, path, data = null) {
+    const databaseURL = process.env.FIREBASE_DATABASE_URL;
+    const url = `${databaseURL}${path}.json`;
     
-    try {
-        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-        const databaseURL = process.env.FIREBASE_DATABASE_URL;
-        
-        if (!serviceAccount || !databaseURL) {
-            throw new Error('Missing Firebase config');
-        }
-        
-        const admin = require('firebase-admin');
-        
-        if (!admin.apps.length) {
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount),
-                databaseURL: databaseURL
-            });
-        }
-        
-        db = admin.database();
-        return db;
-    } catch(error) {
-        console.error('Firebase init error:', error.message);
-        throw error;
+    const options = {
+        method: data ? 'PUT' : 'GET',
+        headers: { 'Content-Type': 'application/json' }
+    };
+    
+    if (data) {
+        options.body = JSON.stringify(data);
     }
+    
+    const res = await fetch(url, options);
+    return res.json();
 }
 
 function verifyToken(req) {
@@ -46,9 +35,7 @@ export default async function handler(req, res) {
     }
     
     try {
-        const database = initFirebase();
         const userData = verifyToken(req);
-        
         if (!userData) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
@@ -58,123 +45,105 @@ export default async function handler(req, res) {
         
         switch(action) {
             case 'getUser': {
-                const snapshot = await database.ref(`users/${userId}`).once('value');
-                const user = snapshot.val() || {};
-                return res.json(user);
+                const result = await firebaseRest('GET', `/users/${userId}`);
+                return res.json(result || {});
             }
             
             case 'updateUser': {
-                await database.ref(`users/${userId}`).update(data);
+                const current = await firebaseRest('GET', `/users/${userId}`);
+                const updated = { ...(current || {}), ...data };
+                await firebaseRest('PUT', `/users/${userId}`, updated);
                 return res.json({ success: true });
             }
             
             case 'getTasks': {
-                const snapshot = await database.ref('tasks').once('value');
-                return res.json(snapshot.val() || {});
+                const result = await firebaseRest('GET', '/tasks');
+                return res.json(result || {});
             }
             
             case 'completeTask': {
-                const { taskId, rewardPower } = data;
-                const completed = await database.ref(`users/${userId}/completedTasks/${taskId}`).once('value');
-                if (completed.exists()) {
+                const completed = await firebaseRest('GET', `/users/${userId}/completedTasks/${data.taskId}`);
+                if (completed) {
                     return res.status(400).json({ error: 'Task already completed' });
                 }
-                await database.ref(`users/${userId}/completedTasks/${taskId}`).set(true);
-                const userSnap = await database.ref(`users/${userId}/powerBalance`).once('value');
-                const newPower = (userSnap.val() || 0) + rewardPower;
-                await database.ref(`users/${userId}`).update({ powerBalance: newPower });
+                await firebaseRest('PUT', `/users/${userId}/completedTasks/${data.taskId}`, true);
+                const powerSnap = await firebaseRest('GET', `/users/${userId}/powerBalance`);
+                const newPower = (powerSnap || 0) + data.rewardPower;
+                await firebaseRest('PUT', `/users/${userId}/powerBalance`, newPower);
                 return res.json({ success: true, newPower });
             }
             
             case 'startMining': {
-                const userSnap = await database.ref(`users/${userId}`).once('value');
-                if (userSnap.val()?.miningActive) {
+                const user = await firebaseRest('GET', `/users/${userId}`);
+                if (user?.miningActive) {
                     return res.status(400).json({ error: 'Mining already active' });
                 }
                 const startTime = Date.now();
                 const endTime = startTime + (data.sessionHours * 3600000);
-                await database.ref(`users/${userId}`).update({
-                    miningActive: true,
-                    miningStartTime: startTime,
-                    miningEndTime: endTime,
-                    miningSessionHours: data.sessionHours
-                });
+                await firebaseRest('PUT', `/users/${userId}/miningActive`, true);
+                await firebaseRest('PUT', `/users/${userId}/miningStartTime`, startTime);
+                await firebaseRest('PUT', `/users/${userId}/miningEndTime`, endTime);
+                await firebaseRest('PUT', `/users/${userId}/miningSessionHours`, data.sessionHours);
                 return res.json({ success: true, startTime, endTime });
             }
             
             case 'stopMining': {
-                const userSnap = await database.ref(`users/${userId}`).once('value');
-                const user = userSnap.val();
+                const user = await firebaseRest('GET', `/users/${userId}`);
                 if (!user?.miningActive) {
                     return res.status(400).json({ error: 'No active mining' });
                 }
                 const elapsed = Math.min((Date.now() - user.miningStartTime) / 3600000, user.miningSessionHours);
                 const hourlyRate = ((user.powerBalance || 0) / 1000) * 0.0000833333;
                 const reward = hourlyRate * elapsed;
-                await database.ref(`users/${userId}`).update({
-                    miningActive: false,
-                    miningStartTime: null,
-                    miningEndTime: null,
-                    pendingTonReward: reward
-                });
+                await firebaseRest('PUT', `/users/${userId}/miningActive`, false);
+                await firebaseRest('PUT', `/users/${userId}/miningStartTime`, null);
+                await firebaseRest('PUT', `/users/${userId}/miningEndTime`, null);
+                await firebaseRest('PUT', `/users/${userId}/pendingTonReward`, reward);
                 return res.json({ success: true, reward });
             }
             
             case 'claimReward': {
-                const userSnap = await database.ref(`users/${userId}`).once('value');
-                const user = userSnap.val();
+                const user = await firebaseRest('GET', `/users/${userId}`);
                 const pending = user?.pendingTonReward || 0;
                 if (pending <= 0) {
                     return res.status(400).json({ error: 'No reward to claim' });
                 }
                 const currentTon = user?.tonBalance || 0;
-                await database.ref(`users/${userId}`).update({
-                    tonBalance: currentTon + pending,
-                    pendingTonReward: 0
-                });
-                const referredBy = user?.referredBy;
-                if (referredBy && referredBy !== userId) {
-                    const commission = pending * 0.1;
-                    const referrerSnap = await database.ref(`users/${referredBy}/tonBalance`).once('value');
-                    const referrerTon = referrerSnap.val() || 0;
-                    await database.ref(`users/${referredBy}`).update({
-                        tonBalance: referrerTon + commission,
-                        referralTon: (user?.referralTon || 0) + commission
-                    });
-                }
+                await firebaseRest('PUT', `/users/${userId}/tonBalance`, currentTon + pending);
+                await firebaseRest('PUT', `/users/${userId}/pendingTonReward`, 0);
                 return res.json({ success: true, amount: pending });
             }
             
             case 'applyPromo': {
-                const promoSnap = await database.ref(`promoCodes/${data.code}`).once('value');
-                if (!promoSnap.exists()) {
+                const promo = await firebaseRest('GET', `/promoCodes/${data.code}`);
+                if (!promo) {
                     return res.status(400).json({ error: 'Invalid code' });
                 }
-                const usedSnap = await database.ref(`usedPromoCodes/${userId}/${data.code}`).once('value');
-                if (usedSnap.exists()) {
+                const used = await firebaseRest('GET', `/usedPromoCodes/${userId}/${data.code}`);
+                if (used) {
                     return res.status(400).json({ error: 'Code already used' });
                 }
-                await database.ref(`usedPromoCodes/${userId}/${data.code}`).set(true);
-                const promoValue = promoSnap.val();
-                const userSnap = await database.ref(`users/${userId}`).once('value');
-                const user = userSnap.val();
-                const updates = {};
-                if (promoValue.power) updates.powerBalance = (user?.powerBalance || 0) + promoValue.power;
-                if (promoValue.ton) updates.tonBalance = (user?.tonBalance || 0) + promoValue.ton;
-                await database.ref(`users/${userId}`).update(updates);
-                return res.json({ success: true, reward: promoValue });
+                await firebaseRest('PUT', `/usedPromoCodes/${userId}/${data.code}`, true);
+                const user = await firebaseRest('GET', `/users/${userId}`);
+                if (promo.power) {
+                    await firebaseRest('PUT', `/users/${userId}/powerBalance`, (user?.powerBalance || 0) + promo.power);
+                }
+                if (promo.ton) {
+                    await firebaseRest('PUT', `/users/${userId}/tonBalance`, (user?.tonBalance || 0) + promo.ton);
+                }
+                return res.json({ success: true, reward: promo });
             }
             
             case 'withdraw': {
-                const userSnap = await database.ref(`users/${userId}`).once('value');
-                const tonBalance = userSnap.val()?.tonBalance || 0;
+                const user = await firebaseRest('GET', `/users/${userId}`);
+                const tonBalance = user?.tonBalance || 0;
                 if (data.amount < 0.01) {
                     return res.status(400).json({ error: 'Minimum withdrawal is 0.01 TON' });
                 }
                 if (data.amount > tonBalance) {
                     return res.status(400).json({ error: 'Insufficient balance' });
                 }
-                await database.ref(`users/${userId}`).update({ tonBalance: tonBalance - data.amount });
+                await firebaseRest('PUT', `/users/${userId}/tonBalance`, tonBalance - data.amount);
                 const withdrawal = {
                     id: Date.now(),
                     amount: data.amount,
@@ -182,44 +151,40 @@ export default async function handler(req, res) {
                     status: 'pending',
                     timestamp: Date.now()
                 };
-                await database.ref(`withdrawals/${userId}/${withdrawal.id}`).set(withdrawal);
+                await firebaseRest('PUT', `/withdrawals/${userId}/${withdrawal.id}`, withdrawal);
                 return res.json({ success: true, withdrawal });
             }
             
             case 'getWithdrawals': {
-                const snapshot = await database.ref(`withdrawals/${userId}`).once('value');
-                const withdrawals = [];
-                snapshot.forEach(w => withdrawals.push({ id: w.key, ...w.val() }));
+                const result = await firebaseRest('GET', `/withdrawals/${userId}`);
+                const withdrawals = result ? Object.values(result) : [];
                 withdrawals.sort((a, b) => b.timestamp - a.timestamp);
                 return res.json(withdrawals);
             }
             
             case 'watchAd': {
-                const lastAdSnap = await database.ref(`users/${userId}/lastAdTime`).once('value');
+                const lastAd = await firebaseRest('GET', `/users/${userId}/lastAdTime`);
                 const now = Date.now();
                 const cooldown = 8 * 3600000;
-                if (lastAdSnap.val() && now - lastAdSnap.val() < cooldown) {
+                if (lastAd && now - lastAd < cooldown) {
                     return res.status(400).json({ error: 'Cooldown active' });
                 }
-                const powerSnap = await database.ref(`users/${userId}/powerBalance`).once('value');
-                const newPower = (powerSnap.val() || 0) + 50;
-                await database.ref(`users/${userId}`).update({
-                    powerBalance: newPower,
-                    lastAdTime: now
-                });
+                const powerSnap = await firebaseRest('GET', `/users/${userId}/powerBalance`);
+                const newPower = (powerSnap || 0) + 50;
+                await firebaseRest('PUT', `/users/${userId}/powerBalance`, newPower);
+                await firebaseRest('PUT', `/users/${userId}/lastAdTime`, now);
                 return res.json({ success: true, newPower });
             }
             
             case 'getReferrals': {
-                const referralsSnap = await database.ref(`referrals/${userId}`).once('value');
-                const statsSnap = await database.ref(`users/${userId}`).once('value');
-                const stats = statsSnap.val() || {};
+                const stats = await firebaseRest('GET', `/users/${userId}`);
+                const referrals = await firebaseRest('GET', `/referrals/${userId}`);
                 return res.json({
-                    totalReferrals: stats.totalReferrals || 0,
-                    verifiedReferrals: stats.verifiedReferrals || 0,
-                    referralPower: stats.referralPower || 0,
-                    referralTon: stats.referralTon || 0,
-                    referrals: referralsSnap.val() || {}
+                    totalReferrals: stats?.totalReferrals || 0,
+                    verifiedReferrals: stats?.verifiedReferrals || 0,
+                    referralPower: stats?.referralPower || 0,
+                    referralTon: stats?.referralTon || 0,
+                    referrals: referrals || {}
                 });
             }
             
