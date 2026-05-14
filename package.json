@@ -1,5 +1,5 @@
 {
-  "name": "api",
+  "name": "veltrix",
   "version": "1.0.0",
   "dependencies": {
     "firebase-admin": "^11.11.0"
