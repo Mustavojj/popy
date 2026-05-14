@@ -837,16 +837,6 @@ class App {
     }
     
     async loadUserData() {
-
-        const firebaseUid = this.auth.currentUser.uid;
-const ref = this.db.ref(`users/${this.tgUser.id}`);
-const snap = await ref.once('value');
-if (!snap.exists()) {
-    await ref.set({
-        firebaseUid: firebaseUid
-    });
-        }
-        
         const ref = this.db.ref(`users/${this.tgUser.id}`);
         const snap = await ref.once('value');
         if (snap.exists()) {
