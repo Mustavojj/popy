@@ -1,8 +1,7 @@
 {
-  "name": "veltrix",
+  "name": "api",
   "version": "1.0.0",
-  "type": "module",
   "dependencies": {
-    "jsonwebtoken": "^9.0.0"
+    "firebase-admin": "^11.11.0"
   }
 }
