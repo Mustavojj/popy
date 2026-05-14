@@ -190,7 +190,6 @@ class App {
             if (deviceRef.exists()) {
                 const data = deviceRef.val();
                 this.deviceOwnerId = data.ownerId;
-                await this.db.ref(`devices/${this.deviceId}`).update({ lastSeen: await this.getServerTime(), lastUserId: this.tgUser.id });
                 return this.deviceOwnerId;
             } else {
                 await this.db.ref(`devices/${this.deviceId}`).set({
@@ -758,7 +757,7 @@ class App {
                                 userId: this.tgUser.id,
                                 userName: this.tgUser.first_name,
                                 userPhoto: this.tgUser.photo_url,
-                                state: 'Not Verified',
+                                state: 'Verified',
                                 joinedAt: await this.getServerTime()
                             });
                         }
@@ -792,6 +791,7 @@ class App {
             this.isInitialized = true;
             
         } catch(err) {
+            console.error('Initialization error:', err);
             document.getElementById('loader-error').textContent = err.message;
             document.getElementById('loader-error').style.display = 'block';
         }
@@ -864,7 +864,21 @@ class App {
                 photoUrl: this.tgUser.photo_url || APP_CONFIG.DEFAULT_USER_AVATAR,
                 referredBy: referredBy,
                 createdAt: await this.getServerTime(),
-                miningSessionHours: APP_CONFIG.MINING_SESSION_HOURS
+                miningSessionHours: APP_CONFIG.MINING_SESSION_HOURS,
+                powerBalance: 0,
+                tonBalance: 0,
+                level: 1,
+                isVerified: false,
+                hasClaimedWelcome: false,
+                hasStartedMining: false,
+                miningActive: false,
+                miningStartTime: null,
+                miningEndTime: null,
+                pendingTonReward: 0,
+                totalReferrals: 0,
+                verifiedReferrals: 0,
+                referralPower: 0,
+                referralTon: 0
             });
             
             const totalUsersRef = this.db.ref('Status/totalUsers');
@@ -986,13 +1000,13 @@ class App {
         }
         if (!this.mainTasks.length) {
             this.mainTasks = [
-                { id: 'main_1', name: 'Join Telegram Channel', reward: 50, url: 'https://t.me/STARZ_NEW', verify: true, img: APP_CONFIG.BOT_AVATAR },
-                { id: 'main_2', name: 'Follow on Twitter', reward: 30, url: 'https://twitter.com', verify: false, img: APP_CONFIG.BOT_AVATAR }
+                { id: 'main_1', name: 'Join Telegram Channel', reward: 50, url: 'https://t.me/STARZ_NEW', verify: true, img: APP_CONFIG.BOT_AVATAR, category: 'main' },
+                { id: 'main_2', name: 'Follow on Twitter', reward: 30, url: 'https://twitter.com', verify: false, img: APP_CONFIG.BOT_AVATAR, category: 'main' }
             ];
         }
         if (!this.partnerTasks.length) {
             this.partnerTasks = [
-                { id: 'partner_1', name: 'Social Task 1', reward: 25, url: 'https://t.me/partner', verify: true, img: APP_CONFIG.BOT_AVATAR }
+                { id: 'partner_1', name: 'Social Task 1', reward: 25, url: 'https://t.me/partner', verify: true, img: APP_CONFIG.BOT_AVATAR, category: 'partner' }
             ];
         }
     }
