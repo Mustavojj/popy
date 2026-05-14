@@ -1,20 +1,108 @@
-import { APP_CONFIG } from './data.js';
+import { APP_CONFIG } from '../data.js';
 
 const translations = {
-    en: { level: "Level", mining_rig: "Mining Rig Lv.", hourly: "Hourly", daily: "Daily", monthly: "Monthly", start_mining: "START MINING", claim_reward: "CLAIM REWARD", mining_note: "Rewards can be collected after mining session ends", next_level_reward: "Next level reward", power: "Power", ton: "TON", promo_code: "Promo Code", enter_code: "Enter code", claim: "Claim", main_tasks: "Main Tasks", partner_tasks: "Social Tasks", watch_ad: "Watch Reward AD", reward_amount: "Reward", available_in: "Available in", hours: "h", watch: "Watch", all_tasks_completed: "All tasks completed!", check_later: "Check back later for more", no_tasks: "No tasks available", team_benefits: "Team Benefits", share_earn: "SHARE & EARN", copy: "Copy", share: "Share", total_members: "Total Members", verified_members: "Verified Members", power_earnings: "Power Earnings", ton_earnings: "TON Earnings", withdraw: "Withdraw", available: "Available", ton_wallet: "TON Wallet", amount: "Amount", min_withdraw: "Minimum withdrawal", confirm_withdrawal: "Confirm Withdrawal", withdrawal_history: "Withdrawal History", no_withdrawals: "No withdrawals yet", pending: "pending", completed: "completed", claim_mining_title: "Claim Mining Rewards", claim_btn: "Claim Rewards", partner_info_title: "Social Tasks", partner_text1: "You can add task by support", partner_text2: "You can cooperate with us", partner_text3: "Contact support for details", contact_support: "Contact Support", mining: "Mining", earn: "Earn", team: "Team", copy_success: "Copied!", link_copied: "Link copied to clipboard", earn_more: "Earn More Power", complete_tasks: "Complete Tasks", go: "GO", invite_frens: "Invite Frens", ad_reward: "Watch AD", loading: "Loading", ready: "Ready", mining_active: "MINING ACTIVE", reward_collect: "Reward ready to collect" },
-    es: { level: "Nivel", mining_rig: "Equipo de Minería Nv.", hourly: "Por hora", daily: "Diario", monthly: "Mensual", start_mining: "INICIAR MINERÍA", claim_reward: "RECLAMAR RECOMPENSA", mining_note: "Las recompensas se pueden recolectar después de la sesión de minería", next_level_reward: "Recompensa del próximo nivel", power: "Energía", ton: "TON", promo_code: "Código Promocional", enter_code: "Ingrese código", claim: "Reclamar", main_tasks: "Tareas Principales", partner_tasks: "Tareas Sociales", watch_ad: "Ver Anuncio Recompensa", reward_amount: "Recompensa", available_in: "Disponible en", hours: "h", watch: "Ver", all_tasks_completed: "¡Todas las tareas completadas!", check_later: "Vuelve más tarde para más", no_tasks: "No hay tareas disponibles", team_benefits: "Beneficios del Equipo", share_earn: "COMPARTIR Y GANAR", copy: "Copiar", share: "Compartir", total_members: "Miembros Totales", verified_members: "Miembros Verificados", power_earnings: "Ganancias de Energía", ton_earnings: "Ganancias en TON", withdraw: "Retirar", available: "Disponible", ton_wallet: "Billetera TON", amount: "Cantidad", min_withdraw: "Retiro mínimo", confirm_withdrawal: "Confirmar Retiro", withdrawal_history: "Historial de Retiros", no_withdrawals: "Sin retiros aún", pending: "pendiente", completed: "completado", claim_mining_title: "Reclamar Recompensas de Minería", claim_btn: "Reclamar Recompensas", partner_info_title: "Tareas Sociales", partner_text1: "Puedes agregar tareas con soporte", partner_text2: "Puedes cooperar con nosotros", partner_text3: "Contacta con soporte para detalles", contact_support: "Contactar Soporte", mining: "Minería", earn: "Ganar", team: "Equipo", copy_success: "¡Copiado!", link_copied: "Enlace copiado al portapapeles", earn_more: "Gana Más Energía", complete_tasks: "Completar Tareas", go: "IR", invite_frens: "Invitar Amigos", ad_reward: "Ver Anuncio", loading: "Cargando", ready: "Listo", mining_active: "MINERÍA ACTIVA", reward_collect: "Recompensa lista para recoger" },
-    fa: { level: "سطح", mining_rig: "دستگاه استخراج سطح", hourly: "ساعتی", daily: "روزانه", monthly: "ماهانه", start_mining: "شروع استخراج", claim_reward: "دریافت پاداش", mining_note: "پاداش‌ها پس از پایان جلسه استخراج قابل دریافت هستند", next_level_reward: "پاداش سطح بعدی", power: "انرژی", ton: "تون", promo_code: "کد تخفیف", enter_code: "ورود کد", claim: "دریافت", main_tasks: "وظایف اصلی", partner_tasks: "وظایف اجتماعی", watch_ad: "تماشای تبلیغ جایزه‌دار", reward_amount: "پاداش", available_in: "موجود در", hours: "ساعت", watch: "تماشا", all_tasks_completed: "تمام وظایف انجام شد!", check_later: "بعداً برای موارد بیشتر مراجعه کنید", no_tasks: "هیچ وظیفه‌ای موجود نیست", team_benefits: "مزایای تیم", share_earn: "اشتراک‌گذاری و درآمدزایی", copy: "کپی", share: "اشتراک‌گذاری", total_members: "کل اعضا", verified_members: "اعضای تأیید شده", power_earnings: "درآمد انرژی", ton_earnings: "درآمد تون", withdraw: "برداشت", available: "موجودی", ton_wallet: "کیف پول تون", amount: "مقدار", min_withdraw: "حداقل برداشت", confirm_withdrawal: "تأیید برداشت", withdrawal_history: "تاریخچه برداشت", no_withdrawals: "هنوز برداشتی انجام نشده", pending: "در انتظار", completed: "تکمیل شده", claim_mining_title: "دریافت پاداش استخراج", claim_btn: "دریافت پاداش", partner_info_title: "وظایف اجتماعی", partner_text1: "می‌توانید وظیفه را با پشتیبانی اضافه کنید", partner_text2: "می‌توانید با ما همکاری کنید", partner_text3: "برای جزئیات با پشتیبانی تماس بگیرید", contact_support: "تماس با پشتیبانی", mining: "استخراج", earn: "درآمد", team: "تیم", copy_success: "کپی شد!", link_copied: "لینک در کلیپ‌بورد کپی شد", earn_more: "انرژی بیشتر کسب کنید", complete_tasks: "تکمیل وظایف", go: "برو", invite_frens: "دعوت از دوستان", ad_reward: "تماشای تبلیغ", loading: "در حال بارگذاری", ready: "آماده", mining_active: "استخراج فعال", reward_collect: "پاداش آماده دریافت" },
-    tr: { level: "Seviye", mining_rig: "Madenci Seviye", hourly: "Saatlik", daily: "Günlük", monthly: "Aylık", start_mining: "MADENCİLİĞE BAŞLA", claim_reward: "ÖDÜLÜ AL", mining_note: "Ödüller madencilik oturumu bittikten sonra toplanabilir", next_level_reward: "Sonraki seviye ödülü", power: "Güç", ton: "TON", promo_code: "Promosyon Kodu", enter_code: "Kodu girin", claim: "Al", main_tasks: "Ana Görevler", partner_tasks: "Sosyal Görevler", watch_ad: "Ödüllü Reklam İzle", reward_amount: "Ödül", available_in: "Kalan süre", hours: "sa", watch: "İzle", all_tasks_completed: "Tüm görevler tamamlandı!", check_later: "Daha fazlası için daha sonra kontrol edin", no_tasks: "Görev yok", team_benefits: "Takım Avantajları", share_earn: "PAYLAŞ VE KAZAN", copy: "Kopyala", share: "Paylaş", total_members: "Toplam Üye", verified_members: "Doğrulanmış Üye", power_earnings: "Güç Kazancı", ton_earnings: "TON Kazancı", withdraw: "Çek", available: "Mevcut", ton_wallet: "TON Cüzdanı", amount: "Miktar", min_withdraw: "Minimum çekim", confirm_withdrawal: "Çekimi Onayla", withdrawal_history: "Çekim Geçmişi", no_withdrawals: "Henüz çekim yok", pending: "beklemede", completed: "tamamlandı", claim_mining_title: "Madencilik Ödüllerini Al", claim_btn: "Ödülleri Al", partner_info_title: "Sosyal Görevler", partner_text1: "Destek ile görev ekleyebilirsiniz", partner_text2: "Bizimle işbirliği yapabilirsiniz", partner_text3: "Detaylar için desteğe başvurun", contact_support: "Desteğe Başvur", mining: "Madencilik", earn: "Kazan", team: "Takım", copy_success: "Kopyalandı!", link_copied: "Bağlantı panoya kopyalandı", earn_more: "Daha Fazla Güç Kazan", complete_tasks: "Görevleri Tamamla", go: "GİT", invite_frens: "Arkadaşları Davet Et", ad_reward: "Reklam İzle", loading: "Yükleniyor", ready: "Hazır", mining_active: "MADENCİLİK AKTİF", reward_collect: "Ödül toplanmaya hazır" },
-    ar: { level: "مستوى", mining_rig: "جهاز التعدين مستوى", hourly: "كل ساعة", daily: "يومي", monthly: "شهري", start_mining: "بدء التعدين", claim_reward: "استلام المكافأة", mining_note: "يمكن جمع المكافآت بعد انتهاء جلسة التعدين", next_level_reward: "مكافأة المستوى التالي", power: "الطاقة", ton: "تون", promo_code: "رمز ترويجي", enter_code: "أدخل الرمز", claim: "استلام", main_tasks: "المهام الرئيسية", partner_tasks: "المهام الاجتماعية", watch_ad: "مشاهدة إعلان مكافأة", reward_amount: "المكافأة", available_in: "متاح بعد", hours: "ساعة", watch: "مشاهدة", all_tasks_completed: "جميع المهام مكتملة!", check_later: "تحقق لاحقاً للمزيد", no_tasks: "لا توجد مهام متاحة", team_benefits: "مزايا الفريق", share_earn: "شارك واربح", copy: "نسخ", share: "مشاركة", total_members: "إجمالي الأعضاء", verified_members: "الأعضاء الموثقين", power_earnings: "أرباح الطاقة", ton_earnings: "أرباح التون", withdraw: "سحب", available: "الرصيد المتوفر", ton_wallet: "محفظة تون", amount: "المبلغ", min_withdraw: "الحد الأدنى للسحب", confirm_withdrawal: "تأكيد السحب", withdrawal_history: "سجل السحوبات", no_withdrawals: "لا توجد سحوبات بعد", pending: "قيد الانتظار", completed: "مكتمل", claim_mining_title: "استلام مكافآت التعدين", claim_btn: "استلام المكافآت", partner_info_title: "المهام الاجتماعية", partner_text1: "يمكنك إضافة مهمة عن طريق الدعم", partner_text2: "يمكنك التعاون معنا", partner_text3: "اتصل بالدعم للتفاصيل", contact_support: "اتصل بالدعم", mining: "التعدين", earn: "الأرباح", team: "الفريق", copy_success: "تم النسخ!", link_copied: "تم نسخ الرابط", earn_more: "احصل على طاقة أكثر", complete_tasks: "إكمال المهام", go: "اذهب", invite_frens: "دعوة الأصدقاء", ad_reward: "مشاهدة إعلان", loading: "جاري التحميل", ready: "جاهز", mining_active: "التعدين نشط", reward_collect: "المكافأة جاهزة للاستلام" }
+    en: {
+        level: "Level", mining_rig: "Mining Rig Lv.", hourly: "Hourly", daily: "Daily", monthly: "Monthly",
+        start_mining: "START MINING", claim_reward: "CLAIM REWARD", mining_note: "Rewards can be collected after mining session ends",
+        next_level_reward: "Next level reward", power: "Power", ton: "TON", promo_code: "Promo Code",
+        enter_code: "Enter code", claim: "Claim", main_tasks: "Main Tasks", partner_tasks: "Social Tasks",
+        watch_ad: "Watch Reward AD", reward_amount: "Reward", available_in: "Available in", hours: "h",
+        watch: "Watch", all_tasks_completed: "All tasks completed!", check_later: "Check back later for more",
+        no_tasks: "No tasks available", team_benefits: "Team Benefits", share_earn: "SHARE & EARN",
+        copy: "Copy", share: "Share", total_members: "Total Members", verified_members: "Verified Members",
+        power_earnings: "Power Earnings", ton_earnings: "TON Earnings", withdraw: "Withdraw",
+        available: "Available", ton_wallet: "TON Wallet", amount: "Amount", min_withdraw: "Minimum withdrawal",
+        confirm_withdrawal: "Confirm Withdrawal", withdrawal_history: "Withdrawal History", no_withdrawals: "No withdrawals yet",
+        pending: "pending", completed: "completed", claim_mining_title: "Claim Mining Rewards", claim_btn: "Claim Rewards",
+        partner_info_title: "Social Tasks", partner_text1: "You can add task by support", partner_text2: "You can cooperate with us",
+        partner_text3: "Contact support for details", contact_support: "Contact Support", mining: "Mining", earn: "Earn",
+        team: "Team", copy_success: "Copied!", link_copied: "Link copied to clipboard", earn_more: "Earn More Power",
+        complete_tasks: "Complete Tasks", go: "GO", invite_frens: "Invite Frens", ad_reward: "Watch AD", loading: "Loading",
+        ready: "Ready", mining_active: "MINING ACTIVE", reward_collect: "Reward ready to collect"
+    },
+    es: {
+        level: "Nivel", mining_rig: "Equipo de Minería Nv.", hourly: "Por hora", daily: "Diario", monthly: "Mensual",
+        start_mining: "INICIAR MINERÍA", claim_reward: "RECLAMAR RECOMPENSA", mining_note: "Las recompensas se pueden recolectar después de la sesión de minería",
+        next_level_reward: "Recompensa del próximo nivel", power: "Energía", ton: "TON", promo_code: "Código Promocional",
+        enter_code: "Ingrese código", claim: "Reclamar", main_tasks: "Tareas Principales", partner_tasks: "Tareas Sociales",
+        watch_ad: "Ver Anuncio Recompensa", reward_amount: "Recompensa", available_in: "Disponible en", hours: "h",
+        watch: "Ver", all_tasks_completed: "¡Todas las tareas completadas!", check_later: "Vuelve más tarde para más",
+        no_tasks: "No hay tareas disponibles", team_benefits: "Beneficios del Equipo", share_earn: "COMPARTIR Y GANAR",
+        copy: "Copiar", share: "Compartir", total_members: "Miembros Totales", verified_members: "Miembros Verificados",
+        power_earnings: "Ganancias de Energía", ton_earnings: "Ganancias en TON", withdraw: "Retirar",
+        available: "Disponible", ton_wallet: "Billetera TON", amount: "Cantidad", min_withdraw: "Retiro mínimo",
+        confirm_withdrawal: "Confirmar Retiro", withdrawal_history: "Historial de Retiros", no_withdrawals: "Sin retiros aún",
+        pending: "pendiente", completed: "completado", claim_mining_title: "Reclamar Recompensas de Minería", claim_btn: "Reclamar Recompensas",
+        partner_info_title: "Tareas Sociales", partner_text1: "Puedes agregar tareas con soporte", partner_text2: "Puedes cooperar con nosotros",
+        partner_text3: "Contacta con soporte para detalles", contact_support: "Contactar Soporte", mining: "Minería", earn: "Ganar",
+        team: "Equipo", copy_success: "¡Copiado!", link_copied: "Enlace copiado al portapapeles", earn_more: "Gana Más Energía",
+        complete_tasks: "Completar Tareas", go: "IR", invite_frens: "Invitar Amigos", ad_reward: "Ver Anuncio", loading: "Cargando",
+        ready: "Listo", mining_active: "MINERÍA ACTIVA", reward_collect: "Recompensa lista para recoger"
+    },
+    fa: {
+        level: "سطح", mining_rig: "دستگاه استخراج سطح", hourly: "ساعتی", daily: "روزانه", monthly: "ماهانه",
+        start_mining: "شروع استخراج", claim_reward: "دریافت پاداش", mining_note: "پاداش‌ها پس از پایان جلسه استخراج قابل دریافت هستند",
+        next_level_reward: "پاداش سطح بعدی", power: "انرژی", ton: "تون", promo_code: "کد تخفیف",
+        enter_code: "ورود کد", claim: "دریافت", main_tasks: "وظایف اصلی", partner_tasks: "وظایف اجتماعی",
+        watch_ad: "تماشای تبلیغ جایزه‌دار", reward_amount: "پاداش", available_in: "موجود در", hours: "ساعت",
+        watch: "تماشا", all_tasks_completed: "تمام وظایف انجام شد!", check_later: "بعداً برای موارد بیشتر مراجعه کنید",
+        no_tasks: "هیچ وظیفه‌ای موجود نیست", team_benefits: "مزایای تیم", share_earn: "اشتراک‌گذاری و درآمدزایی",
+        copy: "کپی", share: "اشتراک‌گذاری", total_members: "کل اعضا", verified_members: "اعضای تأیید شده",
+        power_earnings: "درآمد انرژی", ton_earnings: "درآمد تون", withdraw: "برداشت",
+        available: "موجودی", ton_wallet: "کیف پول تون", amount: "مقدار", min_withdraw: "حداقل برداشت",
+        confirm_withdrawal: "تأیید برداشت", withdrawal_history: "تاریخچه برداشت", no_withdrawals: "هنوز برداشتی انجام نشده",
+        pending: "در انتظار", completed: "تکمیل شده", claim_mining_title: "دریافت پاداش استخراج", claim_btn: "دریافت پاداش",
+        partner_info_title: "وظایف اجتماعی", partner_text1: "می‌توانید وظیفه را با پشتیبانی اضافه کنید", partner_text2: "می‌توانید با ما همکاری کنید",
+        partner_text3: "برای جزئیات با پشتیبانی تماس بگیرید", contact_support: "تماس با پشتیبانی", mining: "استخراج", earn: "درآمد",
+        team: "تیم", copy_success: "کپی شد!", link_copied: "لینک در کلیپ‌بورد کپی شد", earn_more: "انرژی بیشتر کسب کنید",
+        complete_tasks: "تکمیل وظایف", go: "برو", invite_frens: "دعوت از دوستان", ad_reward: "تماشای تبلیغ", loading: "در حال بارگذاری",
+        ready: "آماده", mining_active: "استخراج فعال", reward_collect: "پاداش آماده دریافت"
+    },
+    tr: {
+        level: "Seviye", mining_rig: "Madenci Seviye", hourly: "Saatlik", daily: "Günlük", monthly: "Aylık",
+        start_mining: "MADENCİLİĞE BAŞLA", claim_reward: "ÖDÜLÜ AL", mining_note: "Ödüller madencilik oturumu bittikten sonra toplanabilir",
+        next_level_reward: "Sonraki seviye ödülü", power: "Güç", ton: "TON", promo_code: "Promosyon Kodu",
+        enter_code: "Kodu girin", claim: "Al", main_tasks: "Ana Görevler", partner_tasks: "Sosyal Görevler",
+        watch_ad: "Ödüllü Reklam İzle", reward_amount: "Ödül", available_in: "Kalan süre", hours: "sa",
+        watch: "İzle", all_tasks_completed: "Tüm görevler tamamlandı!", check_later: "Daha fazlası için daha sonra kontrol edin",
+        no_tasks: "Görev yok", team_benefits: "Takım Avantajları", share_earn: "PAYLAŞ VE KAZAN",
+        copy: "Kopyala", share: "Paylaş", total_members: "Toplam Üye", verified_members: "Doğrulanmış Üye",
+        power_earnings: "Güç Kazancı", ton_earnings: "TON Kazancı", withdraw: "Çek",
+        available: "Mevcut", ton_wallet: "TON Cüzdanı", amount: "Miktar", min_withdraw: "Minimum çekim",
+        confirm_withdrawal: "Çekimi Onayla", withdrawal_history: "Çekim Geçmişi", no_withdrawals: "Henüz çekim yok",
+        pending: "beklemede", completed: "tamamlandı", claim_mining_title: "Madencilik Ödüllerini Al", claim_btn: "Ödülleri Al",
+        partner_info_title: "Sosyal Görevler", partner_text1: "Destek ile görev ekleyebilirsiniz", partner_text2: "Bizimle işbirliği yapabilirsiniz",
+        partner_text3: "Detaylar için desteğe başvurun", contact_support: "Desteğe Başvur", mining: "Madencilik", earn: "Kazan",
+        team: "Takım", copy_success: "Kopyalandı!", link_copied: "Bağlantı panoya kopyalandı", earn_more: "Daha Fazla Güç Kazan",
+        complete_tasks: "Görevleri Tamamla", go: "GİT", invite_frens: "Arkadaşları Davet Et", ad_reward: "Reklam İzle", loading: "Yükleniyor",
+        ready: "Hazır", mining_active: "MADENCİLİK AKTİF", reward_collect: "Ödül toplanmaya hazır"
+    },
+    ar: {
+        level: "مستوى", mining_rig: "جهاز التعدين مستوى", hourly: "كل ساعة", daily: "يومي", monthly: "شهري",
+        start_mining: "بدء التعدين", claim_reward: "استلام المكافأة", mining_note: "يمكن جمع المكافآت بعد انتهاء جلسة التعدين",
+        next_level_reward: "مكافأة المستوى التالي", power: "الطاقة", ton: "تون", promo_code: "رمز ترويجي",
+        enter_code: "أدخل الرمز", claim: "استلام", main_tasks: "المهام الرئيسية", partner_tasks: "المهام الاجتماعية",
+        watch_ad: "مشاهدة إعلان مكافأة", reward_amount: "المكافأة", available_in: "متاح بعد", hours: "ساعة",
+        watch: "مشاهدة", all_tasks_completed: "جميع المهام مكتملة!", check_later: "تحقق لاحقاً للمزيد",
+        no_tasks: "لا توجد مهام متاحة", team_benefits: "مزايا الفريق", share_earn: "شارك واربح",
+        copy: "نسخ", share: "مشاركة", total_members: "إجمالي الأعضاء", verified_members: "الأعضاء الموثقين",
+        power_earnings: "أرباح الطاقة", ton_earnings: "أرباح التون", withdraw: "سحب",
+        available: "الرصيد المتوفر", ton_wallet: "محفظة تون", amount: "المبلغ", min_withdraw: "الحد الأدنى للسحب",
+        confirm_withdrawal: "تأكيد السحب", withdrawal_history: "سجل السحوبات", no_withdrawals: "لا توجد سحوبات بعد",
+        pending: "قيد الانتظار", completed: "مكتمل", claim_mining_title: "استلام مكافآت التعدين", claim_btn: "استلام المكافآت",
+        partner_info_title: "المهام الاجتماعية", partner_text1: "يمكنك إضافة مهمة عن طريق الدعم", partner_text2: "يمكنك التعاون معنا",
+        partner_text3: "اتصل بالدعم للتفاصيل", contact_support: "اتصل بالدعم", mining: "التعدين", earn: "الأرباح",
+        team: "الفريق", copy_success: "تم النسخ!", link_copied: "تم نسخ الرابط", earn_more: "احصل على طاقة أكثر",
+        complete_tasks: "إكمال المهام", go: "اذهب", invite_frens: "دعوة الأصدقاء", ad_reward: "مشاهدة إعلان", loading: "جاري التحميل",
+        ready: "جاهز", mining_active: "التعدين نشط", reward_collect: "المكافأة جاهزة للاستلام"
+    }
 };
 
 class App {
     constructor() {
         this.tg = null;
         this.tgUser = null;
-        this.apiToken = null;
         this.isInitialized = false;
-        this.deviceId = null;
         this.powerBalance = 0;
         this.tonBalance = 0;
         this.userLevel = 1;
@@ -52,28 +140,16 @@ class App {
     calculateRewardForHours(hours) { return this.getHourlyTonRate() * hours; }
     getRequiredPowerForLevel(level) { return Math.floor(1000 * Math.pow(1.2, level - 1)); }
     
-    async function apiCall(action, data = {}) {
-    const response = await fetch('/api', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            action, 
-            userId: this.tgUser.id, 
-            data 
-        })
-    });
-    return response.json();
-}
-
-async authenticate() {
-    const result = await this.apiCall('auth', {
-        initData: window.Telegram.WebApp.initData,
-        userId: this.tgUser.id
-    });
-    this.apiToken = result.token;
-}
-    
-    
+    async apiCall(action, data = {}) {
+        const response = await fetch('/api/api', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action, userId: this.tgUser?.id, data })
+        });
+        const result = await response.json();
+        if (result.error) throw new Error(result.error);
+        return result;
+    }
     
     async getServerTime() { return Date.now(); }
     
@@ -107,7 +183,10 @@ async authenticate() {
     updateLevelFromPower() {
         let newLevel = 1;
         while (this.powerBalance >= this.getRequiredPowerForLevel(newLevel + 1)) newLevel++;
-        if (newLevel > this.userLevel) { this.userLevel = newLevel; this.showNotification('Level Up!', `Reached level ${this.userLevel}!`, 'success'); }
+        if (newLevel > this.userLevel) {
+            this.userLevel = newLevel;
+            this.showNotification('Level Up!', `Reached level ${this.userLevel}!`, 'success');
+        }
         const levelSpan = document.getElementById('user-level');
         const levelBadge = document.getElementById('user-level-badge');
         if (levelSpan) levelSpan.innerText = this.userLevel;
@@ -117,19 +196,11 @@ async authenticate() {
     async startMining() {
         const adWatched = await this.showInterstitialAd();
         if (!adWatched) return;
-        const result = await this.apiCall('startMining', { sessionHours: 1 });
+        await this.apiCall('startMining', { hours: 1 });
         this.miningActive = true;
-        this.miningStartTime = result.startTime;
-        this.miningEndTime = result.endTime;
+        this.miningStartTime = Date.now();
+        this.miningEndTime = Date.now() + 3600000;
         this.miningSessionHours = 1;
-        if (!this.hasStartedMining) {
-            this.hasStartedMining = true;
-            const userSnap = await this.apiCall('getUser');
-            const referredBy = userSnap.referredBy;
-            if (referredBy && referredBy !== this.tgUser.id) {
-                await this.apiCall('updateUser', { verifiedReferrals: 1, referralPower: 100 });
-            }
-        }
         await this.saveUserData();
         this.renderMining();
         this.startMiningLoop();
@@ -162,7 +233,7 @@ async authenticate() {
         const handleClaim = async () => {
             modal.style.display = 'none';
             cleanup();
-            const result = await this.apiCall('claimReward');
+            const result = await this.apiCall('claim');
             this.tonBalance += result.amount;
             this.pendingTonReward = 0;
             await this.saveUserData();
@@ -170,7 +241,10 @@ async authenticate() {
             this.showNotification('Rewards Claimed!', `${result.amount.toFixed(8)} TON added to balance`, 'success');
         };
         const handleClose = () => { modal.style.display = 'none'; cleanup(); };
-        const cleanup = () => { confirmBtn.removeEventListener('click', handleClaim); closeBtn.removeEventListener('click', handleClose); };
+        const cleanup = () => {
+            confirmBtn.removeEventListener('click', handleClaim);
+            closeBtn.removeEventListener('click', handleClose);
+        };
         confirmBtn.addEventListener('click', handleClaim);
         closeBtn.addEventListener('click', handleClose);
     }
@@ -213,8 +287,9 @@ async authenticate() {
         if (adWatched) {
             this.lastRewardAdTime = now;
             localStorage.setItem('last_reward_ad_time', now.toString());
-            const result = await this.apiCall('watchAd');
-            this.powerBalance = result.newPower;
+            await this.apiCall('watchAd');
+            const result = await this.apiCall('get');
+            this.powerBalance = result.powerBalance || 0;
             await this.updateLevelFromPower();
             await this.saveUserData();
             this.renderMining();
@@ -239,7 +314,7 @@ async authenticate() {
                 }
             }
         }
-        await this.apiCall('completeTask', { taskId, rewardPower });
+        await this.apiCall('addPower', { amount: rewardPower });
         this.userCompletedTasks.add(taskId);
         this.powerBalance += rewardPower;
         await this.updateLevelFromPower();
@@ -255,12 +330,14 @@ async authenticate() {
     
     async applyPromoCode(code) {
         try {
-            const result = await this.apiCall('applyPromo', { code });
-            if (result.reward.power) { this.powerBalance += result.reward.power; await this.updateLevelFromPower(); }
-            if (result.reward.ton) this.tonBalance += result.reward.ton;
+            await this.apiCall('applyPromo', { code });
+            const result = await this.apiCall('get');
+            this.powerBalance = result.powerBalance || 0;
+            this.tonBalance = result.tonBalance || 0;
+            await this.updateLevelFromPower();
             await this.saveUserData();
             this.renderMining();
-            this.showNotification('Code Applied!', `You received ${result.reward.power ? this.formatNumber(result.reward.power) + ' Power' : result.reward.ton + ' TON'}`, 'success');
+            this.showNotification('Code Applied!', 'Promo code redeemed successfully', 'success');
             return true;
         } catch(e) { this.showNotification('Invalid Code', e.message, 'error'); return false; }
     }
@@ -337,10 +414,14 @@ async authenticate() {
             this.tg.ready();
             this.tg.expand();
             updateProgress(30);
-            await this.authenticate();
+            let userData = {};
+            try {
+                userData = await this.apiCall('get');
+            } catch(e) {
+                userData = {};
+            }
             updateProgress(50);
-            const userData = await this.apiCall('getUser');
-            if (userData.id) {
+            if (userData && Object.keys(userData).length > 0) {
                 this.powerBalance = userData.powerBalance || 0;
                 this.tonBalance = userData.tonBalance || 0;
                 this.userLevel = userData.level || 1;
@@ -354,7 +435,7 @@ async authenticate() {
                 this.miningSessionHours = userData.miningSessionHours || 1;
                 this.userCompletedTasks = new Set(userData.completedTasks || []);
             } else {
-                await this.apiCall('updateUser', {
+                await this.apiCall('set', {
                     id: this.tgUser.id,
                     username: this.tgUser.username || '',
                     firstName: this.tgUser.first_name || 'User',
@@ -363,33 +444,21 @@ async authenticate() {
                     createdAt: Date.now()
                 });
                 if (!this.hasClaimedWelcome) {
+                    await this.apiCall('addPower', { amount: 1000 });
+                    await this.apiCall('set', { hasClaimedWelcome: true, isVerified: true });
                     this.powerBalance = 1000;
                     this.hasClaimedWelcome = true;
                     this.isVerified = true;
-                    await this.apiCall('updateUser', { powerBalance: 1000, hasClaimedWelcome: true, isVerified: true });
                 }
             }
             updateProgress(70);
-            const tasksData = await this.apiCall('getTasks');
-            this.mainTasks = [];
-            this.partnerTasks = [];
-            if (tasksData) {
-                Object.values(tasksData).forEach(task => {
-                    if (task.category === 'main') this.mainTasks.push(task);
-                    else if (task.category === 'partner') this.partnerTasks.push(task);
-                });
-            }
-            if (!this.mainTasks.length) {
-                this.mainTasks = [
-                    { id: 'main_1', name: 'Join Telegram Channel', reward: 50, url: 'https://t.me/STARZ_NEW', verify: true, img: 'https://i.ibb.co/XxXhyZYf/file-000000006f8c720e9ab4c76b6e560062.png' },
-                    { id: 'main_2', name: 'Follow on Twitter', reward: 30, url: 'https://twitter.com', verify: false, img: 'https://i.ibb.co/XxXhyZYf/file-000000006f8c720e9ab4c76b6e560062.png' }
-                ];
-            }
-            if (!this.partnerTasks.length) {
-                this.partnerTasks = [
-                    { id: 'partner_1', name: 'Social Task 1', reward: 25, url: 'https://t.me/partner', verify: true, img: 'https://i.ibb.co/XxXhyZYf/file-000000006f8c720e9ab4c76b6e560062.png' }
-                ];
-            }
+            this.mainTasks = [
+                { id: 'main_1', name: 'Join Telegram Channel', reward: 50, url: 'https://t.me/STARZ_NEW', verify: true, img: 'https://i.ibb.co/XxXhyZYf/file-000000006f8c720e9ab4c76b6e560062.png' },
+                { id: 'main_2', name: 'Follow on Twitter', reward: 30, url: 'https://twitter.com', verify: false, img: 'https://i.ibb.co/XxXhyZYf/file-000000006f8c720e9ab4c76b6e560062.png' }
+            ];
+            this.partnerTasks = [
+                { id: 'partner_1', name: 'Social Task 1', reward: 25, url: 'https://t.me/partner', verify: true, img: 'https://i.ibb.co/XxXhyZYf/file-000000006f8c720e9ab4c76b6e560062.png' }
+            ];
             updateProgress(85);
             const withdrawalsData = await this.apiCall('getWithdrawals');
             this.withdrawals = withdrawalsData || [];
@@ -406,9 +475,7 @@ async authenticate() {
                     const elapsed = Math.min((Date.now() - this.miningStartTime) / 3600000, this.miningSessionHours);
                     this.pendingTonReward = this.calculateRewardForHours(elapsed);
                     this.miningActive = false;
-                    this.miningStartTime = null;
-                    this.miningEndTime = null;
-                    await this.saveUserData();
+                    await this.apiCall('set', { miningActive: false, pendingTonReward: this.pendingTonReward });
                     this.renderMining();
                 } else this.startMiningLoop();
             }
@@ -423,11 +490,15 @@ async authenticate() {
                 else { document.getElementById('app').style.display = 'block'; this.updateAdCooldownDisplay(); }
             }, 500);
             this.isInitialized = true;
-        } catch(err) { document.getElementById('loader-error').textContent = err.message; document.getElementById('loader-error').style.display = 'block'; }
+        } catch(err) { 
+            document.getElementById('loader-error').textContent = err.message; 
+            document.getElementById('loader-error').style.display = 'block';
+            console.error(err);
+        }
     }
     
     async saveUserData() {
-        await this.apiCall('updateUser', {
+        await this.apiCall('set', {
             powerBalance: this.powerBalance,
             tonBalance: this.tonBalance,
             level: this.userLevel,
