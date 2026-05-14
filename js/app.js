@@ -52,28 +52,17 @@ class App {
     calculateRewardForHours(hours) { return this.getHourlyTonRate() * hours; }
     getRequiredPowerForLevel(level) { return Math.floor(1000 * Math.pow(1.2, level - 1)); }
     
-    async apiCall(type, data = {}) {
-    if (!this.apiToken && type !== 'auth') {
-        await this.authenticate();
-    }
-    
+    async function apiCall(action, data = {}) {
     const response = await fetch('/api', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            ...(this.apiToken && { 'Authorization': `Bearer ${this.apiToken}` })
-        },
-        body: JSON.stringify({ type, data })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            action, 
+            userId: this.tgUser.id, 
+            data 
+        })
     });
-    
-    if (response.status === 401) {
-        await this.authenticate();
-        return this.apiCall(type, data);
-    }
-    
-    const result = await response.json();
-    if (result.error) throw new Error(result.error);
-    return result;
+    return response.json();
 }
 
 async authenticate() {
