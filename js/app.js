@@ -1110,11 +1110,7 @@ class App {
                 ${showClaimButton ? `<button id="claim-mining-btn" class="mining-claim-btn"><i class="fas fa-gift"></i> ${this.t('claim_reward')}</button>` : ''}
                 ${showMiningActive ? `<div class="mining-note mining-active-note"><i class="fas fa-circle" style="color:#2ecc71;font-size:0.6rem"></i> ${this.t('mining_active')}</div>` : ''}
             </div>
-            <div class="level-progress">
-                <div class="progress-header"><span>${this.t('level')} ${this.userLevel}</span><span>${this.formatNumber(Math.floor(this.powerBalance))} / ${this.formatNumber(requiredPower)} ${this.t('power')}</span></div>
-                <div class="progress-bar"><div class="progress-fill" style="width: ${progress}%"></div></div>
-                <div class="level-reward"><i class="fas fa-gift"></i> ${this.t('next_level_reward')}: ${nextLevelBonus} ${this.t('power')}</div>
-            </div>
+            
             <div class="earn-more-title"><i class="fas fa-chart-line"></i> ${this.t('earn_more')}</div>
             <div class="earn-cards">
                 <div class="earn-card"><div class="earn-card-info"><h4>${this.t('watch_ad')}</h4><p>10 ${this.t('power')}</p></div><button id="mining-reward-ad" class="earn-card-btn">${this.t('watch')}</button></div>
@@ -1159,8 +1155,7 @@ class App {
         
         el.innerHTML = `
             <div class="promo-card"><div class="promo-title"><i class="fas fa-gift"></i> ${this.t('promo_code')}</div><div class="promo-input-group"><input type="text" id="promo-input" class="form-input" placeholder="${this.t('enter_code')}" autocomplete="off"><button id="promo-submit" class="promo-submit-btn" disabled>${this.t('claim')}</button></div></div>
-            ${promoCodesHtml ? `<div class="promo-list"><h4>Available Codes</h4>${promoCodesHtml}</div>` : ''}
-            
+        
             <div class="section-header"><h3><i class="fas fa-star"></i> ${this.t('main_tasks')}</h3></div>
             <div class="tasks-list">${mainTasksHtml}</div>
             
