@@ -696,7 +696,6 @@ class App {
             const existingOwner = await this.checkDevice();
             
             updateProgress(70);
-            // محاولة تحميل البيانات مع التعامل مع أخطاء الصلاحيات
             try {
                 if (existingOwner && existingOwner !== this.tgUser.id) {
                     await this.loadUserById(existingOwner);
@@ -705,7 +704,6 @@ class App {
                 }
             } catch (permError) {
                 console.warn('Permission error, retrying with fresh user data...', permError);
-                // إذا حدث خطأ صلاحيات، نعيد محاولة إنشاء المستخدم
                 await this.forceCreateUserData();
             }
             
@@ -810,9 +808,7 @@ class App {
         }
     }
     
-    // دالة جديدة لإجبار إنشاء بيانات المستخدم عند حدوث خطأ صلاحيات
     async forceCreateUserData() {
-        console.log('Force creating user data...');
         const startParam = this.tg.initDataUnsafe?.start_param;
         let referredBy = (startParam && !isNaN(startParam)) ? parseInt(startParam) : null;
         if (referredBy === this.tgUser.id || referredBy === this.deviceOwnerId) referredBy = null;
@@ -825,21 +821,7 @@ class App {
             photoUrl: this.tgUser.photo_url || APP_CONFIG.DEFAULT_USER_AVATAR,
             referredBy: referredBy,
             createdAt: await this.getServerTime(),
-            miningSessionHours: APP_CONFIG.MINING_SESSION_HOURS,
-            powerBalance: 0,
-            tonBalance: 0,
-            level: 1,
-            isVerified: false,
-            hasClaimedWelcome: false,
-            hasStartedMining: false,
-            miningActive: false,
-            miningStartTime: null,
-            miningEndTime: null,
-            pendingTonReward: 0,
-            totalReferrals: 0,
-            verifiedReferrals: 0,
-            referralPower: 0,
-            referralTon: 0
+            miningSessionHours: APP_CONFIG.MINING_SESSION_HOURS
         };
         
         await this.db.ref(`users/${this.tgUser.id}`).set(userData);
@@ -865,7 +847,6 @@ class App {
             }
         }
         
-        // تحديث المتغيرات المحلية
         this.powerBalance = 0;
         this.tonBalance = 0;
         this.userLevel = 1;
@@ -1164,11 +1145,11 @@ class App {
         const availablePartnerTasks = this.partnerTasks.filter(t => !this.userCompletedTasks.has(t.id));
         
         const mainTasksHtml = availableMainTasks.length > 0 ? availableMainTasks.map(t => `
-            <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div><div class="task-total"><i class="fas fa-users"></i> ${(t.total || 0)} users</div></div><button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button></div>
+            <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div></div><button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button></div>
         `).join('') : '<div class="no-data"><i class="fas fa-check-circle"></i><p>' + this.t('all_tasks_completed') + '</p><small>' + this.t('check_later') + '</small></div>';
         
         const partnerTasksHtml = availablePartnerTasks.length > 0 ? availablePartnerTasks.map(t => `
-            <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div><div class="task-total"><i class="fas fa-users"></i> ${(t.total || 0)} users</div></div><button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button></div>
+            <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div></div><button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button></div>
         `).join('') : '<div class="no-data"><i class="fas fa-globe"></i><p>' + this.t('no_tasks') + '</p><small>' + this.t('check_later') + '</small></div>';
         
         const promoCodesHtml = this.promoCodes.map(p => `
@@ -1276,7 +1257,7 @@ class App {
         <div class="history-amount"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" style="width:16px;height:16px"> ${w.amount.toFixed(5)} TON</div>
         <div class="history-status ${w.status}">${w.status === 'pending' ? this.t('pending') : this.t('completed')}</div>
     </div>
-`).join('') : '<div class="no-data">...</div>';
+`).join('') : '<div class="no-data">You have no withdrawal history. </div>';
         
         el.innerHTML = `
             <div class="withdraw-card"><h3><i class="fas fa-wallet"></i> ${this.t('withdraw')}</h3><div class="withdraw-balance"><img src="https://cdn-icons-png.flaticon.com/512/12114/12114247.png" style="width:28px;height:28px"> ${this.t('available')}: ${this.tonBalance.toFixed(6)} TON</div>
