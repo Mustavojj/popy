@@ -18,7 +18,7 @@ const translations = {
         partner_text3: "Contact support for details", contact_support: "Contact Support", mining: "Mining", earn: "Earn",
         team: "Team", copy_success: "Copied!", link_copied: "Link copied to clipboard", earn_more: "Earn More Power",
         complete_tasks: "Complete Tasks", go: "GO", invite_frens: "Invite Frens", ad_reward: "Watch AD", loading: "Loading",
-        ready: "Ready", mining_active: "MINING ACTIVE", reward_collect: "-"
+        ready: "Ready", mining_active: "MINING ACTIVE", reward_collect: "Reward Ready!"
     },
     es: {
         level: "Nivel", mining_rig: "Equipo de Minería Nv.", hourly: "Por hora", daily: "Diario", monthly: "Mensual",
@@ -37,7 +37,7 @@ const translations = {
         partner_text3: "Contacta con soporte para detalles", contact_support: "Contactar Soporte", mining: "Minería", earn: "Ganar",
         team: "Equipo", copy_success: "¡Copiado!", link_copied: "Enlace copiado al portapapeles", earn_more: "Gana Más Energía",
         complete_tasks: "Completar Tareas", go: "IR", invite_frens: "Invitar Amigos", ad_reward: "Ver Anuncio", loading: "Cargando",
-        ready: "Listo", mining_active: "MINERÍA ACTIVA", reward_collect: "-"
+        ready: "Listo", mining_active: "MINERÍA ACTIVA", reward_collect: "¡Recompensa Lista!"
     },
     fa: {
         level: "سطح", mining_rig: "دستگاه استخراج سطح", hourly: "ساعتی", daily: "روزانه", monthly: "ماهانه",
@@ -56,7 +56,7 @@ const translations = {
         partner_text3: "برای جزئیات با پشتیبانی تماس بگیرید", contact_support: "تماس با پشتیبانی", mining: "استخراج", earn: "درآمد",
         team: "تیم", copy_success: "کپی شد!", link_copied: "لینک در کلیپ‌بورد کپی شد", earn_more: "انرژی بیشتر کسب کنید",
         complete_tasks: "تکمیل وظایف", go: "برو", invite_frens: "دعوت از دوستان", ad_reward: "تماشای تبلیغ", loading: "در حال بارگذاری",
-        ready: "آماده", mining_active: "استخراج فعال", reward_collect: "-"
+        ready: "آماده", mining_active: "استخراج فعال", reward_collect: "پاداش آماده است!"
     },
     tr: {
         level: "Seviye", mining_rig: "Madenci Seviye", hourly: "Saatlik", daily: "Günlük", monthly: "Aylık",
@@ -75,7 +75,7 @@ const translations = {
         partner_text3: "Detaylar için desteğe başvurun", contact_support: "Desteğe Başvur", mining: "Madencilik", earn: "Kazan",
         team: "Takım", copy_success: "Kopyalandı!", link_copied: "Bağlantı panoya kopyalandı", earn_more: "Daha Fazla Güç Kazan",
         complete_tasks: "Görevleri Tamamla", go: "GİT", invite_frens: "Arkadaşları Davet Et", ad_reward: "Reklam İzle", loading: "Yükleniyor",
-        ready: "Hazır", mining_active: "MADENCİLİK AKTİF", reward_collect: "-"
+        ready: "Hazır", mining_active: "MADENCİLİK AKTİF", reward_collect: "Ödül Hazır!"
     },
     ar: {
         level: "مستوى", mining_rig: "جهاز التعدين مستوى", hourly: "كل ساعة", daily: "يومي", monthly: "شهري",
@@ -94,7 +94,7 @@ const translations = {
         partner_text3: "اتصل بالدعم للتفاصيل", contact_support: "اتصل بالدعم", mining: "التعدين", earn: "الأرباح",
         team: "الفريق", copy_success: "تم النسخ!", link_copied: "تم نسخ الرابط", earn_more: "احصل على طاقة أكثر",
         complete_tasks: "إكمال المهام", go: "اذهب", invite_frens: "دعوة الأصدقاء", ad_reward: "مشاهدة إعلان", loading: "جاري التحميل",
-        ready: "جاهز", mining_active: "التعدين نشط", reward_collect: "-"
+        ready: "جاهز", mining_active: "التعدين نشط", reward_collect: "المكافأة جاهزة!"
     }
 };
 
@@ -139,6 +139,7 @@ class App {
         
         this.vibrationEnabled = true;
         this.loadSettings();
+        this.referralBonusGiven = false;
     }
     
     t(key) {
@@ -283,6 +284,43 @@ class App {
         if (levelBadge) levelBadge.innerText = this.userLevel;
     }
     
+    async giveReferralBonus() {
+        if (this.referralBonusGiven) return;
+        
+        const userSnap = await this.db.ref(`users/${this.tgUser.id}`).once('value');
+        const referredBy = userSnap.val()?.referredBy;
+        
+        if (referredBy && referredBy !== this.tgUser.id && referredBy !== this.deviceOwnerId) {
+            const referrerRef = this.db.ref(`users/${referredBy}`);
+            const referrerSnap = await referrerRef.once('value');
+            
+            if (referrerSnap.exists()) {
+                const currentPower = referrerSnap.val().powerBalance ?? 0;
+                const currentVerified = referrerSnap.val().verifiedReferrals ?? 0;
+                const currentReferralPower = referrerSnap.val().referralPower ?? 0;
+                const currentTotal = referrerSnap.val().totalReferrals ?? 0;
+                
+                await referrerRef.update({ 
+                    powerBalance: currentPower + APP_CONFIG.REFERRAL_POWER_BONUS,
+                    verifiedReferrals: currentVerified + 1,
+                    referralPower: currentReferralPower + APP_CONFIG.REFERRAL_POWER_BONUS,
+                    totalReferrals: currentTotal
+                });
+                
+                await this.db.ref(`referrals/${referredBy}/${this.tgUser.id}`).update({
+                    userId: this.tgUser.id,
+                    userName: this.tgUser.first_name,
+                    userPhoto: this.tgUser.photo_url,
+                    state: 'Verified',
+                    verifiedAt: await this.getServerTime()
+                });
+                
+                this.referralBonusGiven = true;
+                await this.db.ref(`users/${this.tgUser.id}`).update({ referralBonusGiven: true });
+            }
+        }
+    }
+    
     async startMining() {
         const adWatched = await this.showInterstitialAd();
         if (!adWatched) return;
@@ -295,34 +333,12 @@ class App {
         this.miningSessionHours = APP_CONFIG.MINING_SESSION_HOURS;
         this.pendingTonReward = 0;
         
+        const wasFirstMining = !this.hasStartedMining;
+        
         if (!this.hasStartedMining && this.db && this.tgUser) {
             this.hasStartedMining = true;
             await this.db.ref(`users/${this.tgUser.id}`).update({ hasStartedMining: true });
-            
-            const userSnap = await this.db.ref(`users/${this.tgUser.id}`).once('value');
-            const referredBy = userSnap.val()?.referredBy;
-            if (referredBy && referredBy !== this.tgUser.id && referredBy !== this.deviceOwnerId) {
-                const referrerRef = this.db.ref(`users/${referredBy}`);
-                const referrerSnap = await referrerRef.once('value');
-                if (referrerSnap.exists()) {
-                    const currentPower = referrerSnap.val().powerBalance ?? 0;
-                    const currentVerified = referrerSnap.val().verifiedReferrals ?? 0;
-                    const currentReferralPower = referrerSnap.val().referralPower ?? 0;
-                    await referrerRef.update({ 
-                        powerBalance: currentPower + APP_CONFIG.REFERRAL_POWER_BONUS,
-                        verifiedReferrals: currentVerified + 1,
-                        referralPower: currentReferralPower + APP_CONFIG.REFERRAL_POWER_BONUS
-                    });
-                    
-                    await this.db.ref(`referrals/${referredBy}/${this.tgUser.id}`).update({
-                        userId: this.tgUser.id,
-                        userName: this.tgUser.first_name,
-                        userPhoto: this.tgUser.photo_url,
-                        state: 'Verified',
-                        verifiedAt: serverTime
-                    });
-                }
-            }
+            await this.giveReferralBonus();
         }
         
         await this.saveUserData();
@@ -744,34 +760,12 @@ class App {
                 await this.saveUserData();
                 if (this.db) {
                     await this.db.ref(`users/${this.tgUser.id}`).update({ hasClaimedWelcome: true, isVerified: true });
-                    const userSnap = await this.db.ref(`users/${this.tgUser.id}`).once('value');
-                    const referredBy = userSnap.val()?.referredBy;
-                    if (referredBy && referredBy !== this.tgUser.id && referredBy !== this.deviceOwnerId) {
-                        const referrerRef = this.db.ref(`users/${referredBy}`);
-                        const referrerSnap = await referrerRef.once('value');
-                        if (referrerSnap.exists()) {
-                            const currentPower = referrerSnap.val().powerBalance ?? 0;
-                            const currentVerified = referrerSnap.val().verifiedReferrals ?? 0;
-                            const currentReferralPower = referrerSnap.val().referralPower ?? 0;
-                            const currentTotalReferrals = referrerSnap.val().totalReferrals ?? 0;
-                            await referrerRef.update({ 
-                                powerBalance: currentPower + APP_CONFIG.REFERRAL_POWER_BONUS,
-                                verifiedReferrals: currentVerified + 1,
-                                referralPower: currentReferralPower + APP_CONFIG.REFERRAL_POWER_BONUS,
-                                totalReferrals: currentTotalReferrals + 1
-                            });
-                            
-                            await this.db.ref(`referrals/${referredBy}/${this.tgUser.id}`).update({
-                                userId: this.tgUser.id,
-                                userName: this.tgUser.first_name,
-                                userPhoto: this.tgUser.photo_url,
-                                state: 'Verified',
-                                joinedAt: await this.getServerTime()
-                            });
-                        }
-                    }
                 }
             }
+            
+            const userSnap = await this.db.ref(`users/${this.tgUser.id}`).once('value');
+            const referralBonusGiven = userSnap.val()?.referralBonusGiven;
+            if (referralBonusGiven) this.referralBonusGiven = true;
             
             await this.loadReferralStats();
             
@@ -821,7 +815,9 @@ class App {
             photoUrl: this.tgUser.photo_url || APP_CONFIG.DEFAULT_USER_AVATAR,
             referredBy: referredBy,
             createdAt: await this.getServerTime(),
-            miningSessionHours: APP_CONFIG.MINING_SESSION_HOURS
+            miningSessionHours: APP_CONFIG.MINING_SESSION_HOURS,
+            hasStartedMining: false,
+            referralBonusGiven: false
         };
         
         await this.db.ref(`users/${this.tgUser.id}`).set(userData);
@@ -858,6 +854,7 @@ class App {
         this.miningEndTime = null;
         this.pendingTonReward = 0;
         this.miningSessionHours = APP_CONFIG.MINING_SESSION_HOURS;
+        this.referralBonusGiven = false;
         
         const nameSpan = document.getElementById('user-name');
         if (nameSpan) nameSpan.innerText = this.tgUser.first_name || 'User';
@@ -886,6 +883,7 @@ class App {
                 this.miningEndTime = d.miningEndTime ?? null;
                 this.pendingTonReward = d.pendingTonReward ?? 0;
                 this.miningSessionHours = d.miningSessionHours ?? APP_CONFIG.MINING_SESSION_HOURS;
+                this.referralBonusGiven = d.referralBonusGiven ?? false;
                 this.tgUser = { id: userId, first_name: d.firstName, username: d.username, photo_url: d.photoUrl };
                 const nameSpan = document.getElementById('user-name');
                 if (nameSpan) nameSpan.innerText = d.firstName;
@@ -932,6 +930,7 @@ class App {
                 this.miningEndTime = d.miningEndTime ?? null;
                 this.pendingTonReward = d.pendingTonReward ?? 0;
                 this.miningSessionHours = d.miningSessionHours ?? APP_CONFIG.MINING_SESSION_HOURS;
+                this.referralBonusGiven = d.referralBonusGiven ?? false;
             } else {
                 await this.forceCreateUserData();
             }
@@ -965,6 +964,7 @@ class App {
             if (this.miningEndTime !== undefined) updates.miningEndTime = this.miningEndTime;
             if (this.pendingTonReward !== undefined) updates.pendingTonReward = this.pendingTonReward;
             if (this.miningSessionHours !== undefined) updates.miningSessionHours = this.miningSessionHours;
+            if (this.referralBonusGiven !== undefined) updates.referralBonusGiven = this.referralBonusGiven;
             await this.db.ref(`users/${this.tgUser.id}`).update(updates);
         } catch (error) {
             console.warn('Failed to save user data:', error);
