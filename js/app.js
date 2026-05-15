@@ -18,7 +18,7 @@ const translations = {
         partner_text3: "Contact support for details", contact_support: "Contact Support", mining: "Mining", earn: "Earn",
         team: "Team", copy_success: "Copied!", link_copied: "Link copied to clipboard", earn_more: "Earn More Power",
         complete_tasks: "Complete Tasks", go: "GO", invite_frens: "Invite Frens", ad_reward: "Watch AD", loading: "Loading",
-        ready: "Ready", mining_active: "MINING ACTIVE", reward_collect: "Reward ready to collect"
+        ready: "Ready", mining_active: "MINING ACTIVE", reward_collect: "-"
     },
     es: {
         level: "Nivel", mining_rig: "Equipo de Minería Nv.", hourly: "Por hora", daily: "Diario", monthly: "Mensual",
@@ -37,7 +37,7 @@ const translations = {
         partner_text3: "Contacta con soporte para detalles", contact_support: "Contactar Soporte", mining: "Minería", earn: "Ganar",
         team: "Equipo", copy_success: "¡Copiado!", link_copied: "Enlace copiado al portapapeles", earn_more: "Gana Más Energía",
         complete_tasks: "Completar Tareas", go: "IR", invite_frens: "Invitar Amigos", ad_reward: "Ver Anuncio", loading: "Cargando",
-        ready: "Listo", mining_active: "MINERÍA ACTIVA", reward_collect: "Recompensa lista para recoger"
+        ready: "Listo", mining_active: "MINERÍA ACTIVA", reward_collect: "-"
     },
     fa: {
         level: "سطح", mining_rig: "دستگاه استخراج سطح", hourly: "ساعتی", daily: "روزانه", monthly: "ماهانه",
@@ -56,7 +56,7 @@ const translations = {
         partner_text3: "برای جزئیات با پشتیبانی تماس بگیرید", contact_support: "تماس با پشتیبانی", mining: "استخراج", earn: "درآمد",
         team: "تیم", copy_success: "کپی شد!", link_copied: "لینک در کلیپ‌بورد کپی شد", earn_more: "انرژی بیشتر کسب کنید",
         complete_tasks: "تکمیل وظایف", go: "برو", invite_frens: "دعوت از دوستان", ad_reward: "تماشای تبلیغ", loading: "در حال بارگذاری",
-        ready: "آماده", mining_active: "استخراج فعال", reward_collect: "پاداش آماده دریافت"
+        ready: "آماده", mining_active: "استخراج فعال", reward_collect: "-"
     },
     tr: {
         level: "Seviye", mining_rig: "Madenci Seviye", hourly: "Saatlik", daily: "Günlük", monthly: "Aylık",
@@ -75,7 +75,7 @@ const translations = {
         partner_text3: "Detaylar için desteğe başvurun", contact_support: "Desteğe Başvur", mining: "Madencilik", earn: "Kazan",
         team: "Takım", copy_success: "Kopyalandı!", link_copied: "Bağlantı panoya kopyalandı", earn_more: "Daha Fazla Güç Kazan",
         complete_tasks: "Görevleri Tamamla", go: "GİT", invite_frens: "Arkadaşları Davet Et", ad_reward: "Reklam İzle", loading: "Yükleniyor",
-        ready: "Hazır", mining_active: "MADENCİLİK AKTİF", reward_collect: "Ödül toplanmaya hazır"
+        ready: "Hazır", mining_active: "MADENCİLİK AKTİF", reward_collect: "-"
     },
     ar: {
         level: "مستوى", mining_rig: "جهاز التعدين مستوى", hourly: "كل ساعة", daily: "يومي", monthly: "شهري",
@@ -94,7 +94,7 @@ const translations = {
         partner_text3: "اتصل بالدعم للتفاصيل", contact_support: "اتصل بالدعم", mining: "التعدين", earn: "الأرباح",
         team: "الفريق", copy_success: "تم النسخ!", link_copied: "تم نسخ الرابط", earn_more: "احصل على طاقة أكثر",
         complete_tasks: "إكمال المهام", go: "اذهب", invite_frens: "دعوة الأصدقاء", ad_reward: "مشاهدة إعلان", loading: "جاري التحميل",
-        ready: "جاهز", mining_active: "التعدين نشط", reward_collect: "المكافأة جاهزة للاستلام"
+        ready: "جاهز", mining_active: "التعدين نشط", reward_collect: "-"
     }
 };
 
