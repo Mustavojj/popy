@@ -1,7 +1,7 @@
 export const APP_CONFIG = {
     APP_NAME: "VELTRIX",
     BOT_USERNAME: "Veltrxbot",
-    SUPPORT_LINK: "https://t.me/Supports",
+    SUPPORT_LINK: "https://t.me/VLTRIX9",
     MINIMUM_WITHDRAW: 0.01,
     REFERRAL_PERCENTAGE: 10,
     REFERRAL_POWER_BONUS: 100,
