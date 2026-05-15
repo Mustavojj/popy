@@ -686,18 +686,24 @@ class App {
     }
     
     async checkMembership(channel) {
-        try {
-            const res = await fetch('/api/bot-actions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'check_channel', channel: `@${channel}`, userId: this.tgUser.id })
-            });
-            const data = await res.json();
-            return data.isMember === true;
-        } catch(e) {
+    try {
+        const res = await fetch('/api/bot-actions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'check_channel', channel: `@${channel}`, userId: this.tgUser.id })
+        });
+        const data = await res.json();
+        
+        if (data.error === 'bot_not_admin') {
+            this.showNotification('Bot Error', 'Bot is not admin in this channel', 'error');
             return false;
         }
+        
+        return data.isMember === true;
+    } catch(e) {
+        return false;
     }
+}
     
     async initialize() {
         const progressBar = document.getElementById('loader-progress-bar');
