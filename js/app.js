@@ -261,28 +261,22 @@ class App {
         return Math.floor(APP_CONFIG.LEVEL_FORMULA.base * Math.pow(APP_CONFIG.LEVEL_FORMULA.multiplier, level - 1));
     }
     
-    updateLevelFromPower() {
-        let newLevel = 1;
-        let levelUpBonus = 0;
-        while (this.powerBalance >= this.getRequiredPowerForLevel(newLevel + 1)) {
-            newLevel++;
-            levelUpBonus += 50;
-        }
-        if (newLevel > this.userLevel) {
-            if (levelUpBonus > 0) {
-                this.powerBalance += levelUpBonus;
-                this.showNotification(this.t('level') + ' Up!', `+${this.formatNumber(levelUpBonus)} ${this.t('power')} bonus for reaching level ${newLevel}!`, 'success');
-            }
-            this.userLevel = newLevel;
-            this.showNotification(this.t('level') + ' Up!', `Reached level ${this.userLevel}!`, 'success');
-            this.vibrate('success');
-        }
-        this.userLevel = newLevel;
-        const levelSpan = document.getElementById('user-level');
-        const levelBadge = document.getElementById('user-level-badge');
-        if (levelSpan) levelSpan.innerText = this.userLevel;
-        if (levelBadge) levelBadge.innerText = this.userLevel;
+
+  updateLevelFromPower() {
+    let newLevel = 1;
+    while (this.powerBalance >= this.getRequiredPowerForLevel(newLevel + 1)) {
+        newLevel++;
     }
+    
+    if (newLevel > this.userLevel) {
+        this.userLevel = newLevel;
+    }
+        
+    const levelSpan = document.getElementById('user-level');
+    const levelBadge = document.getElementById('user-level-badge');
+    if (levelSpan) levelSpan.innerText = this.userLevel;
+    if (levelBadge) levelBadge.innerText = this.userLevel;
+}
     
     async giveReferralBonus() {
         if (this.referralBonusGiven) return;
