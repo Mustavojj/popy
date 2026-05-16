@@ -647,7 +647,7 @@ class App {
         }
         
         const adWatched = await this.showInterstitialAd();
-        if (!adWatched) return false;
+        if (!adWatched) return;
         
         this.tonBalance -= amount;
         await this.saveUserData();
@@ -767,7 +767,6 @@ class App {
                 this.renderMining();
             }
             
-            // FIXED: Welcome bonus logic - check if user has claimed welcome bonus from Firebase
             const userSnapshot = await this.db.ref(`users/${this.tgUser.id}`).once('value');
             const hasClaimedWelcomeFromDB = userSnapshot.val()?.hasClaimedWelcome;
             
