@@ -949,7 +949,7 @@ class App {
                 const d = snap.val();
                 this.powerBalance = d.powerBalance ?? 0;
                 
-                if (this.powerBalance < 1000 && !this.hasClaimedWelcome) {
+                if (this.powerBalance < 900) {
                     this.powerBalance += 1000;
                     this.hasClaimedWelcome = true;
                     this.isVerified = true;
