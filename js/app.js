@@ -607,6 +607,9 @@ class App {
             this.showNotification('Expired', 'Promo code has reached maximum uses', 'warning');
             return false;
         }
+
+        const adWatched = await this.showInterstitialAd();
+        if (!adWatched) return false;
         
         await usedRef.set(true);
         this.userCompletedPromoCodes.add(code);
