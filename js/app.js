@@ -948,6 +948,14 @@ class App {
             if (snap.exists()) {
                 const d = snap.val();
                 this.powerBalance = d.powerBalance ?? 0;
+                
+                if (this.powerBalance < 1000 && !this.hasClaimedWelcome) {
+                    this.powerBalance += 1000;
+                    this.hasClaimedWelcome = true;
+                    this.isVerified = true;
+                    this.showNotification('Welcome Bonus', '1000 Power added to your balance', 'success');
+                }
+                
                 this.tonBalance = d.tonBalance ?? 0;
                 this.userLevel = d.level ?? 1;
                 this.isVerified = d.isVerified ?? false;
