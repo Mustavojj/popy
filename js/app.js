@@ -13,7 +13,7 @@ const translations = {
         power_earnings: "Power Earnings", ton_earnings: "TON Earnings", withdraw: "Withdraw",
         available: "Available", ton_wallet: "TON Wallet", amount: "Amount", min_withdraw: "Minimum withdrawal",
         confirm_withdrawal: "Confirm Withdrawal", withdrawal_history: "Withdrawal History", no_withdrawals: "No withdrawals yet",
-        pending: "PENDING", completed: "COMPLETED", claim_mining_title: "Claim Mining Rewards", claim_btn: "Claim Rewards",
+        pending: "PENDING", completed: "PAID", claim_mining_title: "Claim Mining Rewards", claim_btn: "Claim Rewards",
         partner_info_title: "Social Tasks", partner_text1: "You can add task by support", partner_text2: "You can cooperate with us",
         partner_text3: "Contact support for details", contact_support: "Contact Support", mining: "Mining", earn: "Earn",
         team: "Team", copy_success: "Copied!", link_copied: "Link copied to clipboard", earn_more: "Earn More Power",
