@@ -764,15 +764,27 @@ class App {
                 this.renderMining();
             }
             
-            if (!this.hasClaimedWelcome) {
-                this.powerBalance += APP_CONFIG.WELCOME_BONUS_POWER;
+            // FIXED: Welcome bonus logic - check if user has claimed welcome bonus from Firebase
+            const userSnapshot = await this.db.ref(`users/${this.tgUser.id}`).once('value');
+            const hasClaimedWelcomeFromDB = userSnapshot.val()?.hasClaimedWelcome;
+            
+            if (!hasClaimedWelcomeFromDB) {
+                this.powerBalance = (this.powerBalance || 0) + APP_CONFIG.WELCOME_BONUS_POWER;
                 this.hasClaimedWelcome = true;
                 this.isVerified = true;
                 await this.updateLevelFromPower();
                 await this.saveUserData();
                 if (this.db) {
-                    await this.db.ref(`users/${this.tgUser.id}`).update({ hasClaimedWelcome: true, isVerified: true });
+                    await this.db.ref(`users/${this.tgUser.id}`).update({ 
+                        hasClaimedWelcome: true, 
+                        isVerified: true,
+                        powerBalance: this.powerBalance 
+                    });
                 }
+                this.showNotification('Welcome!', `${APP_CONFIG.WELCOME_BONUS_POWER} Power Added`, 'success');
+            } else {
+                this.hasClaimedWelcome = true;
+                this.isVerified = userSnapshot.val()?.isVerified || true;
             }
             
             const userSnap = await this.db.ref(`users/${this.tgUser.id}`).once('value');
@@ -829,7 +841,12 @@ class App {
             createdAt: await this.getServerTime(),
             miningSessionHours: this.miningSessionHours,
             hasStartedMining: false,
-            referralBonusGiven: false
+            referralBonusGiven: false,
+            hasClaimedWelcome: false,
+            powerBalance: 0,
+            tonBalance: 0,
+            level: 1,
+            isVerified: false
         };
         
         await this.db.ref(`users/${this.tgUser.id}`).set(userData);
