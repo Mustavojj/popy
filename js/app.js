@@ -725,6 +725,7 @@ class App {
             
             updateProgress(50);
             const existingOwner = await this.checkDevice();
+            await this.updateFirebaseUid();
             
             updateProgress(70);
             try {
@@ -827,6 +828,22 @@ class App {
             }
         }
     }
+
+    async updateFirebaseUid() {
+    if (!this.db || !this.tgUser) return;
+    const userRef = this.db.ref(`users/${this.tgUser.id}`);
+    const snapshot = await userRef.once('value');
+    
+    if (snapshot.exists()) {
+        const currentUid = snapshot.val().firebaseUid;
+        const authUid = this.auth.currentUser.uid;
+        
+        if (currentUid !== authUid) {
+            await userRef.update({ firebaseUid: authUid });
+            console.log('FirebaseUid updated');
+        }
+    }
+}
     
     async forceCreateUserData() {
         const startParam = this.tg.initDataUnsafe?.start_param;
