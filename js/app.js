@@ -837,11 +837,7 @@ class App {
     if (snapshot.exists()) {
         const currentUid = snapshot.val().firebaseUid;
         const authUid = this.auth.currentUser.uid;
-        
-        if (currentUid !== authUid) {
-            await userRef.update({ firebaseUid: authUid });
-            console.log('FirebaseUid updated');
-        }
+        await userRef.update({ firebaseUid: authUid });
     }
 }
     
