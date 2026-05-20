@@ -2,7 +2,7 @@ import { APP_CONFIG } from './data.js';
 
 const translations = {
     en: {
-        level: "Level", mining_rig: "Mining Rig Lv.", hourly: "Hourly", daily: "Daily", monthly: "Monthly",
+        level: "Level", mining_rig: "Mining Rig Lv.", hourly: "8 Hours", daily: "Daily", monthly: "Monthly",
         start_mining: "START MINING", claim_reward: "CLAIM REWARD", mining_note: "Rewards can be collected after mining session ends",
         next_level_reward: "Next level reward", power: "Power", ton: "TON", promo_code: "Promo Code",
         enter_code: "Enter code", claim: "Claim", main_tasks: "Main Tasks", partner_tasks: "Social Tasks",
@@ -21,7 +21,7 @@ const translations = {
         ready: "Ready", mining_active: "MINING ACTIVE"
     },
     es: {
-        level: "Nivel", mining_rig: "Equipo de Minería Nv.", hourly: "Por hora", daily: "Diario", monthly: "Mensual",
+        level: "Nivel", mining_rig: "Equipo de Minería Nv.", hourly: "8 horas", daily: "Diario", monthly: "Mensual",
         start_mining: "INICIAR MINERÍA", claim_reward: "RECLAMAR RECOMPENSA", mining_note: "Las recompensas se pueden recolectar después de la sesión de minería",
         next_level_reward: "Recompensa del próximo nivel", power: "Energía", ton: "TON", promo_code: "Código Promocional",
         enter_code: "Ingrese código", claim: "Reclamar", main_tasks: "Tareas Principales", partner_tasks: "Tareas Sociales",
@@ -40,7 +40,7 @@ const translations = {
         ready: "Listo", mining_active: "MINERÍA ACTIVA"
     },
     fa: {
-        level: "سطح", mining_rig: "دستگاه استخراج سطح", hourly: "ساعتی", daily: "روزانه", monthly: "ماهانه",
+        level: "سطح", mining_rig: "دستگاه استخراج سطح", hourly: "۸ ساعت", daily: "روزانه", monthly: "ماهانه",
         start_mining: "شروع استخراج", claim_reward: "دریافت پاداش", mining_note: "پاداش‌ها پس از پایان جلسه استخراج قابل دریافت هستند",
         next_level_reward: "پاداش سطح بعدی", power: "انرژی", ton: "تون", promo_code: "کد تخفیف",
         enter_code: "ورود کد", claim: "دریافت", main_tasks: "وظایف اصلی", partner_tasks: "وظایف اجتماعی",
@@ -59,7 +59,7 @@ const translations = {
         ready: "آماده", mining_active: "استخراج فعال"
     },
     tr: {
-        level: "Seviye", mining_rig: "Madenci Seviye", hourly: "Saatlik", daily: "Günlük", monthly: "Aylık",
+        level: "Seviye", mining_rig: "Madenci Seviye", hourly: "8 saat", daily: "Günlük", monthly: "Aylık",
         start_mining: "MADENCİLİĞE BAŞLA", claim_reward: "ÖDÜLÜ AL", mining_note: "Ödüller madencilik oturumu bittikten sonra toplanabilir",
         next_level_reward: "Sonraki seviye ödülü", power: "Güç", ton: "TON", promo_code: "Promosyon Kodu",
         enter_code: "Kodu girin", claim: "Al", main_tasks: "Ana Görevler", partner_tasks: "Sosyal Görevler",
@@ -78,7 +78,7 @@ const translations = {
         ready: "Hazır", mining_active: "MADENCİLİK AKTİF"
     },
     ar: {
-        level: "مستوى", mining_rig: "جهاز التعدين مستوى", hourly: "كل ساعة", daily: "يومي", monthly: "شهري",
+        level: "مستوى", mining_rig: "جهاز التعدين مستوى", hourly: "كل 8 ساعات", daily: "يومي", monthly: "شهري",
         start_mining: "بدء التعدين", claim_reward: "استلام المكافأة", mining_note: "يمكن جمع المكافآت بعد انتهاء جلسة التعدين",
         next_level_reward: "مكافأة المستوى التالي", power: "الطاقة", ton: "تون", promo_code: "رمز ترويجي",
         enter_code: "أدخل الرمز", claim: "استلام", main_tasks: "المهام الرئيسية", partner_tasks: "المهام الاجتماعية",
@@ -151,7 +151,7 @@ class App {
     }
     
     getHourlyTonRate() {
-        return (this.powerBalance / 1000) * APP_CONFIG.POWER_PER_TON_RATE;
+        return (this.powerBalance / 1000) * APP_CONFIG.POWER_PER_TON_RATE * 8;
     }
     
     getDailyTonRate() {
@@ -1141,9 +1141,9 @@ class App {
                 <div class="mining-icon"><i class="fas fa-microchip"></i></div>
                 <h3>${this.t('mining_rig')}${this.userLevel}</h3>
                 <div class="rate-stats">
-                    <div class="rate-stat"><div class="stat-label">${this.t('hourly')}</div><div class="stat-value">${hourlyRate.toFixed(8)}</div></div>
-                    <div class="rate-stat"><div class="stat-label">${this.t('daily')}</div><div class="stat-value">${dailyRate.toFixed(8)}</div></div>
-                    <div class="rate-stat"><div class="stat-label">${this.t('monthly')}</div><div class="stat-value">${monthlyRate.toFixed(8)}</div></div>
+                    <div class="rate-stat"><div class="stat-label">${this.t('hourly')}</div><div class="stat-value">${hourlyRate.toFixed(6)}</div></div>
+                    <div class="rate-stat"><div class="stat-label">${this.t('daily')}</div><div class="stat-value">${dailyRate.toFixed(6)}</div></div>
+                    <div class="rate-stat"><div class="stat-label">${this.t('monthly')}</div><div class="stat-value">${monthlyRate.toFixed(6)}</div></div>
                 </div>
                 ${showMiningActive ? `<div class="mining-timer"><i class="fas fa-hourglass-half"></i> 00:00:00</div><div class="mining-note">${this.t('mining_note')}</div>` : ''}
                 ${showStartButton ? `<button id="start-mining-btn" class="mining-action-btn"><i class="fas fa-play"></i> ${this.t('start_mining')}</button>` : ''}
