@@ -159,7 +159,7 @@ class App {
     }
     
     getMonthlyTonRate() {
-        return this.getDailyTonRate() * 10;
+        return this.getDailyTonRate() * 15;
     }
     
     calculateRewardForHours(hours) {
