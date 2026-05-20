@@ -155,15 +155,15 @@ class App {
     }
     
     getDailyTonRate() {
-        return this.getHourlyTonRate() * 24;
+        return this.getHourlyTonRate() * 3;
     }
     
     getMonthlyTonRate() {
-        return this.getDailyTonRate() * 30;
+        return this.getDailyTonRate() * 10;
     }
     
     calculateRewardForHours(hours) {
-        return this.getHourlyTonRate() * hours;
+        return this.getHourlyTonRate();
     }
     
     async getDeviceFingerprint() {
@@ -372,7 +372,7 @@ class App {
         
         const modal = document.getElementById('claim-modal');
         const rewardEl = document.getElementById('claim-reward-amount');
-        rewardEl.innerText = this.pendingTonReward.toFixed(8) + ' TON';
+        rewardEl.innerText = this.pendingTonReward.toFixed(6) + ' TON';
         modal.style.display = 'flex';
         
         const confirmBtn = document.getElementById('confirm-claim-btn');
