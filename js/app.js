@@ -140,6 +140,9 @@ class App {
         this.vibrationEnabled = true;
         this.loadSettings();
         this.referralBonusGiven = false;
+        this.timeOffset = 0;
+        this.firebaseConfigCache = null;
+        this.membershipCache = new Map();
     }
     
     t(key) {
@@ -209,9 +212,13 @@ class App {
     }
     
     async getServerTime() {
+        if (this.timeOffset !== 0) {
+            return Date.now() + this.timeOffset;
+        }
         try {
             const res = await fetch('/api/time');
             const data = await res.json();
+            this.timeOffset = data.serverTime - Date.now();
             return data.serverTime;
         } catch(e) {
             return Date.now();
@@ -243,6 +250,7 @@ class App {
             await AdController.show();
             return true;
         } catch(e) {
+            console.warn('Interstitial ad failed:', e);
             return true;
         }
     }
@@ -253,6 +261,7 @@ class App {
             await AdController.show();
             return true;
         } catch(e) {
+            console.warn('Reward ad failed:', e);
             return true;
         }
     }
@@ -261,22 +270,21 @@ class App {
         return Math.floor(APP_CONFIG.LEVEL_FORMULA.base * Math.pow(APP_CONFIG.LEVEL_FORMULA.multiplier, level - 1));
     }
     
-
-  updateLevelFromPower() {
-    let newLevel = 1;
-    while (this.powerBalance >= this.getRequiredPowerForLevel(newLevel + 1)) {
-        newLevel++;
-    }
-    
-    if (newLevel > this.userLevel) {
-        this.userLevel = newLevel;
-    }
+    updateLevelFromPower() {
+        let newLevel = 1;
+        while (this.powerBalance >= this.getRequiredPowerForLevel(newLevel + 1)) {
+            newLevel++;
+        }
         
-    const levelSpan = document.getElementById('user-level');
-    const levelBadge = document.getElementById('user-level-badge');
-    if (levelSpan) levelSpan.innerText = this.userLevel;
-    if (levelBadge) levelBadge.innerText = this.userLevel;
-}
+        if (newLevel > this.userLevel) {
+            this.userLevel = newLevel;
+        }
+        
+        const levelSpan = document.getElementById('user-level');
+        const levelBadge = document.getElementById('user-level-badge');
+        if (levelSpan) levelSpan.innerText = this.userLevel;
+        if (levelBadge) levelBadge.innerText = this.userLevel;
+    }
     
     async giveReferralBonus() {
         if (this.referralBonusGiven) return;
@@ -326,8 +334,6 @@ class App {
         this.miningEndTime = serverTime + (this.miningSessionHours * 3600000);
         this.pendingTonReward = 0;
         
-        const wasFirstMining = !this.hasStartedMining;
-        
         if (!this.hasStartedMining && this.db && this.tgUser) {
             this.hasStartedMining = true;
             await this.db.ref(`users/${this.tgUser.id}`).update({ hasStartedMining: true });
@@ -339,7 +345,7 @@ class App {
         this.startMiningLoop();
         this.showNotification(this.t('start_mining'), 'Your rig is now mining TON', 'success');
     }
-
+    
     async stopMining() {
         if (!this.miningActive) return;
         
@@ -607,7 +613,7 @@ class App {
             this.showNotification('Expired', 'Promo code has reached maximum uses', 'warning');
             return false;
         }
-
+        
         const adWatched = await this.showInterstitialAd();
         if (!adWatched) return false;
         
@@ -647,7 +653,7 @@ class App {
         }
         
         const adWatched = await this.showInterstitialAd();
-        if (!adWatched) return;
+        if (!adWatched) return false;
         
         this.tonBalance -= amount;
         await this.saveUserData();
@@ -661,14 +667,17 @@ class App {
         };
         
         if (this.db) {
-            await this.db.ref(`withdrawals/${this.tgUser.id}/${withdrawal.id}`).set(withdrawal);
-            const withdrawalsCountRef = this.db.ref('Status/totalWithdrawals');
-            const currentCount = (await withdrawalsCountRef.once('value')).val() || 0;
-            await withdrawalsCountRef.set(currentCount + 1);
-            
-            const totalTonPaidRef = this.db.ref('Status/totalTonPaid');
-            const currentPaid = (await totalTonPaidRef.once('value')).val() || 0;
-            await totalTonPaidRef.set(currentPaid + amount);
+            try {
+                await this.db.ref(`withdrawals/${this.tgUser.id}/${withdrawal.id}`).set(withdrawal);
+                await this.db.ref('Status/totalWithdrawals').transaction(current => (current || 0) + 1);
+                await this.db.ref('Status/totalTonPaid').transaction(current => (current || 0) + amount);
+            } catch (error) {
+                console.error('Withdrawal save failed:', error);
+                this.tonBalance += amount;
+                await this.saveUserData();
+                this.showNotification('Error', 'Failed to submit withdrawal', 'error');
+                return false;
+            }
         }
         
         this.withdrawals.unshift(withdrawal);
@@ -683,24 +692,51 @@ class App {
     }
     
     async checkMembership(channel) {
-    try {
-        const res = await fetch('/api/bot-actions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'check_channel', channel: `@${channel}`, userId: this.tgUser.id })
-        });
-        const data = await res.json();
+        const cacheKey = `membership_${channel}_${this.tgUser.id}`;
+        const cached = this.membershipCache.get(cacheKey);
+        const now = Date.now();
         
-        if (data.error === 'bot_not_admin') {
-            this.showNotification('Bot Error', 'Bot is not admin in this channel', 'error');
-            return false;
+        if (cached && (now - cached.timestamp) < 300000) {
+            return cached.isMember;
         }
         
-        return data.isMember === true;
-    } catch(e) {
-        return false;
+        try {
+            const res = await fetch('/api/bot-actions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'check_channel', channel: `@${channel}`, userId: this.tgUser.id })
+            });
+            const data = await res.json();
+            
+            if (data.error === 'bot_not_admin') {
+                this.showNotification('Bot Error', 'Bot is not admin in this channel', 'error');
+                return false;
+            }
+            
+            const isMember = data.isMember === true;
+            this.membershipCache.set(cacheKey, { isMember, timestamp: now });
+            return isMember;
+        } catch(e) {
+            return false;
+        }
     }
-}
+    
+    async updateFirebaseUid() {
+        if (!this.db || !this.tgUser) return;
+        const lastUpdate = localStorage.getItem('firebaseUid_last_update');
+        if (lastUpdate && (Date.now() - parseInt(lastUpdate)) < 86400000) {
+            return;
+        }
+        
+        const userRef = this.db.ref(`users/${this.tgUser.id}`);
+        const snapshot = await userRef.once('value');
+        
+        if (snapshot.exists()) {
+            const authUid = this.auth.currentUser.uid;
+            await userRef.update({ firebaseUid: authUid });
+            localStorage.setItem('firebaseUid_last_update', Date.now().toString());
+        }
+    }
     
     async initialize() {
         const progressBar = document.getElementById('loader-progress-bar');
@@ -828,18 +864,6 @@ class App {
             }
         }
     }
-
-    async updateFirebaseUid() {
-    if (!this.db || !this.tgUser) return;
-    const userRef = this.db.ref(`users/${this.tgUser.id}`);
-    const snapshot = await userRef.once('value');
-    
-    if (snapshot.exists()) {
-        const currentUid = snapshot.val().firebaseUid;
-        const authUid = this.auth.currentUser.uid;
-        await userRef.update({ firebaseUid: authUid });
-    }
-}
     
     async forceCreateUserData() {
         const startParam = this.tg.initDataUnsafe?.start_param;
@@ -946,9 +970,24 @@ class App {
     }
     
     async initFirebase() {
-        const res = await fetch('/api/firebase-config', { method: 'POST' });
-        const { encrypted } = await res.json();
-        const config = JSON.parse(atob(encrypted));
+        let config = this.firebaseConfigCache;
+        
+        if (!config) {
+            const cachedConfig = localStorage.getItem('firebase_config');
+            const cachedTime = localStorage.getItem('firebase_config_time');
+            
+            if (cachedConfig && cachedTime && (Date.now() - parseInt(cachedTime)) < 86400000) {
+                config = JSON.parse(cachedConfig);
+            } else {
+                const res = await fetch('/api/firebase-config', { method: 'POST' });
+                const { encrypted } = await res.json();
+                config = JSON.parse(atob(encrypted));
+                localStorage.setItem('firebase_config', JSON.stringify(config));
+                localStorage.setItem('firebase_config_time', Date.now().toString());
+            }
+            this.firebaseConfigCache = config;
+        }
+        
         let app;
         try { app = firebase.initializeApp(config); } catch(e) { app = firebase.app(); }
         this.db = app.database();
@@ -964,17 +1003,19 @@ class App {
                 const d = snap.val();
                 this.powerBalance = d.powerBalance ?? 0;
                 
-                if (this.powerBalance < 900) {
+                if (this.powerBalance < 900 && !d.hasClaimedWelcome) {
                     this.powerBalance += 1000;
                     this.hasClaimedWelcome = true;
                     this.isVerified = true;
+                    await this.saveUserData();
                     this.showNotification('Welcome Bonus', '1000 Power added to your balance', 'success');
+                } else {
+                    this.hasClaimedWelcome = d.hasClaimedWelcome ?? false;
+                    this.isVerified = d.isVerified ?? false;
                 }
                 
                 this.tonBalance = d.tonBalance ?? 0;
                 this.userLevel = d.level ?? 1;
-                this.isVerified = d.isVerified ?? false;
-                this.hasClaimedWelcome = d.hasClaimedWelcome ?? false;
                 this.hasStartedMining = d.hasStartedMining ?? false;
                 this.miningActive = d.miningActive ?? false;
                 this.miningStartTime = d.miningStartTime ?? null;
@@ -1002,24 +1043,28 @@ class App {
     
     async saveUserData() {
         if (!this.db || !this.tgUser) return;
-        try {
-            const updates = {};
-            if (this.powerBalance !== undefined) updates.powerBalance = this.powerBalance;
-            if (this.tonBalance !== undefined) updates.tonBalance = this.tonBalance;
-            if (this.userLevel !== undefined) updates.level = this.userLevel;
-            if (this.isVerified !== undefined) updates.isVerified = this.isVerified;
-            if (this.hasClaimedWelcome !== undefined) updates.hasClaimedWelcome = this.hasClaimedWelcome;
-            if (this.hasStartedMining !== undefined) updates.hasStartedMining = this.hasStartedMining;
-            if (this.miningActive !== undefined) updates.miningActive = this.miningActive;
-            if (this.miningStartTime !== undefined) updates.miningStartTime = this.miningStartTime;
-            if (this.miningEndTime !== undefined) updates.miningEndTime = this.miningEndTime;
-            if (this.pendingTonReward !== undefined) updates.pendingTonReward = this.pendingTonReward;
-            if (this.miningSessionHours !== undefined) updates.miningSessionHours = this.miningSessionHours;
-            if (this.referralBonusGiven !== undefined) updates.referralBonusGiven = this.referralBonusGiven;
-            await this.db.ref(`users/${this.tgUser.id}`).update(updates);
-        } catch (error) {
-            console.warn('Failed to save user data:', error);
-        }
+        if (this.saveTimeout) clearTimeout(this.saveTimeout);
+        
+        this.saveTimeout = setTimeout(async () => {
+            try {
+                const updates = {};
+                if (this.powerBalance !== undefined) updates.powerBalance = this.powerBalance;
+                if (this.tonBalance !== undefined) updates.tonBalance = this.tonBalance;
+                if (this.userLevel !== undefined) updates.level = this.userLevel;
+                if (this.isVerified !== undefined) updates.isVerified = this.isVerified;
+                if (this.hasClaimedWelcome !== undefined) updates.hasClaimedWelcome = this.hasClaimedWelcome;
+                if (this.hasStartedMining !== undefined) updates.hasStartedMining = this.hasStartedMining;
+                if (this.miningActive !== undefined) updates.miningActive = this.miningActive;
+                if (this.miningStartTime !== undefined) updates.miningStartTime = this.miningStartTime;
+                if (this.miningEndTime !== undefined) updates.miningEndTime = this.miningEndTime;
+                if (this.pendingTonReward !== undefined) updates.pendingTonReward = this.pendingTonReward;
+                if (this.miningSessionHours !== undefined) updates.miningSessionHours = this.miningSessionHours;
+                if (this.referralBonusGiven !== undefined) updates.referralBonusGiven = this.referralBonusGiven;
+                await this.db.ref(`users/${this.tgUser.id}`).update(updates);
+            } catch (error) {
+                console.warn('Failed to save user data:', error);
+            }
+        }, 3000);
     }
     
     async loadCompletedTasks() {
@@ -1122,11 +1167,9 @@ class App {
         const el = document.getElementById('mining-page');
         if (!el) return;
         const requiredPower = this.getRequiredPowerForLevel(this.userLevel + 1);
-        const progress = Math.min((this.powerBalance / requiredPower) * 100, 100);
         const hourlyRate = this.getHourlyTonRate();
         const dailyRate = this.getDailyTonRate();
         const monthlyRate = this.getMonthlyTonRate();
-        const nextLevelBonus = 50;
         
         const showStartButton = !this.miningActive && this.pendingTonReward <= 0;
         const showClaimButton = !this.miningActive && this.pendingTonReward > 0;
@@ -1187,11 +1230,6 @@ class App {
         const partnerTasksHtml = availablePartnerTasks.length > 0 ? availablePartnerTasks.map(t => `
             <div class="task-item"><img class="task-img" src="${t.img}"><div class="task-info"><h4>${t.name}</h4><div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div></div><button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button></div>
         `).join('') : '<div class="no-data"><i class="fas fa-globe"></i><p>' + this.t('no_tasks') + '</p><small>' + this.t('check_later') + '</small></div>';
-        
-        const promoCodesHtml = this.promoCodes.map(p => {
-            const rewardText = p.rewardType === 'power' ? p.reward + ' Power' : p.reward + ' TON';
-            return `<div class="promo-item"><div class="promo-code">${p.code}</div><div class="promo-reward">${rewardText}</div></div>`;
-        }).join('');
         
         el.innerHTML = `
             <div class="promo-card"><div class="promo-title"><i class="fas fa-gift"></i> ${this.t('promo_code')}</div><div class="promo-input-group"><input type="text" id="promo-input" class="form-input" placeholder="${this.t('enter_code')}" autocomplete="off"><button id="promo-submit" class="promo-submit-btn" disabled>${this.t('claim')}</button></div></div>
