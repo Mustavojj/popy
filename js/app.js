@@ -182,34 +182,42 @@ class App {
         return 'dev_' + Math.abs(hash).toString(16);
     }
     
-    async checkDevice() {
-        try {
-            if (!this.db) return null;
-            this.deviceId = await this.getDeviceFingerprint();
-            const saved = localStorage.getItem('device_fingerprint');
-            if (saved && saved !== this.deviceId) this.deviceId = saved;
-            else localStorage.setItem('device_fingerprint', this.deviceId);
+async checkDevice() {
+    try {
+        if (!this.db) return;
+        
+        this.deviceId = await this.getDeviceFingerprint();
+        localStorage.setItem('device_fingerprint', this.deviceId);
+        
+        const deviceRef = await this.db.ref(`devices/${this.deviceId}`).once('value');
+        
+        if (deviceRef.exists()) {
+            const registeredUserId = deviceRef.val().ownerId;
             
-            const deviceRef = await this.db.ref(`devices/${this.deviceId}`).once('value');
-            if (deviceRef.exists()) {
-                const data = deviceRef.val();
-                this.deviceOwnerId = data.ownerId;
-                return this.deviceOwnerId;
-            } else {
-                await this.db.ref(`devices/${this.deviceId}`).set({
-                    ownerId: this.tgUser.id,
-                    firstSeen: await this.getServerTime(),
-                    lastSeen: await this.getServerTime(),
-                    userAgent: navigator.userAgent
-                });
-                this.deviceOwnerId = this.tgUser.id;
-                return null;
+            if (registeredUserId && registeredUserId !== this.tgUser.id) {
+                this.showNotification('Device Locked', 'Multiple accounts not allowed on this device', 'error');
+                setTimeout(() => window.Telegram?.WebApp?.close(), 3000);
+                throw new Error('Device already registered');
             }
-        } catch(e) { 
-            console.warn('Device check failed:', e);
-            return null; 
+            
+            await deviceRef.update({ lastSeen: await this.getServerTime() });
+            
+        } else {
+            await this.db.ref(`devices/${this.deviceId}`).set({
+                ownerId: this.tgUser.id,
+                firstSeen: await this.getServerTime(),
+                lastSeen: await this.getServerTime(),
+                userAgent: navigator.userAgent
+            });
         }
+        
+        return null;
+        
+    } catch(e) { 
+        console.warn('Device check failed:', e);
+        throw e;
     }
+}
     
     async getServerTime() {
         if (this.timeOffset !== 0) {
@@ -754,19 +762,13 @@ async updateFirebaseUid() {
             await this.initFirebase();
             
             updateProgress(50);
-            const existingOwner = await this.checkDevice();
+            await this.checkDevice();
             await this.updateFirebaseUid();
             
             updateProgress(70);
+            
             try {
-                if (existingOwner && existingOwner !== this.tgUser.id) {
-                    await this.loadUserById(existingOwner);
-                } else {
-                    await this.loadUserData();
-                }
-            } catch (permError) {
-                console.warn('Permission error, retrying with fresh user data...', permError);
-                await this.forceCreateUserData();
+                await this.loadUserData();
             }
             
             updateProgress(85);
