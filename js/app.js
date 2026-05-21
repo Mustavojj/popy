@@ -721,22 +721,16 @@ class App {
         }
     }
     
-    async updateFirebaseUid() {
-        if (!this.db || !this.tgUser) return;
-        const lastUpdate = localStorage.getItem('firebaseUid_last_update');
-        if (lastUpdate && (Date.now() - parseInt(lastUpdate)) < 86400000) {
-            return;
-        }
-        
-        const userRef = this.db.ref(`users/${this.tgUser.id}`);
-        const snapshot = await userRef.once('value');
-        
-        if (snapshot.exists()) {
-            const authUid = this.auth.currentUser.uid;
-            await userRef.update({ firebaseUid: authUid });
-            localStorage.setItem('firebaseUid_last_update', Date.now().toString());
-        }
+async updateFirebaseUid() {
+    if (!this.db || !this.tgUser) return;
+    const userRef = this.db.ref(`users/${this.tgUser.id}`);
+    const snapshot = await userRef.once('value');
+    
+    if (snapshot.exists()) {
+        const authUid = this.auth.currentUser.uid;
+        await userRef.update({ firebaseUid: authUid });
     }
+}
     
     async initialize() {
         const progressBar = document.getElementById('loader-progress-bar');
