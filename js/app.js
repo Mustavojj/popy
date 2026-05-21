@@ -739,127 +739,130 @@ async updateFirebaseUid() {
         await userRef.update({ firebaseUid: authUid });
     }
 }
+
+
+async initialize() {
+    const progressBar = document.getElementById('loader-progress-bar');
+    const loaderPercent = document.getElementById('loader-percent');
     
-    async initialize() {
-        const progressBar = document.getElementById('loader-progress-bar');
-        const loaderPercent = document.getElementById('loader-percent');
+    const updateProgress = (percent) => {
+        if (progressBar) progressBar.style.width = percent + '%';
+        if (loaderPercent) loaderPercent.innerText = Math.floor(percent) + '%';
+    };
+    
+    try {
+        updateProgress(10);
+        if (!window.Telegram?.WebApp) throw new Error('Open from Telegram');
+        this.tg = window.Telegram.WebApp;
+        this.tgUser = this.tg.initDataUnsafe.user;
+        if (!this.tgUser) throw new Error('No user data');
+        this.tg.ready();
+        this.tg.expand();
         
-        const updateProgress = (percent) => {
-            if (progressBar) progressBar.style.width = percent + '%';
-            if (loaderPercent) loaderPercent.innerText = Math.floor(percent) + '%';
-        };
+        updateProgress(30);
+        await this.initFirebase();
         
+        updateProgress(50);
+        await this.checkDevice();
+        await this.updateFirebaseUid();
+        
+        updateProgress(70);
         try {
-            updateProgress(10);
-            if (!window.Telegram?.WebApp) throw new Error('Open from Telegram');
-            this.tg = window.Telegram.WebApp;
-            this.tgUser = this.tg.initDataUnsafe.user;
-            if (!this.tgUser) throw new Error('No user data');
-            this.tg.ready();
-            this.tg.expand();
-            
-            updateProgress(30);
-            await this.initFirebase();
-            
-            updateProgress(50);
-            await this.checkDevice();
-            await this.updateFirebaseUid();
-            
-            updateProgress(70);
-            
-            try {
-                await this.loadUserData();
-            }
-            
-            updateProgress(85);
-            await this.loadCompletedTasks();
-            await this.loadWithdrawals();
-            await this.loadReferralStats();
-            await this.loadPromoCodes();
-            await this.loadTasks();
-            
-            const savedAdTime = localStorage.getItem('last_reward_ad_time');
-            if (savedAdTime) this.lastRewardAdTime = parseInt(savedAdTime);
-            
-            updateProgress(95);
-            if (this.miningActive && this.miningEndTime) {
-                const serverTime = await this.getServerTime();
-                if (serverTime >= this.miningEndTime) {
-                    const elapsedSeconds = (serverTime - this.miningStartTime) / 1000;
-                    const elapsedHours = elapsedSeconds / 3600;
-                    this.pendingTonReward = this.calculateRewardForHours(Math.min(elapsedHours, this.miningSessionHours));
-                    this.miningActive = false;
-                    this.miningStartTime = null;
-                    this.miningEndTime = null;
-                    await this.saveUserData();
-                    this.renderMining();
-                } else {
-                    this.startMiningLoop();
-                }
-            } else if (this.pendingTonReward > 0 && !this.miningActive) {
-                this.renderMining();
-            }
-            
-            const userSnapshot = await this.db.ref(`users/${this.tgUser.id}`).once('value');
-            const hasClaimedWelcomeFromDB = userSnapshot.val()?.hasClaimedWelcome;
-            
-            if (!hasClaimedWelcomeFromDB) {
-                this.powerBalance = (this.powerBalance || 0) + APP_CONFIG.WELCOME_BONUS_POWER;
-                this.hasClaimedWelcome = true;
-                this.isVerified = true;
-                await this.updateLevelFromPower();
+            await this.loadUserData();
+        } catch (permError) {
+            console.warn('Permission error, retrying with fresh user data...', permError);
+            await this.forceCreateUserData();
+        }
+        
+        updateProgress(85);
+        await this.loadCompletedTasks();
+        await this.loadWithdrawals();
+        await this.loadReferralStats();
+        await this.loadPromoCodes();
+        await this.loadTasks();
+        
+        const savedAdTime = localStorage.getItem('last_reward_ad_time');
+        if (savedAdTime) this.lastRewardAdTime = parseInt(savedAdTime);
+        
+        updateProgress(95);
+        if (this.miningActive && this.miningEndTime) {
+            const serverTime = await this.getServerTime();
+            if (serverTime >= this.miningEndTime) {
+                const elapsedSeconds = (serverTime - this.miningStartTime) / 1000;
+                const elapsedHours = elapsedSeconds / 3600;
+                this.pendingTonReward = this.calculateRewardForHours(Math.min(elapsedHours, this.miningSessionHours));
+                this.miningActive = false;
+                this.miningStartTime = null;
+                this.miningEndTime = null;
                 await this.saveUserData();
-                if (this.db) {
-                    await this.db.ref(`users/${this.tgUser.id}`).update({ 
-                        hasClaimedWelcome: true, 
-                        isVerified: true,
-                        powerBalance: this.powerBalance 
-                    });
-                }
-                this.showNotification('Welcome!', `${APP_CONFIG.WELCOME_BONUS_POWER} Power Added`, 'success');
+                this.renderMining();
             } else {
-                this.hasClaimedWelcome = true;
-                this.isVerified = userSnapshot.val()?.isVerified || true;
+                this.startMiningLoop();
             }
-            
-            const userSnap = await this.db.ref(`users/${this.tgUser.id}`).once('value');
-            const referralBonusGiven = userSnap.val()?.referralBonusGiven;
-            if (referralBonusGiven) this.referralBonusGiven = true;
-            
-            await this.loadReferralStats();
-            
-            this.setupEventListeners();
-            this.renderUI();
-            this.setupNavigation();
-            this.startCooldownTimer();
-            
-            updateProgress(100);
-            
-            setTimeout(() => {
-                const loader = document.getElementById('app-loader');
-                if (loader) {
-                    loader.style.opacity = '0';
-                    setTimeout(() => {
-                        loader.style.display = 'none';
-                        document.getElementById('app').style.display = 'block';
-                        this.updateAdCooldownDisplay();
-                    }, 500);
-                } else {
+        } else if (this.pendingTonReward > 0 && !this.miningActive) {
+            this.renderMining();
+        }
+        
+        const userSnapshot = await this.db.ref(`users/${this.tgUser.id}`).once('value');
+        const hasClaimedWelcomeFromDB = userSnapshot.val()?.hasClaimedWelcome;
+        
+        if (!hasClaimedWelcomeFromDB) {
+            this.powerBalance = (this.powerBalance || 0) + APP_CONFIG.WELCOME_BONUS_POWER;
+            this.hasClaimedWelcome = true;
+            this.isVerified = true;
+            await this.updateLevelFromPower();
+            await this.saveUserData();
+            if (this.db) {
+                await this.db.ref(`users/${this.tgUser.id}`).update({ 
+                    hasClaimedWelcome: true, 
+                    isVerified: true,
+                    powerBalance: this.powerBalance 
+                });
+            }
+            this.showNotification('Welcome!', `${APP_CONFIG.WELCOME_BONUS_POWER} Power Added`, 'success');
+        } else {
+            this.hasClaimedWelcome = true;
+            this.isVerified = userSnapshot.val()?.isVerified || true;
+        }
+        
+        const userSnap = await this.db.ref(`users/${this.tgUser.id}`).once('value');
+        const referralBonusGiven = userSnap.val()?.referralBonusGiven;
+        if (referralBonusGiven) this.referralBonusGiven = true;
+        
+        await this.loadReferralStats();
+        
+        this.setupEventListeners();
+        this.renderUI();
+        this.setupNavigation();
+        this.startCooldownTimer();
+        
+        updateProgress(100);
+        
+        setTimeout(() => {
+            const loader = document.getElementById('app-loader');
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
                     document.getElementById('app').style.display = 'block';
                     this.updateAdCooldownDisplay();
-                }
-            }, 500);
-            this.isInitialized = true;
-            
-        } catch(err) {
-            console.error('Initialization error:', err);
-            const errorEl = document.getElementById('loader-error');
-            if (errorEl) {
-                errorEl.textContent = err.message;
-                errorEl.style.display = 'block';
+                }, 500);
+            } else {
+                document.getElementById('app').style.display = 'block';
+                this.updateAdCooldownDisplay();
             }
+        }, 500);
+        this.isInitialized = true;
+        
+    } catch(err) {
+        console.error('Initialization error:', err);
+        const errorEl = document.getElementById('loader-error');
+        if (errorEl) {
+            errorEl.textContent = err.message;
+            errorEl.style.display = 'block';
         }
     }
+}
     
     async forceCreateUserData() {
         const startParam = this.tg.initDataUnsafe?.start_param;
