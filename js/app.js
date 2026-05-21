@@ -189,10 +189,11 @@ async checkDevice() {
         this.deviceId = await this.getDeviceFingerprint();
         localStorage.setItem('device_fingerprint', this.deviceId);
         
-        const deviceRef = await this.db.ref(`devices/${this.deviceId}`).once('value');
+        const deviceRef = this.db.ref(`devices/${this.deviceId}`);
+        const snapshot = await deviceRef.once('value');
         
-        if (deviceRef.exists()) {
-            const registeredUserId = deviceRef.val().ownerId;
+        if (snapshot.exists()) {
+            const registeredUserId = snapshot.val().ownerId;
             
             if (registeredUserId && registeredUserId !== this.tgUser.id) {
                 this.showNotification('Device Locked', 'Multiple accounts not allowed on this device', 'error');
@@ -203,7 +204,7 @@ async checkDevice() {
             await deviceRef.update({ lastSeen: await this.getServerTime() });
             
         } else {
-            await this.db.ref(`devices/${this.deviceId}`).set({
+            await deviceRef.set({
                 ownerId: this.tgUser.id,
                 firstSeen: await this.getServerTime(),
                 lastSeen: await this.getServerTime(),
