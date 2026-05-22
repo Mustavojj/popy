@@ -1159,7 +1159,7 @@ body {
     to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
-    .history-amount {
+.history-amount {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -1178,10 +1178,10 @@ body {
     font-weight: 600;
     padding: 4px 12px;
     border-radius: 20px;
-} 
+}
 
 .page {
     display: none;
     animation: fadeIn 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
     padding-bottom: 80px;
-} 
+}
