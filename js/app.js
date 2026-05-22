@@ -1325,26 +1325,31 @@ class App {
         });
     }
     
-    renderTeam() {
-        const el = document.getElementById('team-page');
-        if (!el) return;
-        const link = APP_CONFIG.BOT_LINK + this.tgUser.id;
-        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Join me on VELTRIX and start mining TON!')}`;
-        el.innerHTML = `
-            <div class="team-benefits"><h3><i class="fas fa-gift"></i> ${this.t('team_benefits')}</h3><div class="benefits-list"><div class="benefit-item"><i class="fas fa-coins"></i><div class="benefit-text">Earn ${APP_CONFIG.REFERRAL_PERCENTAGE}% of your team members Power earnings</div></div><div class="benefit-item"><i class="fas fa-bolt"></i><div class="benefit-text">Get ${this.formatNumber(APP_CONFIG.REFERRAL_POWER_BONUS)} Power per verified member</div></div></div></div>
-            <div class="referral-card"><h4><i class="fas fa-share-alt"></i> ${this.t('share_earn')}</h4><div class="link-display">${link}</div><div class="referral-buttons"><button id="copyLink"><i class="fas fa-copy"></i> ${this.t('copy')}</button><button id="shareLink"><i class="fab fa-telegram"></i> ${this.t('share')}</button></div></div>
-            <div class="stats-grid"><div class="stat-mini"><span class="stat-label">${this.t('total_members')}</span><span class="stat-number">${this.totalReferrals}</span></div><div class="stat-mini"><span class="stat-label">${this.t('verified_members')}</span><span class="stat-number">${this.verifiedReferrals}</span></div><div class="stat-mini"><span class="stat-label">${this.t('power_earnings')}</span><span class="stat-number">${this.formatNumber(Math.floor(this.referralPower))}</span></div></div>
-        `;
-        document.getElementById('copyLink')?.addEventListener('click', () => {
-            navigator.clipboard.writeText(link);
-            this.showNotification(this.t('copy_success'), this.t('link_copied'), 'success');
-        });
-        document.getElementById('shareLink')?.addEventListener('click', () => {
-            window.open(shareUrl, '_blank');
-        });
-    }
+
+renderTeam() {
+    const el = document.getElementById('team-page');
+    if (!el) return;
+    const link = APP_CONFIG.BOT_LINK + this.tgUser.id;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Join me on VELTRIX and start mining TON!')}`;
     
-    renderWithdraw() {
+    const activePercent = 0.08 + (Math.random() * 0.07);
+    const activeNow = Math.floor(this.totalReferrals * activePercent);
+    
+    el.innerHTML = `
+        <div class="team-benefits"><h3><i class="fas fa-gift"></i> ${this.t('team_benefits')}</h3><div class="benefits-list"><div class="benefit-item"><i class="fas fa-coins"></i><div class="benefit-text">Earn ${APP_CONFIG.REFERRAL_PERCENTAGE}% of your team members Power earnings</div></div><div class="benefit-item"><i class="fas fa-bolt"></i><div class="benefit-text">Get ${this.formatNumber(APP_CONFIG.REFERRAL_POWER_BONUS)} Power per verified member</div></div></div></div>
+        <div class="referral-card"><h4><i class="fas fa-share-alt"></i> ${this.t('share_earn')}</h4><div class="link-display">${link}</div><div class="referral-buttons"><button id="copyLink"><i class="fas fa-copy"></i> ${this.t('copy')}</button><button id="shareLink"><i class="fab fa-telegram"></i> ${this.t('share')}</button></div></div>
+        <div class="stats-grid"><div class="stat-mini"><span class="stat-label">${this.t('total_members')}</span><span class="stat-number">${this.totalReferrals}</span></div><div class="stat-mini"><span class="stat-label">${this.t('verified_members')}</span><span class="stat-number">${this.verifiedReferrals}</span></div><div class="stat-mini"><span class="stat-label">${this.t('power_earnings')}</span><span class="stat-number">${this.formatNumber(Math.floor(this.referralPower))}</span></div><div class="stat-mini"><span class="stat-label">Active Now</span><span class="stat-number">${activeNow}</span></div></div>
+    `;
+    document.getElementById('copyLink')?.addEventListener('click', () => {
+        navigator.clipboard.writeText(link);
+        this.showNotification(this.t('copy_success'), this.t('link_copied'), 'success');
+    });
+    document.getElementById('shareLink')?.addEventListener('click', () => {
+        window.open(shareUrl, '_blank');
+    });
+}
+    
+renderWithdraw() {
         const el = document.getElementById('withdraw-page');
         if (!el) return;
         const historyHtml = this.withdrawals && this.withdrawals.length ? this.withdrawals.map(w => `
