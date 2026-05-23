@@ -1,4 +1,3 @@
-// app.js - ملف كامل بعد التعديلات المطلوبة
 import { APP_CONFIG } from './data.js';
 
 const translations = {
