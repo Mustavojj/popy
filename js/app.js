@@ -445,7 +445,7 @@ class App {
                     this.showNotification('Join Required', 'Please join the channel first', 'warning');
                     if (btnElement) {
                         btnElement.disabled = false;
-                        btnElement.innerHTML = 'Start';
+                        btnElement.innerHTML = 'Claim';
                         btnElement.classList.remove('check');
                         btnElement.classList.add('start');
                     }
@@ -470,12 +470,20 @@ class App {
             await taskRef.set(currentTotal + 1);
             
             if (this.cache.tasks) {
-                const cachedTask = this.cache.tasks.find(t => t.id === taskId);
+                const cachedTask = this.cache.tasks.main?.find(t => t.id === taskId) || this.cache.tasks.partner?.find(t => t.id === taskId);
                 if (cachedTask) {
                     cachedTask.total = currentTotal + 1;
                 }
             }
         }
+        
+        if (btnElement) {
+            btnElement.innerHTML = 'Done';
+            btnElement.disabled = true;
+            btnElement.classList.add('done');
+            btnElement.classList.remove('start', 'check');
+        }
+        
         this.renderMining();
         this.renderEarn();
         this.showNotification('Task Completed!', `${rewardPower} ${this.t('power')}`, 'success');
@@ -654,13 +662,6 @@ class App {
         
         let seed = `${tgId}|${userAgent}|${screen}|${timezone}|${platform}|${language}`;
         
-        let hash = 0;
-        for (let i = 0; i < seed.length; i++) {
-            const char = seed.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-        }
-        
         const cryptoHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(seed));
         const hashArray = Array.from(new Uint8Array(cryptoHash));
         const hexHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
@@ -686,17 +687,12 @@ class App {
                     setTimeout(() => window.Telegram?.WebApp?.close(), 3000);
                     throw new Error('Device already registered with different user');
                 }
-                
-                await deviceRef.update({ lastSeen: await this.getServerTime() });
-                
             } else {
                 const existingUserDevice = await this.db.ref('devices').orderByChild('ownerId').equalTo(this.tgUser.id).once('value');
                 if (existingUserDevice.exists()) {
-                    for (const [devId, devData] of Object.entries(existingUserDevice.val())) {
-                        if (devData.ownerId === this.tgUser.id && devId !== this.deviceId) {
-                            await this.db.ref(`devices/${devId}`).remove();
-                        }
-                    }
+                    this.showNotification('Device Locked', 'This account is already registered on another device', 'error');
+                    setTimeout(() => window.Telegram?.WebApp?.close(), 3000);
+                    throw new Error('User already has a device registered');
                 }
                 
                 await deviceRef.set({
@@ -1338,32 +1334,36 @@ class App {
                     this.showNotification('Busy', 'Complete current task first', 'warning');
                     return;
                 }
-                const id = btn.dataset.id, reward = parseInt(btn.dataset.reward), url = btn.dataset.url, verify = btn.dataset.verify === 'true';
+                const id = btn.dataset.id;
+                const reward = parseInt(btn.dataset.reward);
+                const url = btn.dataset.url;
+                const verify = btn.dataset.verify === 'true';
+                
                 window.open(url, '_blank');
                 this.isTaskRunning = true;
                 this.disableAllTaskButtons();
                 btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
                 btn.disabled = true;
+                
                 let seconds = APP_CONFIG.TASK_VERIFICATION_DELAY;
                 const interval = setInterval(() => {
                     seconds--;
                     if (seconds <= 0) {
                         clearInterval(interval);
-                        if (!verify) {
-                            this.completeTask(id, reward, url, verify, btn);
-                        } else {
-                            btn.innerHTML = 'Claim';
-                            btn.disabled = false;
-                            btn.classList.remove('start');
-                            btn.classList.add('check');
-                            const newBtn = btn.cloneNode(true);
-                            btn.parentNode.replaceChild(newBtn, btn);
-                            newBtn.addEventListener('click', async () => {
-                                newBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
-                                newBtn.disabled = true;
-                                await this.completeTask(id, reward, url, verify, newBtn);
-                            });
-                        }
+                        btn.innerHTML = 'Claim';
+                        btn.disabled = false;
+                        btn.classList.remove('start');
+                        btn.classList.add('check');
+                        
+                        const newBtn = btn.cloneNode(true);
+                        btn.parentNode.replaceChild(newBtn, btn);
+                        
+                        newBtn.addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            newBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
+                            newBtn.disabled = true;
+                            await this.completeTask(id, reward, url, verify, newBtn);
+                        });
                     }
                 }, 1000);
             });
