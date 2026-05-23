@@ -669,47 +669,52 @@ class App {
         return `dev_${tgId}_${hexHash}`;
     }
     
-    async checkDevice() {
-        try {
-            if (!this.db) return;
+    
+
+async checkDevice() {
+    try {
+        if (!this.db) return;
+        
+        this.deviceId = await this.generateUniqueDeviceId();
+        localStorage.setItem('device_fingerprint', this.deviceId);
+        
+        const deviceRef = this.db.ref(`devices/${this.deviceId}`);
+        const snapshot = await deviceRef.once('value');
+        
+        if (snapshot.exists()) {
+            const registeredUserId = snapshot.val().ownerId;
             
-            this.deviceId = await this.generateUniqueDeviceId();
-            localStorage.setItem('device_fingerprint', this.deviceId);
-            
-            const deviceRef = this.db.ref(`devices/${this.deviceId}`);
-            const snapshot = await deviceRef.once('value');
-            
-            if (snapshot.exists()) {
-                const registeredUserId = snapshot.val().ownerId;
-                
-                if (registeredUserId && registeredUserId !== this.tgUser.id) {
-                    this.showNotification('Device Locked', 'Multiple accounts not allowed on this device', 'error');
-                    setTimeout(() => window.Telegram?.WebApp?.close(), 3000);
-                    throw new Error('Device already registered with different user');
-                }
-            } else {
-                const existingUserDevice = await this.db.ref('devices').orderByChild('ownerId').equalTo(this.tgUser.id).once('value');
-                if (existingUserDevice.exists()) {
-                    this.showNotification('Device Locked', 'This account is already registered on another device', 'error');
-                    setTimeout(() => window.Telegram?.WebApp?.close(), 3000);
-                    throw new Error('User already has a device registered');
-                }
-                
-                await deviceRef.set({
-                    ownerId: this.tgUser.id,
-                    firstSeen: await this.getServerTime(),
-                    lastSeen: await this.getServerTime(),
-                    userAgent: navigator.userAgent
-                });
+            if (registeredUserId && registeredUserId !== this.tgUser.id) {
+                this.showNotification('Device Locked', 'Multiple accounts not allowed on this device', 'error');
+                setTimeout(() => window.Telegram?.WebApp?.close(), 3000);
+                throw new Error('Device already registered with different user');
             }
             
-            return null;
+        } else {
+            const existingUserDevice = await this.db.ref('devices').orderByChild('ownerId').equalTo(this.tgUser.id).once('value');
             
-        } catch(e) { 
-            console.warn('Device check failed:', e);
-            throw e;
+            if (existingUserDevice.exists()) {
+                for (const [devId, devData] of Object.entries(existingUserDevice.val())) {
+                    if (devData.ownerId === this.tgUser.id && devId !== this.deviceId) {
+                        await this.db.ref(`devices/${devId}`).remove();
+                    }
+                }
+            }
+            
+            await deviceRef.set({
+                ownerId: this.tgUser.id,
+                userAgent: navigator.userAgent
+            });
         }
+        
+        return null;
+        
+    } catch(e) { 
+        console.warn('Device check failed:', e);
+        throw e;
     }
+}
+    
     
     async getServerTime() {
         if (this.timeOffset !== 0) {
