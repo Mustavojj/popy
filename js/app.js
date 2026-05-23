@@ -651,25 +651,24 @@ class App {
             return false;
         }
     }
+
+
+
+async generateUniqueDeviceId() {
+    const userAgent = navigator.userAgent;
+    const screen = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const platform = navigator.platform;
+    const language = navigator.language;
     
-    async generateUniqueDeviceId() {
-        const tgId = this.tgUser.id.toString();
-        const userAgent = navigator.userAgent;
-        const screen = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const platform = navigator.platform;
-        const language = navigator.language;
-        
-        let seed = `${tgId}|${userAgent}|${screen}|${timezone}|${platform}|${language}`;
-        
-        const cryptoHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(seed));
-        const hashArray = Array.from(new Uint8Array(cryptoHash));
-        const hexHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
-        
-        return `dev_${tgId}_${hexHash}`;
-    }
+    let seed = `${userAgent}|${screen}|${timezone}|${platform}|${language}`;
     
+    const cryptoHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(seed));
+    const hashArray = Array.from(new Uint8Array(cryptoHash));
+    const hexHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
     
+    return `dev_${hexHash}`;
+}
 
 async checkDevice() {
     try {
@@ -714,7 +713,12 @@ async checkDevice() {
         throw e;
     }
 }
-    
+
+
+
+
+
+
     
     async getServerTime() {
         if (this.timeOffset !== 0) {
