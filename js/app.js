@@ -123,6 +123,13 @@ class App {
         this.timeOffset = 0;
         this.firebaseConfigCache = null;
         this.membershipCache = new Map();
+        
+        this.cache = {
+            tasks: null,
+            tasksTime: 0,
+            promoCodes: null,
+            promosTime: 0
+        };
     }
     
     t(key) {
@@ -461,6 +468,13 @@ class App {
             const taskRef = this.db.ref(`tasks/${taskId}/total`);
             const currentTotal = (await taskRef.once('value')).val() || 0;
             await taskRef.set(currentTotal + 1);
+            
+            if (this.cache.tasks) {
+                const cachedTask = this.cache.tasks.find(t => t.id === taskId);
+                if (cachedTask) {
+                    cachedTask.total = currentTotal + 1;
+                }
+            }
         }
         this.renderMining();
         this.renderEarn();
@@ -538,6 +552,13 @@ class App {
         
         const promoRef = this.db.ref(`promoCodes/${code}/total`);
         await promoRef.set(totalUses + 1);
+        
+        if (this.cache.promoCodes) {
+            const cachedPromo = this.cache.promoCodes.find(p => p.code === code);
+            if (cachedPromo) {
+                cachedPromo.total = totalUses + 1;
+            }
+        }
         
         this.renderMining();
         this.renderEarn();
@@ -794,11 +815,13 @@ class App {
             }
             
             updateProgress(85);
-            await this.loadCompletedTasks();
-            await this.loadWithdrawals();
-            await this.loadReferralStats();
-            await this.loadPromoCodes();
-            await this.loadTasks();
+            await Promise.all([
+                this.loadCompletedTasks(),
+                this.loadWithdrawals(),
+                this.loadReferralStats(),
+                this.loadPromoCodes(),
+                this.loadTasks()
+            ]);
             
             const savedAdTime = localStorage.getItem('last_reward_ad_time');
             if (savedAdTime) this.lastRewardAdTime = parseInt(savedAdTime);
@@ -1141,6 +1164,13 @@ class App {
     
     async loadPromoCodes() {
         if (!this.db) return;
+        
+        const now = Date.now();
+        if (this.cache.promoCodes && (now - this.cache.promosTime) < 300000) {
+            this.promoCodes = this.cache.promoCodes;
+            return;
+        }
+        
         try {
             const snap = await this.db.ref('promoCodes').once('value');
             this.promoCodes = [];
@@ -1149,6 +1179,8 @@ class App {
                     this.promoCodes.push({ code: c.key, ...c.val() });
                 });
             }
+            this.cache.promoCodes = this.promoCodes;
+            this.cache.promosTime = now;
         } catch (error) {
             console.warn('Failed to load promo codes:', error);
             this.promoCodes = [];
@@ -1161,6 +1193,14 @@ class App {
             this.partnerTasks = [];
             return;
         }
+        
+        const now = Date.now();
+        if (this.cache.tasks && (now - this.cache.tasksTime) < 300000) {
+            this.mainTasks = this.cache.tasks.main || [];
+            this.partnerTasks = this.cache.tasks.partner || [];
+            return;
+        }
+        
         try {
             const snap = await this.db.ref('tasks').once('value');
             this.mainTasks = [];
@@ -1179,6 +1219,11 @@ class App {
                     else if (task.category === 'partner') this.partnerTasks.push(task);
                 });
             }
+            this.cache.tasks = {
+                main: this.mainTasks,
+                partner: this.partnerTasks
+            };
+            this.cache.tasksTime = now;
         } catch (error) {
             console.warn('Failed to load tasks:', error);
             this.mainTasks = [];
@@ -1325,31 +1370,30 @@ class App {
         });
     }
     
-
-renderTeam() {
-    const el = document.getElementById('team-page');
-    if (!el) return;
-    const link = APP_CONFIG.BOT_LINK + this.tgUser.id;
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Join me on VELTRIX and start mining TON!')}`;
+    renderTeam() {
+        const el = document.getElementById('team-page');
+        if (!el) return;
+        const link = APP_CONFIG.BOT_LINK + this.tgUser.id;
+        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Join me on VELTRIX and start mining TON!')}`;
+        
+        const activePercent = 0.08 + (Math.random() * 0.07);
+        const activeNow = Math.floor(this.totalReferrals * activePercent);
+        
+        el.innerHTML = `
+            <div class="team-benefits"><h3><i class="fas fa-gift"></i> ${this.t('team_benefits')}</h3><div class="benefits-list"><div class="benefit-item"><i class="fas fa-coins"></i><div class="benefit-text">Earn ${APP_CONFIG.REFERRAL_PERCENTAGE}% of your team members Power earnings</div></div><div class="benefit-item"><i class="fas fa-bolt"></i><div class="benefit-text">Get ${this.formatNumber(APP_CONFIG.REFERRAL_POWER_BONUS)} Power per verified member</div></div></div></div>
+            <div class="referral-card"><h4><i class="fas fa-share-alt"></i> ${this.t('share_earn')}</h4><div class="link-display">${link}</div><div class="referral-buttons"><button id="copyLink"><i class="fas fa-copy"></i> ${this.t('copy')}</button><button id="shareLink"><i class="fab fa-telegram"></i> ${this.t('share')}</button></div></div>
+            <div class="stats-grid"><div class="stat-mini"><span class="stat-label">${this.t('total_members')}</span><span class="stat-number">${this.totalReferrals}</span></div><div class="stat-mini"><span class="stat-label">${this.t('verified_members')}</span><span class="stat-number">${this.verifiedReferrals}</span></div><div class="stat-mini"><span class="stat-label">${this.t('power_earnings')}</span><span class="stat-number">${this.formatNumber(Math.floor(this.referralPower))}</span></div><div class="stat-mini"><span class="stat-label">Active Now</span><span class="stat-number">${activeNow}</span></div></div>
+        `;
+        document.getElementById('copyLink')?.addEventListener('click', () => {
+            navigator.clipboard.writeText(link);
+            this.showNotification(this.t('copy_success'), this.t('link_copied'), 'success');
+        });
+        document.getElementById('shareLink')?.addEventListener('click', () => {
+            window.open(shareUrl, '_blank');
+        });
+    }
     
-    const activePercent = 0.08 + (Math.random() * 0.07);
-    const activeNow = Math.floor(this.totalReferrals * activePercent);
-    
-    el.innerHTML = `
-        <div class="team-benefits"><h3><i class="fas fa-gift"></i> ${this.t('team_benefits')}</h3><div class="benefits-list"><div class="benefit-item"><i class="fas fa-coins"></i><div class="benefit-text">Earn ${APP_CONFIG.REFERRAL_PERCENTAGE}% of your team members Power earnings</div></div><div class="benefit-item"><i class="fas fa-bolt"></i><div class="benefit-text">Get ${this.formatNumber(APP_CONFIG.REFERRAL_POWER_BONUS)} Power per verified member</div></div></div></div>
-        <div class="referral-card"><h4><i class="fas fa-share-alt"></i> ${this.t('share_earn')}</h4><div class="link-display">${link}</div><div class="referral-buttons"><button id="copyLink"><i class="fas fa-copy"></i> ${this.t('copy')}</button><button id="shareLink"><i class="fab fa-telegram"></i> ${this.t('share')}</button></div></div>
-        <div class="stats-grid"><div class="stat-mini"><span class="stat-label">${this.t('total_members')}</span><span class="stat-number">${this.totalReferrals}</span></div><div class="stat-mini"><span class="stat-label">${this.t('verified_members')}</span><span class="stat-number">${this.verifiedReferrals}</span></div><div class="stat-mini"><span class="stat-label">${this.t('power_earnings')}</span><span class="stat-number">${this.formatNumber(Math.floor(this.referralPower))}</span></div><div class="stat-mini"><span class="stat-label">Active Now</span><span class="stat-number">${activeNow}</span></div></div>
-    `;
-    document.getElementById('copyLink')?.addEventListener('click', () => {
-        navigator.clipboard.writeText(link);
-        this.showNotification(this.t('copy_success'), this.t('link_copied'), 'success');
-    });
-    document.getElementById('shareLink')?.addEventListener('click', () => {
-        window.open(shareUrl, '_blank');
-    });
-}
-    
-renderWithdraw() {
+    renderWithdraw() {
         const el = document.getElementById('withdraw-page');
         if (!el) return;
         const historyHtml = this.withdrawals && this.withdrawals.length ? this.withdrawals.map(w => `
