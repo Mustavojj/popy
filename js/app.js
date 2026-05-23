@@ -1,3 +1,4 @@
+// app.js - ملف كامل بعد التعديلات المطلوبة
 import { APP_CONFIG } from './data.js';
 
 const translations = {
@@ -18,7 +19,7 @@ const translations = {
         partner_text3: "Свяжитесь с поддержкой для деталей", contact_support: "Связаться с поддержкой", mining: "Майнинг", earn: "Заработок",
         team: "Команда", copy_success: "Скопировано!", link_copied: "Ссылка скопирована", earn_more: "Заработай больше энергии",
         complete_tasks: "Выполнить задания", go: "ПЕРЕЙТИ", invite_frens: "Пригласить друзей", ad_reward: "Смотреть рекламу", loading: "Загрузка",
-        ready: "Готово", mining_active: "МАЙНИНГ АКТИВЕН"
+        ready: "Готово", mining_active: "МАЙНИНГ АКТИВЕН", team_earnings: "Заработок команды"
     },
     en: {
         level: "Level", mining_rig: "Mining Rig Lv.", hourly: "8 Hours", daily: "Daily", monthly: "Monthly",
@@ -37,7 +38,7 @@ const translations = {
         partner_text3: "Contact support for details", contact_support: "Contact Support", mining: "Mining", earn: "Earn",
         team: "Team", copy_success: "Copied!", link_copied: "Link copied to clipboard", earn_more: "Earn More Power",
         complete_tasks: "Complete Tasks", go: "GO", invite_frens: "Invite Frens", ad_reward: "Watch AD", loading: "Loading",
-        ready: "Ready", mining_active: "MINING ACTIVE"
+        ready: "Ready", mining_active: "MINING ACTIVE", team_earnings: "Team Earnings"
     },
     tr: {
         level: "Seviye", mining_rig: "Madenci Seviye", hourly: "8 saat", daily: "Günlük", monthly: "Aylık",
@@ -56,7 +57,7 @@ const translations = {
         partner_text3: "Detaylar için desteğe başvurun", contact_support: "Desteğe Başvur", mining: "Madencilik", earn: "Kazan",
         team: "Takım", copy_success: "Kopyalandı!", link_copied: "Bağlantı panoya kopyalandı", earn_more: "Daha Fazla Güç Kazan",
         complete_tasks: "Görevleri Tamamla", go: "GİT", invite_frens: "Arkadaşları Davet Et", ad_reward: "Reklam İzle", loading: "Yükleniyor",
-        ready: "Hazır", mining_active: "MADENCİLİK AKTİF"
+        ready: "Hazır", mining_active: "MADENCİLİK AKTİF", team_earnings: "Takım Kazancı"
     },
     ar: {
         level: "مستوى", mining_rig: "جهاز التعدين مستوى", hourly: "كل 8 ساعات", daily: "يومي", monthly: "شهري",
@@ -75,7 +76,7 @@ const translations = {
         partner_text3: "اتصل بالدعم للتفاصيل", contact_support: "اتصل بالدعم", mining: "التعدين", earn: "الأرباح",
         team: "الفريق", copy_success: "تم النسخ!", link_copied: "تم نسخ الرابط", earn_more: "احصل على طاقة أكثر",
         complete_tasks: "إكمال المهام", go: "اذهب", invite_frens: "دعوة الأصدقاء", ad_reward: "مشاهدة إعلان", loading: "جاري التحميل",
-        ready: "جاهز", mining_active: "التعدين نشط"
+        ready: "جاهز", mining_active: "التعدين نشط", team_earnings: "أرباح الفريق"
     }
 };
 
@@ -121,8 +122,14 @@ class App {
         this.loadSettings();
         this.referralBonusGiven = false;
         this.timeOffset = 0;
+        this.lastServerTimeSync = 0;
+        this.serverTimeOffset = 0;
         this.firebaseConfigCache = null;
         this.membershipCache = new Map();
+        
+        this._dirtyPower = false;
+        this._dirtyTon = false;
+        this._dirtyMining = false;
         
         this.cache = {
             tasks: null,
@@ -233,16 +240,55 @@ class App {
         }
     }
     
+    async addReferralEarnings(userId, earnedAmount, isPowerEarning = true) {
+        const userSnap = await this.db.ref(`users/${userId}`).once('value');
+        const referredBy = userSnap.val()?.referredBy;
+        
+        if (referredBy && referredBy !== userId) {
+            const commission = Math.floor(earnedAmount * (APP_CONFIG.REFERRAL_PERCENTAGE / 100));
+            
+            if (commission > 0) {
+                const referrerRef = this.db.ref(`users/${referredBy}`);
+                const referrerSnap = await referrerRef.once('value');
+                
+                if (referrerSnap.exists()) {
+                    if (isPowerEarning) {
+                        const currentPower = referrerSnap.val().powerBalance ?? 0;
+                        const currentReferralPower = referrerSnap.val().referralPower ?? 0;
+                        await referrerRef.update({ 
+                            powerBalance: currentPower + commission,
+                            referralPower: currentReferralPower + commission
+                        });
+                    } else {
+                        const currentTon = referrerSnap.val().tonBalance ?? 0;
+                        await referrerRef.update({ 
+                            tonBalance: currentTon + commission
+                        });
+                    }
+                    
+                    if (window.app && window.app.tgUser && window.app.tgUser.id === referredBy) {
+                        if (isPowerEarning && window.app.powerBalance) window.app.powerBalance += commission;
+                        if (!isPowerEarning && window.app.tonBalance) window.app.tonBalance += commission;
+                        if (isPowerEarning) window.app._dirtyPower = true;
+                        else window.app._dirtyTon = true;
+                        window.app.renderMining();
+                    }
+                }
+            }
+        }
+    }
+    
     async startMining() {
         const adWatched = await this.showInterstitialAd();
         if (!adWatched) return;
         
-        const serverTime = await this.getServerTime();
+        const serverTime = await this.getServerTime(true);
         
         this.miningActive = true;
         this.miningStartTime = serverTime;
         this.miningEndTime = serverTime + (this.miningSessionHours * 3600000);
         this.pendingTonReward = 0;
+        this._dirtyMining = true;
         
         if (!this.hasStartedMining && this.db && this.tgUser) {
             this.hasStartedMining = true;
@@ -259,15 +305,15 @@ class App {
     async stopMining() {
         if (!this.miningActive) return;
         
-        const currentServerTime = await this.getServerTime();
+        const currentServerTime = await this.getServerTime(true);
         const elapsedSeconds = (currentServerTime - this.miningStartTime) / 1000;
-        const elapsedHours = elapsedSeconds / 3600;
-        const actualHours = Math.min(elapsedHours, this.miningSessionHours);
+        const elapsedHours = Math.min(elapsedSeconds / 3600, this.miningSessionHours);
         
-        this.pendingTonReward = this.calculateRewardForHours(actualHours);
+        this.pendingTonReward = this.calculateRewardForHours(elapsedHours);
         this.miningActive = false;
         this.miningStartTime = null;
         this.miningEndTime = null;
+        this._dirtyMining = true;
         
         await this.saveUserData();
         this.renderMining();
@@ -298,11 +344,16 @@ class App {
             modal.style.display = 'none';
             cleanup();
             
-            this.tonBalance += this.pendingTonReward;
             const earnedAmount = this.pendingTonReward;
+            this.tonBalance += earnedAmount;
+            this._dirtyTon = true;
             this.pendingTonReward = 0;
+            this._dirtyMining = true;
             
-            await this.saveUserData();
+            await this.saveUserData(true);
+            
+            await this.addReferralEarnings(this.tgUser.id, earnedAmount, false);
+            
             this.updateLevelFromPower();
             this.renderMining();
             this.showNotification('Rewards Claimed!', `${earnedAmount.toFixed(8)} TON added to balance`, 'success');
@@ -328,27 +379,27 @@ class App {
         
         this.miningInterval = setInterval(async () => {
             if (!this.miningActive) return;
-            const serverTime = await this.getServerTime();
-            if (this.miningEndTime && serverTime >= this.miningEndTime) {
+            const currentTime = Date.now() + this.serverTimeOffset;
+            if (this.miningEndTime && currentTime >= this.miningEndTime) {
                 await this.stopMining();
             }
-        }, 10000);
+        }, 60000);
         
-        this.uiUpdateInterval = setInterval(async () => {
+        this.uiUpdateInterval = setInterval(() => {
             if (this.miningActive) {
-                await this.updateMiningTimerDisplay();
+                this.updateMiningTimerDisplay();
             }
         }, 1000);
     }
     
-    async updateMiningTimerDisplay() {
+    updateMiningTimerDisplay() {
         if (!this.miningEndTime) return;
         
-        const currentServerTime = await this.getServerTime();
-        const remaining = Math.max(0, (this.miningEndTime - currentServerTime) / 1000);
+        const currentTime = Date.now() + this.serverTimeOffset;
+        const remaining = Math.max(0, (this.miningEndTime - currentTime) / 1000);
         
         if (remaining <= 0 && this.miningActive) {
-            await this.stopMining();
+            this.stopMining();
             this.renderMining();
             return;
         }
@@ -407,8 +458,10 @@ class App {
             this.lastRewardAdTime = now;
             localStorage.setItem('last_reward_ad_time', now.toString());
             this.powerBalance += 10;
+            this._dirtyPower = true;
             await this.updateLevelFromPower();
             await this.saveUserData();
+            await this.addReferralEarnings(this.tgUser.id, 10, true);
             this.renderMining();
             this.renderEarn();
             this.updateAdCooldownDisplay();
@@ -416,50 +469,61 @@ class App {
         }
     }
     
-    async addReferralPowerEarnings(userId, powerAmount) {
-        const userSnap = await this.db.ref(`users/${userId}`).once('value');
-        const referredBy = userSnap.val()?.referredBy;
-        if (referredBy && referredBy !== userId && referredBy !== this.tgUser.id) {
-            const commission = Math.floor(powerAmount * (APP_CONFIG.REFERRAL_PERCENTAGE / 100));
-            const referrerRef = this.db.ref(`users/${referredBy}`);
-            const referrerSnap = await referrerRef.once('value');
-            if (referrerSnap.exists()) {
-                const currentPower = referrerSnap.val().powerBalance ?? 0;
-                const currentReferralPower = referrerSnap.val().referralPower ?? 0;
-                await referrerRef.update({ 
-                    powerBalance: currentPower + commission,
-                    referralPower: currentReferralPower + commission
-                });
-            }
-        }
-    }
-    
     async completeTask(taskId, rewardPower, url, verification, btnElement) {
         if (this.userCompletedTasks.has(taskId)) return false;
+        
+        let verificationSucceeded = false;
+        let useDirectClaim = false;
         
         if (verification) {
             const chatId = this.extractChatId(url);
             if (chatId) {
-                const isMember = await this.checkMembership(chatId);
-                if (!isMember) {
-                    this.showNotification('Join Required', 'Please join the channel first', 'warning');
-                    if (btnElement) {
-                        btnElement.disabled = false;
-                        btnElement.innerHTML = 'Claim';
-                        btnElement.classList.remove('check');
-                        btnElement.classList.add('start');
+                const isBotAdmin = await this.checkBotAdmin(chatId);
+                
+                if (!isBotAdmin) {
+                    useDirectClaim = true;
+                    verificationSucceeded = true;
+                } else {
+                    const isMember = await this.checkMembership(chatId);
+                    if (isMember) {
+                        verificationSucceeded = true;
+                    } else {
+                        this.showNotification('Join Required', 'Please join the channel first', 'warning');
+                        if (btnElement) {
+                            btnElement.disabled = false;
+                            btnElement.innerHTML = 'Start';
+                            btnElement.classList.remove('check');
+                            btnElement.classList.add('start');
+                        }
+                        this.isTaskRunning = false;
+                        this.enableAllTaskButtons();
+                        return false;
                     }
-                    this.isTaskRunning = false;
-                    this.enableAllTaskButtons();
-                    return false;
                 }
+            } else {
+                verificationSucceeded = true;
             }
+        } else {
+            verificationSucceeded = true;
+        }
+        
+        if (!verificationSucceeded) {
+            if (btnElement) {
+                btnElement.disabled = false;
+                btnElement.innerHTML = 'Start';
+                btnElement.classList.remove('check');
+                btnElement.classList.add('start');
+            }
+            this.isTaskRunning = false;
+            this.enableAllTaskButtons();
+            return false;
         }
         
         this.userCompletedTasks.add(taskId);
         this.powerBalance += rewardPower;
+        this._dirtyPower = true;
         
-        await this.addReferralPowerEarnings(this.tgUser.id, rewardPower);
+        await this.addReferralEarnings(this.tgUser.id, rewardPower, true);
         
         await this.updateLevelFromPower();
         await this.saveUserData();
@@ -491,6 +555,30 @@ class App {
         this.isTaskRunning = false;
         this.enableAllTaskButtons();
         return true;
+    }
+    
+    async checkBotAdmin(channel) {
+        const cacheKey = `bot_admin_${channel}`;
+        const cached = this.membershipCache.get(cacheKey);
+        const now = Date.now();
+        
+        if (cached && (now - cached.timestamp) < 3600000) {
+            return cached.isAdmin;
+        }
+        
+        try {
+            const res = await fetch('/api/bot-actions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'check_bot_admin', channel: `@${channel}` })
+            });
+            const data = await res.json();
+            const isAdmin = data.isAdmin === true;
+            this.membershipCache.set(cacheKey, { isAdmin, timestamp: now });
+            return isAdmin;
+        } catch(e) {
+            return false;
+        }
     }
     
     disableAllTaskButtons() {
@@ -546,12 +634,16 @@ class App {
         
         if (promoData.rewardType === 'power') {
             this.powerBalance += promoData.reward;
+            this._dirtyPower = true;
             await this.updateLevelFromPower();
             await this.saveUserData();
+            await this.addReferralEarnings(this.tgUser.id, promoData.reward, true);
             this.showNotification('Code Applied!', `You received ${this.formatNumber(promoData.reward)} Power`, 'success');
         } else if (promoData.rewardType === 'ton') {
             this.tonBalance += promoData.reward;
+            this._dirtyTon = true;
             await this.saveUserData();
+            await this.addReferralEarnings(this.tgUser.id, promoData.reward, false);
             this.showNotification('Code Applied!', `You received ${promoData.reward} TON`, 'success');
         } else {
             this.showNotification('Error', 'Invalid reward type', 'error');
@@ -587,6 +679,7 @@ class App {
         if (!adWatched) return false;
         
         this.tonBalance -= amount;
+        this._dirtyTon = true;
         await this.saveUserData();
         
         const withdrawal = {
@@ -605,6 +698,7 @@ class App {
             } catch (error) {
                 console.error('Withdrawal save failed:', error);
                 this.tonBalance += amount;
+                this._dirtyTon = true;
                 await this.saveUserData();
                 this.showNotification('Error', 'Failed to submit withdrawal', 'error');
                 return false;
@@ -640,8 +734,7 @@ class App {
             const data = await res.json();
             
             if (data.error === 'bot_not_admin') {
-                this.showNotification('Bot Error', 'Bot is not admin in this channel', 'error');
-                return false;
+                return true;
             }
             
             const isMember = data.isMember === true;
@@ -651,86 +744,82 @@ class App {
             return false;
         }
     }
-
-
-
-async generateUniqueDeviceId() {
-    const userAgent = navigator.userAgent;
-    const screen = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const platform = navigator.platform;
-    const language = navigator.language;
     
-    let seed = `${userAgent}|${screen}|${timezone}|${platform}|${language}`;
-    
-    const cryptoHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(seed));
-    const hashArray = Array.from(new Uint8Array(cryptoHash));
-    const hexHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
-    
-    return `dev_${hexHash}`;
-}
-
-async checkDevice() {
-    try {
-        if (!this.db) return;
+    async getServerTime(forceSync = false) {
+        const now = Date.now();
         
-        this.deviceId = await this.generateUniqueDeviceId();
-        localStorage.setItem('device_fingerprint', this.deviceId);
-        
-        const deviceRef = this.db.ref(`devices/${this.deviceId}`);
-        const snapshot = await deviceRef.once('value');
-        
-        if (snapshot.exists()) {
-            const registeredUserId = snapshot.val().ownerId;
-            
-            if (registeredUserId && registeredUserId !== this.tgUser.id) {
-                this.showNotification('Device Locked', 'Multiple accounts not allowed on this device', 'error');
-                setTimeout(() => window.Telegram?.WebApp?.close(), 3000);
-                throw new Error('Device already registered with different user');
-            }
-            
-        } else {
-            const existingUserDevice = await this.db.ref('devices').orderByChild('ownerId').equalTo(this.tgUser.id).once('value');
-            
-            if (existingUserDevice.exists()) {
-                for (const [devId, devData] of Object.entries(existingUserDevice.val())) {
-                    if (devData.ownerId === this.tgUser.id && devId !== this.deviceId) {
-                        await this.db.ref(`devices/${devId}`).remove();
-                    }
-                }
-            }
-            
-            await deviceRef.set({
-                ownerId: this.tgUser.id,
-                userAgent: navigator.userAgent
-            });
+        if (!forceSync && this.lastServerTimeSync && (now - this.lastServerTimeSync) < 300000) {
+            return now + this.serverTimeOffset;
         }
         
-        return null;
-        
-    } catch(e) { 
-        console.warn('Device check failed:', e);
-        throw e;
-    }
-}
-
-
-
-
-
-
-    
-    async getServerTime() {
-        if (this.timeOffset !== 0) {
-            return Date.now() + this.timeOffset;
-        }
         try {
             const res = await fetch('/api/time');
             const data = await res.json();
-            this.timeOffset = data.serverTime - Date.now();
+            this.serverTimeOffset = data.serverTime - now;
+            this.lastServerTimeSync = now;
             return data.serverTime;
         } catch(e) {
-            return Date.now();
+            return now + this.serverTimeOffset;
+        }
+    }
+    
+    async generateUniqueDeviceId() {
+        const userAgent = navigator.userAgent;
+        const screen = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const platform = navigator.platform;
+        const language = navigator.language;
+        
+        let seed = `${userAgent}|${screen}|${timezone}|${platform}|${language}`;
+        
+        const cryptoHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(seed));
+        const hashArray = Array.from(new Uint8Array(cryptoHash));
+        const hexHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
+        
+        return `dev_${hexHash}`;
+    }
+    
+    async checkDevice() {
+        try {
+            if (!this.db) return;
+            
+            this.deviceId = await this.generateUniqueDeviceId();
+            localStorage.setItem('device_fingerprint', this.deviceId);
+            
+            const deviceRef = this.db.ref(`devices/${this.deviceId}`);
+            const snapshot = await deviceRef.once('value');
+            
+            if (snapshot.exists()) {
+                const registeredUserId = snapshot.val().ownerId;
+                
+                if (registeredUserId && registeredUserId !== this.tgUser.id) {
+                    this.showNotification('Device Locked', 'Multiple accounts not allowed on this device', 'error');
+                    setTimeout(() => window.Telegram?.WebApp?.close(), 3000);
+                    throw new Error('Device already registered with different user');
+                }
+                
+            } else {
+                const existingUserDevice = await this.db.ref('devices').orderByChild('ownerId').equalTo(this.tgUser.id).once('value');
+                
+                if (existingUserDevice.exists()) {
+                    for (const [devId, devData] of Object.entries(existingUserDevice.val())) {
+                        if (devData.ownerId === this.tgUser.id && devId !== this.deviceId) {
+                            await this.db.ref(`devices/${devId}`).remove();
+                        }
+                    }
+                }
+                
+                await deviceRef.set({
+                    ownerId: this.tgUser.id,
+                    userAgent: navigator.userAgent
+                });
+            }
+            
+            return null;
+            
+        } catch(e) { 
+            console.warn('Device check failed:', e);
+            throw e;
         }
     }
     
@@ -786,128 +875,38 @@ async checkDevice() {
         }
     }
     
-    async initialize() {
-        const progressBar = document.getElementById('loader-progress-bar');
-        const loaderPercent = document.getElementById('loader-percent');
+    async saveUserData(immediate = false) {
+        if (!this.db || !this.tgUser) return;
+        if (this.saveTimeout) clearTimeout(this.saveTimeout);
         
-        const updateProgress = (percent) => {
-            if (progressBar) progressBar.style.width = percent + '%';
-            if (loaderPercent) loaderPercent.innerText = Math.floor(percent) + '%';
+        const save = async () => {
+            try {
+                const updates = {};
+                if (this._dirtyPower) updates.powerBalance = this.powerBalance;
+                if (this._dirtyTon) updates.tonBalance = this.tonBalance;
+                if (this._dirtyMining) {
+                    updates.miningActive = this.miningActive;
+                    updates.miningStartTime = this.miningStartTime;
+                    updates.miningEndTime = this.miningEndTime;
+                    updates.pendingTonReward = this.pendingTonReward;
+                }
+                
+                if (Object.keys(updates).length === 0) return;
+                
+                await this.db.ref(`users/${this.tgUser.id}`).update(updates);
+                
+                this._dirtyPower = false;
+                this._dirtyTon = false;
+                this._dirtyMining = false;
+            } catch (error) {
+                console.warn('Failed to save user data:', error);
+            }
         };
         
-        try {
-            updateProgress(10);
-            if (!window.Telegram?.WebApp) throw new Error('Open from Telegram');
-            this.tg = window.Telegram.WebApp;
-            this.tgUser = this.tg.initDataUnsafe.user;
-            if (!this.tgUser) throw new Error('No user data');
-            this.tg.ready();
-            this.tg.expand();
-            
-            updateProgress(30);
-            await this.initFirebase();
-            
-            updateProgress(50);
-            await this.checkDevice();
-            await this.updateFirebaseUid();
-            
-            updateProgress(70);
-            try {
-                await this.loadUserData();
-            } catch (permError) {
-                console.warn('Permission error, retrying with fresh user data...', permError);
-                await this.forceCreateUserData();
-            }
-            
-            updateProgress(85);
-            await Promise.all([
-                this.loadCompletedTasks(),
-                this.loadWithdrawals(),
-                this.loadReferralStats(),
-                this.loadPromoCodes(),
-                this.loadTasks()
-            ]);
-            
-            const savedAdTime = localStorage.getItem('last_reward_ad_time');
-            if (savedAdTime) this.lastRewardAdTime = parseInt(savedAdTime);
-            
-            updateProgress(95);
-            if (this.miningActive && this.miningEndTime) {
-                const serverTime = await this.getServerTime();
-                if (serverTime >= this.miningEndTime) {
-                    const elapsedSeconds = (serverTime - this.miningStartTime) / 1000;
-                    const elapsedHours = elapsedSeconds / 3600;
-                    this.pendingTonReward = this.calculateRewardForHours(Math.min(elapsedHours, this.miningSessionHours));
-                    this.miningActive = false;
-                    this.miningStartTime = null;
-                    this.miningEndTime = null;
-                    await this.saveUserData();
-                    this.renderMining();
-                } else {
-                    this.startMiningLoop();
-                }
-            } else if (this.pendingTonReward > 0 && !this.miningActive) {
-                this.renderMining();
-            }
-            
-            const userSnapshot = await this.db.ref(`users/${this.tgUser.id}`).once('value');
-            const hasClaimedWelcomeFromDB = userSnapshot.val()?.hasClaimedWelcome;
-            
-            if (!hasClaimedWelcomeFromDB) {
-                this.powerBalance = (this.powerBalance || 0) + APP_CONFIG.WELCOME_BONUS_POWER;
-                this.hasClaimedWelcome = true;
-                this.isVerified = true;
-                await this.updateLevelFromPower();
-                await this.saveUserData();
-                if (this.db) {
-                    await this.db.ref(`users/${this.tgUser.id}`).update({ 
-                        hasClaimedWelcome: true, 
-                        isVerified: true,
-                        powerBalance: this.powerBalance 
-                    });
-                }
-                this.showNotification('Welcome!', `${APP_CONFIG.WELCOME_BONUS_POWER} Power Added`, 'success');
-            } else {
-                this.hasClaimedWelcome = true;
-                this.isVerified = userSnapshot.val()?.isVerified || true;
-            }
-            
-            const userSnap = await this.db.ref(`users/${this.tgUser.id}`).once('value');
-            const referralBonusGiven = userSnap.val()?.referralBonusGiven;
-            if (referralBonusGiven) this.referralBonusGiven = true;
-            
-            await this.loadReferralStats();
-            
-            this.setupEventListeners();
-            this.renderUI();
-            this.setupNavigation();
-            this.startCooldownTimer();
-            
-            updateProgress(100);
-            
-            setTimeout(() => {
-                const loader = document.getElementById('app-loader');
-                if (loader) {
-                    loader.style.opacity = '0';
-                    setTimeout(() => {
-                        loader.style.display = 'none';
-                        document.getElementById('app').style.display = 'block';
-                        this.updateAdCooldownDisplay();
-                    }, 500);
-                } else {
-                    document.getElementById('app').style.display = 'block';
-                    this.updateAdCooldownDisplay();
-                }
-            }, 500);
-            this.isInitialized = true;
-            
-        } catch(err) {
-            console.error('Initialization error:', err);
-            const errorEl = document.getElementById('loader-error');
-            if (errorEl) {
-                errorEl.textContent = err.message;
-                errorEl.style.display = 'block';
-            }
+        if (immediate) {
+            await save();
+        } else {
+            this.saveTimeout = setTimeout(save, 10000);
         }
     }
     
@@ -1051,9 +1050,10 @@ async checkDevice() {
                 
                 if (this.powerBalance < 900 && !d.hasClaimedWelcome) {
                     this.powerBalance += 1000;
+                    this._dirtyPower = true;
                     this.hasClaimedWelcome = true;
                     this.isVerified = true;
-                    await this.saveUserData();
+                    await this.saveUserData(true);
                     this.showNotification('Welcome Bonus', '1000 Power added to your balance', 'success');
                 } else {
                     this.hasClaimedWelcome = d.hasClaimedWelcome ?? false;
@@ -1085,32 +1085,6 @@ async checkDevice() {
         if (levelBadge) levelBadge.innerText = this.userLevel;
         const photoImg = document.getElementById('user-photo');
         if (photoImg) photoImg.src = this.tgUser.photo_url || APP_CONFIG.DEFAULT_USER_AVATAR;
-    }
-    
-    async saveUserData() {
-        if (!this.db || !this.tgUser) return;
-        if (this.saveTimeout) clearTimeout(this.saveTimeout);
-        
-        this.saveTimeout = setTimeout(async () => {
-            try {
-                const updates = {};
-                if (this.powerBalance !== undefined) updates.powerBalance = this.powerBalance;
-                if (this.tonBalance !== undefined) updates.tonBalance = this.tonBalance;
-                if (this.userLevel !== undefined) updates.level = this.userLevel;
-                if (this.isVerified !== undefined) updates.isVerified = this.isVerified;
-                if (this.hasClaimedWelcome !== undefined) updates.hasClaimedWelcome = this.hasClaimedWelcome;
-                if (this.hasStartedMining !== undefined) updates.hasStartedMining = this.hasStartedMining;
-                if (this.miningActive !== undefined) updates.miningActive = this.miningActive;
-                if (this.miningStartTime !== undefined) updates.miningStartTime = this.miningStartTime;
-                if (this.miningEndTime !== undefined) updates.miningEndTime = this.miningEndTime;
-                if (this.pendingTonReward !== undefined) updates.pendingTonReward = this.pendingTonReward;
-                if (this.miningSessionHours !== undefined) updates.miningSessionHours = this.miningSessionHours;
-                if (this.referralBonusGiven !== undefined) updates.referralBonusGiven = this.referralBonusGiven;
-                await this.db.ref(`users/${this.tgUser.id}`).update(updates);
-            } catch (error) {
-                console.warn('Failed to save user data:', error);
-            }
-        }, 3000);
     }
     
     async loadCompletedTasks() {
@@ -1389,7 +1363,7 @@ async checkDevice() {
         const activeNow = Math.floor(this.totalReferrals * activePercent);
         
         el.innerHTML = `
-            <div class="team-benefits"><h3><i class="fas fa-gift"></i> ${this.t('team_benefits')}</h3><div class="benefits-list"><div class="benefit-item"><i class="fas fa-coins"></i><div class="benefit-text">Earn ${APP_CONFIG.REFERRAL_PERCENTAGE}% of your team members Power earnings</div></div><div class="benefit-item"><i class="fas fa-bolt"></i><div class="benefit-text">Get ${this.formatNumber(APP_CONFIG.REFERRAL_POWER_BONUS)} Power per verified member</div></div></div></div>
+            <div class="team-benefits"><h3><i class="fas fa-gift"></i> ${this.t('team_benefits')}</h3><div class="benefits-list"><div class="benefit-item"><i class="fas fa-coins"></i><div class="benefit-text">${this.t('team_earnings')} ${APP_CONFIG.REFERRAL_PERCENTAGE}%</div></div></div></div>
             <div class="referral-card"><h4><i class="fas fa-share-alt"></i> ${this.t('share_earn')}</h4><div class="link-display">${link}</div><div class="referral-buttons"><button id="copyLink"><i class="fas fa-copy"></i> ${this.t('copy')}</button><button id="shareLink"><i class="fab fa-telegram"></i> ${this.t('share')}</button></div></div>
             <div class="stats-grid"><div class="stat-mini"><span class="stat-label">${this.t('total_members')}</span><span class="stat-number">${this.totalReferrals}</span></div><div class="stat-mini"><span class="stat-label">${this.t('verified_members')}</span><span class="stat-number">${this.verifiedReferrals}</span></div><div class="stat-mini"><span class="stat-label">${this.t('power_earnings')}</span><span class="stat-number">${this.formatNumber(Math.floor(this.referralPower))}</span></div><div class="stat-mini"><span class="stat-label">Active Now</span><span class="stat-number">${activeNow}</span></div></div>
         `;
@@ -1573,6 +1547,135 @@ async checkDevice() {
         this.renderTeam();
         this.renderWithdraw();
         this.updateModalTranslations();
+    }
+    
+    async initialize() {
+        const progressBar = document.getElementById('loader-progress-bar');
+        const loaderPercent = document.getElementById('loader-percent');
+        
+        const updateProgress = (percent) => {
+            if (progressBar) progressBar.style.width = percent + '%';
+            if (loaderPercent) loaderPercent.innerText = Math.floor(percent) + '%';
+        };
+        
+        try {
+            updateProgress(10);
+            if (!window.Telegram?.WebApp) throw new Error('Open from Telegram');
+            this.tg = window.Telegram.WebApp;
+            this.tgUser = this.tg.initDataUnsafe.user;
+            if (!this.tgUser) throw new Error('No user data');
+            this.tg.ready();
+            this.tg.expand();
+            
+            updateProgress(30);
+            await this.initFirebase();
+            
+            updateProgress(50);
+            await this.checkDevice();
+            await this.updateFirebaseUid();
+            
+            updateProgress(70);
+            await this.getServerTime(true);
+            
+            try {
+                await this.loadUserData();
+            } catch (permError) {
+                console.warn('Permission error, retrying with fresh user data...', permError);
+                await this.forceCreateUserData();
+            }
+            
+            updateProgress(85);
+            await Promise.all([
+                this.loadCompletedTasks(),
+                this.loadWithdrawals(),
+                this.loadReferralStats(),
+                this.loadPromoCodes(),
+                this.loadTasks()
+            ]);
+            
+            const savedAdTime = localStorage.getItem('last_reward_ad_time');
+            if (savedAdTime) this.lastRewardAdTime = parseInt(savedAdTime);
+            
+            updateProgress(95);
+            if (this.miningActive && this.miningEndTime) {
+                const serverTime = await this.getServerTime(true);
+                if (serverTime >= this.miningEndTime) {
+                    const elapsedSeconds = (serverTime - this.miningStartTime) / 1000;
+                    const elapsedHours = elapsedSeconds / 3600;
+                    this.pendingTonReward = this.calculateRewardForHours(Math.min(elapsedHours, this.miningSessionHours));
+                    this.miningActive = false;
+                    this.miningStartTime = null;
+                    this.miningEndTime = null;
+                    this._dirtyMining = true;
+                    await this.saveUserData(true);
+                    this.renderMining();
+                } else {
+                    this.startMiningLoop();
+                }
+            } else if (this.pendingTonReward > 0 && !this.miningActive) {
+                this.renderMining();
+            }
+            
+            const userSnapshot = await this.db.ref(`users/${this.tgUser.id}`).once('value');
+            const hasClaimedWelcomeFromDB = userSnapshot.val()?.hasClaimedWelcome;
+            
+            if (!hasClaimedWelcomeFromDB) {
+                this.powerBalance = (this.powerBalance || 0) + APP_CONFIG.WELCOME_BONUS_POWER;
+                this._dirtyPower = true;
+                this.hasClaimedWelcome = true;
+                this.isVerified = true;
+                await this.updateLevelFromPower();
+                await this.saveUserData(true);
+                if (this.db) {
+                    await this.db.ref(`users/${this.tgUser.id}`).update({ 
+                        hasClaimedWelcome: true, 
+                        isVerified: true,
+                        powerBalance: this.powerBalance 
+                    });
+                }
+                this.showNotification('Welcome!', `${APP_CONFIG.WELCOME_BONUS_POWER} Power Added`, 'success');
+            } else {
+                this.hasClaimedWelcome = true;
+                this.isVerified = userSnapshot.val()?.isVerified || true;
+            }
+            
+            const userSnap = await this.db.ref(`users/${this.tgUser.id}`).once('value');
+            const referralBonusGiven = userSnap.val()?.referralBonusGiven;
+            if (referralBonusGiven) this.referralBonusGiven = true;
+            
+            await this.loadReferralStats();
+            
+            this.setupEventListeners();
+            this.renderUI();
+            this.setupNavigation();
+            this.startCooldownTimer();
+            
+            updateProgress(100);
+            
+            setTimeout(() => {
+                const loader = document.getElementById('app-loader');
+                if (loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => {
+                        loader.style.display = 'none';
+                        document.getElementById('app').style.display = 'block';
+                        this.updateAdCooldownDisplay();
+                    }, 500);
+                } else {
+                    document.getElementById('app').style.display = 'block';
+                    this.updateAdCooldownDisplay();
+                }
+            }, 500);
+            this.isInitialized = true;
+            
+        } catch(err) {
+            console.error('Initialization error:', err);
+            const errorEl = document.getElementById('loader-error');
+            if (errorEl) {
+                errorEl.textContent = err.message;
+                errorEl.style.display = 'block';
+            }
+        }
     }
 }
 
