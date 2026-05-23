@@ -23,6 +23,17 @@ export default async function handler(req, res) {
             const isMember = ['member', 'administrator', 'creator'].includes(data.result?.status);
             return res.json({ isMember });
         }
+        
+        if (action === 'check_bot_admin') {
+            const botId = (await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getMe`).then(r => r.json())).result.id;
+            
+            const botMember = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${channel}&user_id=${botId}`);
+            const botData = await botMember.json();
+            
+            const isBotAdmin = ['administrator', 'creator'].includes(botData.result?.status);
+            return res.json({ isAdmin: isBotAdmin });
+        }
+        
         return res.status(400).json({ error: 'Invalid action' });
     } catch (error) {
         return res.status(500).json({ error: error.message });
