@@ -127,6 +127,8 @@ class App {
         this._dirtyPower = false;
         this._dirtyTon = false;
         this._dirtyMining = false;
+        this._saveTimeout = null;
+        this._isSaving = false;
         
         this.cache = {
             tasks: null,
@@ -134,6 +136,8 @@ class App {
             promoCodes: null,
             promosTime: 0
         };
+        
+        this._userDataLoaded = false;
     }
     
     t(key) {
@@ -224,7 +228,7 @@ class App {
                 if (window.app && window.app.tgUser && window.app.tgUser.id === this.referredBy) {
                     if (window.app.powerBalance) window.app.powerBalance += commission;
                     window.app._dirtyPower = true;
-                    window.app.renderMining();
+                    window.app.scheduleSave();
                 }
             }
         }
@@ -244,7 +248,7 @@ class App {
             await this.db.ref(`users/${this.tgUser.id}`).update({ hasStartedMining: true });
         }
         
-        await this.saveUserData(true);
+        this.scheduleSave();
         this.renderMining();
         this.startMiningLoop();
         this.showNotification(this.t('start_mining'), 'Your rig is now mining TON', 'success');
@@ -263,7 +267,7 @@ class App {
         this.miningEndTime = null;
         this._dirtyMining = true;
         
-        await this.saveUserData(true);
+        this.scheduleSave();
         this.renderMining();
         if (this.miningInterval) clearInterval(this.miningInterval);
         if (this.uiUpdateInterval) clearInterval(this.uiUpdateInterval);
@@ -301,11 +305,7 @@ class App {
             this.pendingTonReward = 0;
             this._dirtyMining = true;
             
-            const saved = await this.saveUserData(true);
-            if (!saved) {
-                this.showNotification(this.t('save_error'), '', 'error');
-                return;
-            }
+            await this.saveUserData(true);
             
             this.updateLevelFromPower();
             this.renderMining();
@@ -413,11 +413,7 @@ class App {
             this.powerBalance += 10;
             this._dirtyPower = true;
             await this.updateLevelFromPower();
-            const saved = await this.saveUserData(true);
-            if (!saved) {
-                this.showNotification(this.t('save_error'), '', 'error');
-                return;
-            }
+            this.scheduleSave();
             await this.addReferralEarnings(this.tgUser.id, 10);
             this.renderMining();
             this.renderEarn();
@@ -480,21 +476,7 @@ class App {
         this.powerBalance += rewardPower;
         this._dirtyPower = true;
         
-        const saved = await this.saveUserData(true);
-        if (!saved) {
-            this.showNotification(this.t('save_error'), '', 'error');
-            this.userCompletedTasks.delete(taskId);
-            this.powerBalance -= rewardPower;
-            if (btnElement) {
-                btnElement.disabled = false;
-                btnElement.innerHTML = 'Start';
-                btnElement.classList.remove('check');
-                btnElement.classList.add('start');
-            }
-            this.isTaskRunning = false;
-            this.enableAllTaskButtons();
-            return false;
-        }
+        await this.saveUserData(true);
         
         await this.addReferralEarnings(this.tgUser.id, rewardPower);
         
@@ -608,21 +590,13 @@ class App {
             this.powerBalance += promoData.reward;
             this._dirtyPower = true;
             await this.updateLevelFromPower();
-            const saved = await this.saveUserData(true);
-            if (!saved) {
-                this.showNotification(this.t('save_error'), '', 'error');
-                return false;
-            }
+            await this.saveUserData(true);
             await this.addReferralEarnings(this.tgUser.id, promoData.reward);
             this.showNotification('Code Applied!', `You received ${this.formatNumber(promoData.reward)} Power`, 'success');
         } else if (promoData.rewardType === 'ton') {
             this.tonBalance += promoData.reward;
             this._dirtyTon = true;
-            const saved = await this.saveUserData(true);
-            if (!saved) {
-                this.showNotification(this.t('save_error'), '', 'error');
-                return false;
-            }
+            await this.saveUserData(true);
             this.showNotification('Code Applied!', `You received ${promoData.reward} TON`, 'success');
         } else {
             this.showNotification('Error', 'Invalid reward type', 'error');
@@ -661,12 +635,7 @@ class App {
         this.tonBalance -= amount;
         this._dirtyTon = true;
         
-        const saved = await this.saveUserData(true);
-        if (!saved) {
-            this.tonBalance = originalBalance;
-            this.showNotification(this.t('save_error'), '', 'error');
-            return false;
-        }
+        await this.saveUserData(true);
         
         const withdrawal = {
             id: Date.now(),
@@ -681,6 +650,22 @@ class App {
                 await this.db.ref(`withdrawals/${this.tgUser.id}/${withdrawal.id}`).set(withdrawal);
                 await this.db.ref('Status/totalWithdrawals').transaction(current => (current || 0) + 1);
                 await this.db.ref('Status/totalTonPaid').transaction(current => (current || 0) + amount);
+                
+                const userWithdrawalsRef = this.db.ref(`withdrawals/${this.tgUser.id}`);
+                const snapshot = await userWithdrawalsRef.once('value');
+                if (snapshot.exists()) {
+                    const allWithdrawals = [];
+                    snapshot.forEach(child => {
+                        allWithdrawals.push({ id: child.key, ...child.val() });
+                    });
+                    allWithdrawals.sort((a, b) => b.timestamp - a.timestamp);
+                    if (allWithdrawals.length > 5) {
+                        const toDelete = allWithdrawals.slice(5);
+                        for (const old of toDelete) {
+                            await userWithdrawalsRef.child(old.id).remove();
+                        }
+                    }
+                }
             } catch (error) {
                 console.error('Withdrawal save failed:', error);
                 this.tonBalance += amount;
@@ -692,6 +677,7 @@ class App {
         }
         
         this.withdrawals.unshift(withdrawal);
+        if (this.withdrawals.length > 5) this.withdrawals = this.withdrawals.slice(0, 5);
         this.renderWithdraw();
         this.showNotification('Withdrawn!', `${amount.toFixed(5)} TON requested`, 'success');
         return true;
@@ -861,43 +847,56 @@ class App {
         }
     }
     
+    scheduleSave() {
+        if (this._saveTimeout) clearTimeout(this._saveTimeout);
+        this._saveTimeout = setTimeout(() => {
+            this.saveUserData(false);
+        }, 30000);
+    }
+    
     async saveUserData(immediate = false) {
         if (!this.db || !this.tgUser) return true;
-        if (this.saveTimeout && !immediate) clearTimeout(this.saveTimeout);
         
-        const save = async () => {
-            try {
-                const updates = {};
-                if (this._dirtyPower) updates.powerBalance = this.powerBalance;
-                if (this._dirtyTon) updates.tonBalance = this.tonBalance;
-                if (this._dirtyMining) {
-                    updates.miningActive = this.miningActive;
-                    updates.miningStartTime = this.miningStartTime;
-                    updates.miningEndTime = this.miningEndTime;
-                    updates.pendingTonReward = this.pendingTonReward;
-                }
-                
-                if (Object.keys(updates).length === 0) return true;
-                
-                await this.db.ref(`users/${this.tgUser.id}`).update(updates);
-                
-                this._dirtyPower = false;
-                this._dirtyTon = false;
-                this._dirtyMining = false;
+        if (this._isSaving) {
+            if (immediate) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            } else {
                 return true;
-            } catch (error) {
-                console.warn('Failed to save user data:', error);
-                return false;
             }
-        };
+        }
         
-        if (immediate) {
-            return await save();
-        } else {
-            this.saveTimeout = setTimeout(async () => {
-                await save();
-            }, 10000);
+        this._isSaving = true;
+        
+        try {
+            const updates = {};
+            if (this._dirtyPower) updates.powerBalance = this.powerBalance;
+            if (this._dirtyTon) updates.tonBalance = this.tonBalance;
+            if (this._dirtyMining) {
+                updates.miningActive = this.miningActive;
+                updates.miningStartTime = this.miningStartTime;
+                updates.miningEndTime = this.miningEndTime;
+                updates.pendingTonReward = this.pendingTonReward;
+            }
+            
+            if (Object.keys(updates).length === 0) {
+                this._isSaving = false;
+                return true;
+            }
+            
+            await this.db.ref(`users/${this.tgUser.id}`).update(updates);
+            
+            this._dirtyPower = false;
+            this._dirtyTon = false;
+            this._dirtyMining = false;
+            
+            if (this._saveTimeout) clearTimeout(this._saveTimeout);
+            
             return true;
+        } catch (error) {
+            console.warn('Failed to save user data:', error);
+            return false;
+        } finally {
+            this._isSaving = false;
         }
     }
     
@@ -932,15 +931,8 @@ class App {
             const referrerRef = this.db.ref(`users/${referredBy}`);
             const referrerSnap = await referrerRef.once('value');
             if (referrerSnap.exists()) {
-                const currentTotal = referrerSnap.val().totalReferrals ?? 0;
-                await referrerRef.update({ totalReferrals: currentTotal + 1 });
-                
-                await this.db.ref(`referrals/${referredBy}/${this.tgUser.id}`).set({
-                    userId: this.tgUser.id,
-                    userName: this.tgUser.first_name,
-                    userPhoto: this.tgUser.photo_url,
-                    joinedAt: await this.getServerTime()
-                });
+                const currentTotalRef = referrerSnap.val().totalReferrals ?? 0;
+                await referrerRef.update({ totalReferrals: currentTotalRef + 1 });
             }
         }
         
@@ -991,6 +983,8 @@ class App {
     }
     
     async loadUserData() {
+        if (this._userDataLoaded) return;
+        
         try {
             const ref = this.db.ref(`users/${this.tgUser.id}`);
             const snap = await ref.once('value');
@@ -1002,10 +996,8 @@ class App {
                     this.powerBalance += 1000;
                     this._dirtyPower = true;
                     this.hasClaimedWelcome = true;
-                    const saved = await this.saveUserData(true);
-                    if (saved) {
-                        this.showNotification('Welcome Bonus', '1000 Power added to your balance', 'success');
-                    }
+                    await this.saveUserData(true);
+                    this.showNotification('Welcome Bonus', '1000 Power added to your balance', 'success');
                 } else {
                     this.hasClaimedWelcome = d.hasClaimedWelcome ?? false;
                 }
@@ -1019,14 +1011,18 @@ class App {
                 this.pendingTonReward = d.pendingTonReward ?? 0;
                 this.miningSessionHours = d.miningSessionHours ?? 8;
                 this.referredBy = d.referredBy ?? null;
+                this.totalReferrals = d.totalReferrals ?? 0;
+                this.referralPower = d.referralPower ?? 0;
                 
-                const totalRef = this.db.ref(`users/${this.tgUser.id}/totalReferrals`);
-                const totalSnap = await totalRef.once('value');
-                this.totalReferrals = totalSnap.val() ?? 0;
-                
-                const referralPowerRef = this.db.ref(`users/${this.tgUser.id}/referralPower`);
-                const referralPowerSnap = await referralPowerRef.once('value');
-                this.referralPower = referralPowerSnap.val() ?? 0;
+                const withdrawalsSnap = await this.db.ref(`withdrawals/${this.tgUser.id}`).once('value');
+                this.withdrawals = [];
+                if (withdrawalsSnap.exists()) {
+                    withdrawalsSnap.forEach(child => {
+                        this.withdrawals.push({ id: child.key, ...child.val() });
+                    });
+                    this.withdrawals.sort((a, b) => b.timestamp - a.timestamp);
+                    if (this.withdrawals.length > 5) this.withdrawals = this.withdrawals.slice(0, 5);
+                }
             } else {
                 await this.forceCreateUserData();
                 const ref2 = this.db.ref(`users/${this.tgUser.id}`);
@@ -1039,6 +1035,8 @@ class App {
             console.error('loadUserData error:', error);
             await this.forceCreateUserData();
         }
+        
+        this._userDataLoaded = true;
         
         const nameSpan = document.getElementById('user-name');
         if (nameSpan) nameSpan.innerText = this.tgUser.first_name || 'User';
@@ -1077,6 +1075,7 @@ class App {
                     this.withdrawals.push({ id: c.key, ...c.val() });
                 });
                 this.withdrawals.sort((a,b) => b.timestamp - a.timestamp);
+                if (this.withdrawals.length > 5) this.withdrawals = this.withdrawals.slice(0, 5);
             }
         } catch (error) {
             console.warn('Failed to load withdrawals:', error);
@@ -1419,8 +1418,17 @@ class App {
         document.getElementById('contact-support-modal')?.addEventListener('click', () => {
             window.open(APP_CONFIG.SUPPORT_LINK, '_blank');
         });
+        
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.saveUserData(true);
+            }
+        });
+        
         window.addEventListener('beforeunload', () => {
-            if (this.miningActive) this.saveUserData(true);
+            if (this.miningActive || this._dirtyPower || this._dirtyTon || this._dirtyMining) {
+                this.saveUserData(true);
+            }
         });
         
         const langBtn = document.getElementById('lang-btn');
@@ -1579,8 +1587,8 @@ class App {
                 this._dirtyPower = true;
                 this.hasClaimedWelcome = true;
                 await this.updateLevelFromPower();
-                const saved = await this.saveUserData(true);
-                if (saved && this.db) {
+                await this.saveUserData(true);
+                if (this.db) {
                     await this.db.ref(`users/${this.tgUser.id}`).update({ 
                         hasClaimedWelcome: true,
                         powerBalance: this.powerBalance 
@@ -1597,6 +1605,12 @@ class App {
             this.renderUI();
             this.setupNavigation();
             this.startCooldownTimer();
+            
+            setInterval(() => {
+                if (this._dirtyPower || this._dirtyTon || this._dirtyMining) {
+                    this.scheduleSave();
+                }
+            }, 60000);
             
             updateProgress(100);
             
