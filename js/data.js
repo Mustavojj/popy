@@ -13,7 +13,7 @@ export const APP_CONFIG = {
     BOT_AVATAR: "https://i.ibb.co/B5z8x1vJ/afb301036766.jpg",
     LEVEL_FORMULA: { base: 1000, multiplier: 1.2 },
     AD_COOLDOWN_HOURS: 3,
-    REWARD_AD_BLOCK_ID: "32175",
-    INTERSTITIAL_AD_BLOCK_ID: "int-32176",
+    REWARD_AD_BLOCK_ID: "32205",
+    INTERSTITIAL_AD_BLOCK_ID: "int-32206",
     BOT_LINK: "https://t.me/Veltrxbot/mine?startapp="
 };
