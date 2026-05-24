@@ -9,7 +9,7 @@ const translations = {
         watch_ad: "Смотреть рекламу", reward_amount: "Награда", available_in: "Доступно через", hours: "ч",
         watch: "Смотреть", all_tasks_completed: "Все задания выполнены!", check_later: "Заходите позже за новыми",
         no_tasks: "Нет доступных заданий", team_benefits: "Преимущества команды", share_earn: "ДЕЛИСЬ И ЗАРАБАТЫВАЙ",
-        copy: "Копировать", share: "Поделиться", total_members: "Всего участников", verified_members: "Подтвержденных участников",
+        copy: "Копировать", share: "Поделиться", total_members: "Всего участников",
         power_earnings: "Заработок энергии", withdraw: "Вывести",
         available: "Доступно", ton_wallet: "TON кошелек", amount: "Сумма", min_withdraw: "Мин. вывод",
         confirm_withdrawal: "Подтвердить вывод", withdrawal_history: "История выводов", no_withdrawals: "Пока нет выводов",
@@ -18,7 +18,7 @@ const translations = {
         partner_text3: "Свяжитесь с поддержкой для деталей", contact_support: "Связаться с поддержкой", mining: "Майнинг", earn: "Заработок",
         team: "Команда", copy_success: "Скопировано!", link_copied: "Ссылка скопирована", earn_more: "Заработай больше энергии",
         complete_tasks: "Выполнить задания", go: "ПЕРЕЙТИ", invite_frens: "Пригласить друзей", ad_reward: "Смотреть рекламу", loading: "Загрузка",
-        ready: "Готово", mining_active: "МАЙНИНГ АКТИВЕН", team_earnings: "Заработок команды", save_error: "Ошибка сохранения данных! Попробуйте снова."
+        ready: "Готово", mining_active: "МАЙНИНГ АКТИВЕН", team_earnings: "Зарабатывайте %from% от дохода команды", save_error: "Ошибка сохранения данных! Попробуйте снова."
     },
     en: {
         level: "Level", mining_rig: "Mining Rig Lv.", hourly: "8 Hours", daily: "Daily", monthly: "Monthly",
@@ -28,7 +28,7 @@ const translations = {
         watch_ad: "Watch Reward AD", reward_amount: "Reward", available_in: "Available in", hours: "h",
         watch: "Watch", all_tasks_completed: "All tasks completed!", check_later: "Check back later for more",
         no_tasks: "No tasks available", team_benefits: "Team Benefits", share_earn: "SHARE & EARN",
-        copy: "Copy", share: "Share", total_members: "Total Members", verified_members: "Verified Members",
+        copy: "Copy", share: "Share", total_members: "Total Members",
         power_earnings: "Power Earnings", withdraw: "Withdraw",
         available: "Available", ton_wallet: "TON Wallet", amount: "Amount", min_withdraw: "Minimum withdrawal",
         confirm_withdrawal: "Confirm Withdrawal", withdrawal_history: "Withdrawal History", no_withdrawals: "No withdrawals yet",
@@ -37,7 +37,7 @@ const translations = {
         partner_text3: "Contact support for details", contact_support: "Contact Support", mining: "Mining", earn: "Earn",
         team: "Team", copy_success: "Copied!", link_copied: "Link copied to clipboard", earn_more: "Earn More Power",
         complete_tasks: "Complete Tasks", go: "GO", invite_frens: "Invite Frens", ad_reward: "Watch AD", loading: "Loading",
-        ready: "Ready", mining_active: "MINING ACTIVE", team_earnings: "Team Earnings", save_error: "Data save failed! Please try again."
+        ready: "Ready", mining_active: "MINING ACTIVE", team_earnings: "Earn %from% from team earnings", save_error: "Data save failed! Please try again."
     },
     tr: {
         level: "Seviye", mining_rig: "Madenci Seviye", hourly: "8 saat", daily: "Günlük", monthly: "Aylık",
@@ -47,7 +47,7 @@ const translations = {
         watch_ad: "Ödüllü Reklam İzle", reward_amount: "Ödül", available_in: "Kalan süre", hours: "sa",
         watch: "İzle", all_tasks_completed: "Tüm görevler tamamlandı!", check_later: "Daha fazlası için daha sonra kontrol edin",
         no_tasks: "Görev yok", team_benefits: "Takım Avantajları", share_earn: "PAYLAŞ VE KAZAN",
-        copy: "Kopyala", share: "Paylaş", total_members: "Toplam Üye", verified_members: "Doğrulanmış Üye",
+        copy: "Kopyala", share: "Paylaş", total_members: "Toplam Üye",
         power_earnings: "Güç Kazancı", withdraw: "Çek",
         available: "Mevcut", ton_wallet: "TON Cüzdanı", amount: "Miktar", min_withdraw: "Minimum çekim",
         confirm_withdrawal: "Çekimi Onayla", withdrawal_history: "Çekim Geçmişi", no_withdrawals: "Henüz çekim yok",
@@ -56,7 +56,7 @@ const translations = {
         partner_text3: "Detaylar için desteğe başvurun", contact_support: "Desteğe Başvur", mining: "Madencilik", earn: "Kazan",
         team: "Takım", copy_success: "Kopyalandı!", link_copied: "Bağlantı panoya kopyalandı", earn_more: "Daha Fazla Güç Kazan",
         complete_tasks: "Görevleri Tamamla", go: "GİT", invite_frens: "Arkadaşları Davet Et", ad_reward: "Reklam İzle", loading: "Yükleniyor",
-        ready: "Hazır", mining_active: "MADENCİLİK AKTİF", team_earnings: "Takım Kazancı", save_error: "Veri kaydedilemedi! Lütfen tekrar deneyin."
+        ready: "Hazır", mining_active: "MADENCİLİK AKTİF", team_earnings: "Takım kazancından %from% kazanın", save_error: "Veri kaydedilemedi! Lütfen tekrar deneyin."
     },
     ar: {
         level: "مستوى", mining_rig: "جهاز التعدين مستوى", hourly: "كل 8 ساعات", daily: "يومي", monthly: "شهري",
@@ -66,7 +66,7 @@ const translations = {
         watch_ad: "مشاهدة إعلان مكافأة", reward_amount: "المكافأة", available_in: "متاح بعد", hours: "ساعة",
         watch: "مشاهدة", all_tasks_completed: "جميع المهام مكتملة!", check_later: "تحقق لاحقاً للمزيد",
         no_tasks: "لا توجد مهام متاحة", team_benefits: "مزايا الفريق", share_earn: "شارك واربح",
-        copy: "نسخ", share: "مشاركة", total_members: "إجمالي الأعضاء", verified_members: "الأعضاء الموثقين",
+        copy: "نسخ", share: "مشاركة", total_members: "إجمالي الأعضاء",
         power_earnings: "أرباح الطاقة", withdraw: "سحب",
         available: "الرصيد المتوفر", ton_wallet: "محفظة تون", amount: "المبلغ", min_withdraw: "الحد الأدنى للسحب",
         confirm_withdrawal: "تأكيد السحب", withdrawal_history: "سجل السحوبات", no_withdrawals: "لا توجد سحوبات بعد",
@@ -75,7 +75,7 @@ const translations = {
         partner_text3: "اتصل بالدعم للتفاصيل", contact_support: "اتصل بالدعم", mining: "التعدين", earn: "الأرباح",
         team: "الفريق", copy_success: "تم النسخ!", link_copied: "تم نسخ الرابط", earn_more: "احصل على طاقة أكثر",
         complete_tasks: "إكمال المهام", go: "اذهب", invite_frens: "دعوة الأصدقاء", ad_reward: "مشاهدة إعلان", loading: "جاري التحميل",
-        ready: "جاهز", mining_active: "التعدين نشط", team_earnings: "أرباح الفريق", save_error: "فشل حفظ البيانات! حاول مرة أخرى."
+        ready: "جاهز", mining_active: "التعدين نشط", team_earnings: "اربح %from% من أرباح الفريق", save_error: "فشل حفظ البيانات! حاول مرة أخرى."
     }
 };
 
@@ -92,7 +92,6 @@ class App {
         this.powerBalance = 0;
         this.tonBalance = 0;
         this.userLevel = 1;
-        this.isVerified = false;
         this.hasClaimedWelcome = false;
         this.hasStartedMining = false;
         this.userCompletedTasks = new Set();
@@ -106,7 +105,6 @@ class App {
         this.miningSessionHours = 8;
         this.withdrawals = [];
         this.totalReferrals = 0;
-        this.verifiedReferrals = 0;
         this.referralPower = 0;
         this.isTaskRunning = false;
         this.mainTasks = [];
@@ -119,7 +117,7 @@ class App {
         
         this.vibrationEnabled = true;
         this.loadSettings();
-        this.referralBonusGiven = false;
+        this.referredBy = null;
         this.timeOffset = 0;
         this.lastServerTimeSync = 0;
         this.serverTimeOffset = 0;
@@ -139,7 +137,11 @@ class App {
     }
     
     t(key) {
-        return translations[this.lang]?.[key] || translations.en[key] || key;
+        let text = translations[this.lang]?.[key] || translations.en[key] || key;
+        if (key === 'team_earnings') {
+            text = text.replace('%from%', APP_CONFIG.REFERRAL_PERCENTAGE);
+        }
+        return text;
     }
     
     formatNumber(num) {
@@ -202,76 +204,33 @@ class App {
         return 1000;
     }
     
-    async giveReferralBonus() {
-        if (this.referralBonusGiven) return;
+    async addReferralEarnings(userId, powerAmount) {
+        if (!this.referredBy) return;
         
-        const userSnap = await this.db.ref(`users/${this.tgUser.id}`).once('value');
-        const referredBy = userSnap.val()?.referredBy;
+        const commission = Math.floor(powerAmount * (APP_CONFIG.REFERRAL_PERCENTAGE / 100));
         
-        if (referredBy && referredBy !== this.tgUser.id && referredBy !== this.deviceOwnerId) {
-            const referrerRef = this.db.ref(`users/${referredBy}`);
+        if (commission > 0) {
+            const referrerRef = this.db.ref(`users/${this.referredBy}`);
             const referrerSnap = await referrerRef.once('value');
             
             if (referrerSnap.exists()) {
                 const currentPower = referrerSnap.val().powerBalance ?? 0;
-                const currentVerified = referrerSnap.val().verifiedReferrals ?? 0;
                 const currentReferralPower = referrerSnap.val().referralPower ?? 0;
-                const currentTotal = referrerSnap.val().totalReferrals ?? 0;
-                
                 await referrerRef.update({ 
-                    powerBalance: currentPower + APP_CONFIG.REFERRAL_POWER_BONUS,
-                    verifiedReferrals: currentVerified + 1,
-                    referralPower: currentReferralPower + APP_CONFIG.REFERRAL_POWER_BONUS,
-                    totalReferrals: currentTotal
+                    powerBalance: currentPower + commission,
+                    referralPower: currentReferralPower + commission
                 });
                 
-                await this.db.ref(`referrals/${referredBy}/${this.tgUser.id}`).update({
-                    userId: this.tgUser.id,
-                    userName: this.tgUser.first_name,
-                    userPhoto: this.tgUser.photo_url,
-                    state: 'Verified',
-                    verifiedAt: await this.getServerTime()
-                });
-                
-                this.referralBonusGiven = true;
-                await this.db.ref(`users/${this.tgUser.id}`).update({ referralBonusGiven: true });
-            }
-        }
-    }
-    
-    async addReferralEarnings(userId, powerAmount) {
-        const userSnap = await this.db.ref(`users/${userId}`).once('value');
-        const referredBy = userSnap.val()?.referredBy;
-        
-        if (referredBy && referredBy !== userId) {
-            const commission = Math.floor(powerAmount * (APP_CONFIG.REFERRAL_PERCENTAGE / 100));
-            
-            if (commission > 0) {
-                const referrerRef = this.db.ref(`users/${referredBy}`);
-                const referrerSnap = await referrerRef.once('value');
-                
-                if (referrerSnap.exists()) {
-                    const currentPower = referrerSnap.val().powerBalance ?? 0;
-                    const currentReferralPower = referrerSnap.val().referralPower ?? 0;
-                    await referrerRef.update({ 
-                        powerBalance: currentPower + commission,
-                        referralPower: currentReferralPower + commission
-                    });
-                    
-                    if (window.app && window.app.tgUser && window.app.tgUser.id === referredBy) {
-                        if (window.app.powerBalance) window.app.powerBalance += commission;
-                        window.app._dirtyPower = true;
-                        window.app.renderMining();
-                    }
+                if (window.app && window.app.tgUser && window.app.tgUser.id === this.referredBy) {
+                    if (window.app.powerBalance) window.app.powerBalance += commission;
+                    window.app._dirtyPower = true;
+                    window.app.renderMining();
                 }
             }
         }
     }
     
     async startMining() {
-        const adWatched = await this.showInterstitialAd();
-        if (!adWatched) return;
-        
         const serverTime = await this.getServerTime(true);
         
         this.miningActive = true;
@@ -283,7 +242,6 @@ class App {
         if (!this.hasStartedMining && this.db && this.tgUser) {
             this.hasStartedMining = true;
             await this.db.ref(`users/${this.tgUser.id}`).update({ hasStartedMining: true });
-            await this.giveReferralBonus();
         }
         
         await this.saveUserData(true);
@@ -321,6 +279,9 @@ class App {
             this.showNotification('Error', 'No rewards to claim', 'error');
             return;
         }
+        
+        const adWatched = await this.showInterstitialAd();
+        if (!adWatched) return;
         
         const modal = document.getElementById('claim-modal');
         const rewardEl = document.getElementById('claim-reward-amount');
@@ -955,12 +916,10 @@ class App {
             createdAt: await this.getServerTime(),
             miningSessionHours: this.miningSessionHours,
             hasStartedMining: false,
-            referralBonusGiven: false,
             hasClaimedWelcome: false,
             powerBalance: 0,
             tonBalance: 0,
-            level: 1,
-            isVerified: false
+            level: 1
         };
         
         await this.db.ref(`users/${this.tgUser.id}`).set(userData);
@@ -980,7 +939,6 @@ class App {
                     userId: this.tgUser.id,
                     userName: this.tgUser.first_name,
                     userPhoto: this.tgUser.photo_url,
-                    state: 'Not Verified',
                     joinedAt: await this.getServerTime()
                 });
             }
@@ -989,14 +947,12 @@ class App {
         this.powerBalance = 0;
         this.tonBalance = 0;
         this.userLevel = 1;
-        this.isVerified = false;
         this.hasClaimedWelcome = false;
         this.hasStartedMining = false;
         this.miningActive = false;
         this.miningStartTime = null;
         this.miningEndTime = null;
         this.pendingTonReward = 0;
-        this.referralBonusGiven = false;
         
         const nameSpan = document.getElementById('user-name');
         if (nameSpan) nameSpan.innerText = this.tgUser.first_name || 'User';
@@ -1006,42 +962,6 @@ class App {
         if (levelBadge) levelBadge.innerText = this.userLevel;
         const photoImg = document.getElementById('user-photo');
         if (photoImg) photoImg.src = this.tgUser.photo_url || APP_CONFIG.DEFAULT_USER_AVATAR;
-    }
-    
-    async loadUserById(userId) {
-        try {
-            const ref = this.db.ref(`users/${userId}`);
-            const snap = await ref.once('value');
-            if (snap.exists()) {
-                const d = snap.val();
-                this.powerBalance = d.powerBalance ?? 0;
-                this.tonBalance = d.tonBalance ?? 0;
-                this.userLevel = d.level ?? 1;
-                this.isVerified = d.isVerified ?? false;
-                this.hasClaimedWelcome = d.hasClaimedWelcome ?? false;
-                this.hasStartedMining = d.hasStartedMining ?? false;
-                this.miningActive = d.miningActive ?? false;
-                this.miningStartTime = d.miningStartTime ?? null;
-                this.miningEndTime = d.miningEndTime ?? null;
-                this.pendingTonReward = d.pendingTonReward ?? 0;
-                this.miningSessionHours = d.miningSessionHours ?? 8;
-                this.referralBonusGiven = d.referralBonusGiven ?? false;
-                this.tgUser = { id: userId, first_name: d.firstName, username: d.username, photo_url: d.photoUrl };
-                const nameSpan = document.getElementById('user-name');
-                if (nameSpan) nameSpan.innerText = d.firstName;
-                const photoImg = document.getElementById('user-photo');
-                if (photoImg) photoImg.src = d.photoUrl || APP_CONFIG.DEFAULT_USER_AVATAR;
-                const levelSpan = document.getElementById('user-level');
-                if (levelSpan) levelSpan.innerText = this.userLevel;
-                const levelBadge = document.getElementById('user-level-badge');
-                if (levelBadge) levelBadge.innerText = this.userLevel;
-            } else {
-                await this.forceCreateUserData();
-            }
-        } catch (error) {
-            console.error('loadUserById error:', error);
-            await this.forceCreateUserData();
-        }
     }
     
     async initFirebase() {
@@ -1082,14 +1002,12 @@ class App {
                     this.powerBalance += 1000;
                     this._dirtyPower = true;
                     this.hasClaimedWelcome = true;
-                    this.isVerified = true;
                     const saved = await this.saveUserData(true);
                     if (saved) {
                         this.showNotification('Welcome Bonus', '1000 Power added to your balance', 'success');
                     }
                 } else {
                     this.hasClaimedWelcome = d.hasClaimedWelcome ?? false;
-                    this.isVerified = d.isVerified ?? false;
                 }
                 
                 this.tonBalance = d.tonBalance ?? 0;
@@ -1100,9 +1018,22 @@ class App {
                 this.miningEndTime = d.miningEndTime ?? null;
                 this.pendingTonReward = d.pendingTonReward ?? 0;
                 this.miningSessionHours = d.miningSessionHours ?? 8;
-                this.referralBonusGiven = d.referralBonusGiven ?? false;
+                this.referredBy = d.referredBy ?? null;
+                
+                const totalRef = this.db.ref(`users/${this.tgUser.id}/totalReferrals`);
+                const totalSnap = await totalRef.once('value');
+                this.totalReferrals = totalSnap.val() ?? 0;
+                
+                const referralPowerRef = this.db.ref(`users/${this.tgUser.id}/referralPower`);
+                const referralPowerSnap = await referralPowerRef.once('value');
+                this.referralPower = referralPowerSnap.val() ?? 0;
             } else {
                 await this.forceCreateUserData();
+                const ref2 = this.db.ref(`users/${this.tgUser.id}`);
+                const snap2 = await ref2.once('value');
+                if (snap2.exists()) {
+                    this.referredBy = snap2.val().referredBy ?? null;
+                }
             }
         } catch (error) {
             console.error('loadUserData error:', error);
@@ -1154,18 +1085,12 @@ class App {
     }
     
     async loadReferralStats() {
-        if (!this.db) {
-            this.totalReferrals = 0;
-            this.verifiedReferrals = 0;
-            this.referralPower = 0;
-            return;
-        }
+        if (!this.db) return;
         try {
             const snap = await this.db.ref(`users/${this.tgUser.id}`).once('value');
             if (snap.exists()) {
                 const d = snap.val();
                 this.totalReferrals = d.totalReferrals ?? 0;
-                this.verifiedReferrals = d.verifiedReferrals ?? 0;
                 this.referralPower = d.referralPower ?? 0;
             }
         } catch (error) {
@@ -1391,13 +1316,10 @@ class App {
         const link = APP_CONFIG.BOT_LINK + this.tgUser.id;
         const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Join me on VELTRIX and start mining TON!')}`;
         
-        const activePercent = 0.08 + (Math.random() * 0.07);
-        const activeNow = Math.floor(this.totalReferrals * activePercent);
-        
         el.innerHTML = `
-            <div class="team-benefits"><h3><i class="fas fa-gift"></i> ${this.t('team_benefits')}</h3><div class="benefits-list"><div class="benefit-item"><i class="fas fa-coins"></i><div class="benefit-text">${this.t('team_earnings')} ${APP_CONFIG.REFERRAL_PERCENTAGE}%</div></div></div></div>
+            <div class="team-benefits"><h3><i class="fas fa-gift"></i> ${this.t('team_benefits')}</h3><div class="benefits-list"><div class="benefit-item"><i class="fas fa-coins"></i><div class="benefit-text">${this.t('team_earnings')}</div></div></div></div>
             <div class="referral-card"><h4><i class="fas fa-share-alt"></i> ${this.t('share_earn')}</h4><div class="link-display">${link}</div><div class="referral-buttons"><button id="copyLink"><i class="fas fa-copy"></i> ${this.t('copy')}</button><button id="shareLink"><i class="fab fa-telegram"></i> ${this.t('share')}</button></div></div>
-            <div class="stats-grid"><div class="stat-mini"><span class="stat-label">${this.t('total_members')}</span><span class="stat-number">${this.totalReferrals}</span></div><div class="stat-mini"><span class="stat-label">${this.t('verified_members')}</span><span class="stat-number">${this.verifiedReferrals}</span></div><div class="stat-mini"><span class="stat-label">${this.t('power_earnings')}</span><span class="stat-number">${this.formatNumber(Math.floor(this.referralPower))}</span></div><div class="stat-mini"><span class="stat-label">Active Now</span><span class="stat-number">${activeNow}</span></div></div>
+            <div class="stats-grid"><div class="stat-mini"><span class="stat-label">${this.t('total_members')}</span><span class="stat-number">${this.totalReferrals}</span></div><div class="stat-mini"><span class="stat-label">${this.t('power_earnings')}</span><span class="stat-number">${this.formatNumber(Math.floor(this.referralPower))}</span></div></div>
         `;
         document.getElementById('copyLink')?.addEventListener('click', () => {
             navigator.clipboard.writeText(link);
@@ -1614,6 +1536,7 @@ class App {
             } catch (permError) {
                 console.warn('Permission error, retrying with fresh user data...', permError);
                 await this.forceCreateUserData();
+                await this.loadUserData();
             }
             
             updateProgress(85);
@@ -1655,25 +1578,18 @@ class App {
                 this.powerBalance = (this.powerBalance || 0) + APP_CONFIG.WELCOME_BONUS_POWER;
                 this._dirtyPower = true;
                 this.hasClaimedWelcome = true;
-                this.isVerified = true;
                 await this.updateLevelFromPower();
                 const saved = await this.saveUserData(true);
                 if (saved && this.db) {
                     await this.db.ref(`users/${this.tgUser.id}`).update({ 
-                        hasClaimedWelcome: true, 
-                        isVerified: true,
+                        hasClaimedWelcome: true,
                         powerBalance: this.powerBalance 
                     });
                     this.showNotification('Welcome!', `${APP_CONFIG.WELCOME_BONUS_POWER} Power Added`, 'success');
                 }
             } else {
                 this.hasClaimedWelcome = true;
-                this.isVerified = userSnapshot.val()?.isVerified || true;
             }
-            
-            const userSnap = await this.db.ref(`users/${this.tgUser.id}`).once('value');
-            const referralBonusGiven = userSnap.val()?.referralBonusGiven;
-            if (referralBonusGiven) this.referralBonusGiven = true;
             
             await this.loadReferralStats();
             
