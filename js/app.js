@@ -18,7 +18,7 @@ const translations = {
         partner_text3: "Свяжитесь с поддержкой для деталей", contact_support: "Связаться с поддержкой", mining: "Майнинг", earn: "Заработок",
         team: "Команда", copy_success: "Скопировано!", link_copied: "Ссылка скопирована", earn_more: "Заработай больше энергии",
         complete_tasks: "Выполнить задания", go: "ПЕРЕЙТИ", invite_frens: "Пригласить друзей", ad_reward: "Смотреть рекламу", loading: "Загрузка",
-        ready: "Готово", mining_active: "МАЙНИНГ АКТИВЕН", team_earnings: "Заработок команды"
+        ready: "Готово", mining_active: "МАЙНИНГ АКТИВЕН", team_earnings: "Заработок команды", save_error: "Ошибка сохранения данных! Попробуйте снова."
     },
     en: {
         level: "Level", mining_rig: "Mining Rig Lv.", hourly: "8 Hours", daily: "Daily", monthly: "Monthly",
@@ -37,7 +37,7 @@ const translations = {
         partner_text3: "Contact support for details", contact_support: "Contact Support", mining: "Mining", earn: "Earn",
         team: "Team", copy_success: "Copied!", link_copied: "Link copied to clipboard", earn_more: "Earn More Power",
         complete_tasks: "Complete Tasks", go: "GO", invite_frens: "Invite Frens", ad_reward: "Watch AD", loading: "Loading",
-        ready: "Ready", mining_active: "MINING ACTIVE", team_earnings: "Team Earnings"
+        ready: "Ready", mining_active: "MINING ACTIVE", team_earnings: "Team Earnings", save_error: "Data save failed! Please try again."
     },
     tr: {
         level: "Seviye", mining_rig: "Madenci Seviye", hourly: "8 saat", daily: "Günlük", monthly: "Aylık",
@@ -56,7 +56,7 @@ const translations = {
         partner_text3: "Detaylar için desteğe başvurun", contact_support: "Desteğe Başvur", mining: "Madencilik", earn: "Kazan",
         team: "Takım", copy_success: "Kopyalandı!", link_copied: "Bağlantı panoya kopyalandı", earn_more: "Daha Fazla Güç Kazan",
         complete_tasks: "Görevleri Tamamla", go: "GİT", invite_frens: "Arkadaşları Davet Et", ad_reward: "Reklam İzle", loading: "Yükleniyor",
-        ready: "Hazır", mining_active: "MADENCİLİK AKTİF", team_earnings: "Takım Kazancı"
+        ready: "Hazır", mining_active: "MADENCİLİK AKTİF", team_earnings: "Takım Kazancı", save_error: "Veri kaydedilemedi! Lütfen tekrar deneyin."
     },
     ar: {
         level: "مستوى", mining_rig: "جهاز التعدين مستوى", hourly: "كل 8 ساعات", daily: "يومي", monthly: "شهري",
@@ -75,7 +75,7 @@ const translations = {
         partner_text3: "اتصل بالدعم للتفاصيل", contact_support: "اتصل بالدعم", mining: "التعدين", earn: "الأرباح",
         team: "الفريق", copy_success: "تم النسخ!", link_copied: "تم نسخ الرابط", earn_more: "احصل على طاقة أكثر",
         complete_tasks: "إكمال المهام", go: "اذهب", invite_frens: "دعوة الأصدقاء", ad_reward: "مشاهدة إعلان", loading: "جاري التحميل",
-        ready: "جاهز", mining_active: "التعدين نشط", team_earnings: "أرباح الفريق"
+        ready: "جاهز", mining_active: "التعدين نشط", team_earnings: "أرباح الفريق", save_error: "فشل حفظ البيانات! حاول مرة أخرى."
     }
 };
 
@@ -286,7 +286,7 @@ class App {
             await this.giveReferralBonus();
         }
         
-        await this.saveUserData();
+        await this.saveUserData(true);
         this.renderMining();
         this.startMiningLoop();
         this.showNotification(this.t('start_mining'), 'Your rig is now mining TON', 'success');
@@ -305,7 +305,7 @@ class App {
         this.miningEndTime = null;
         this._dirtyMining = true;
         
-        await this.saveUserData();
+        await this.saveUserData(true);
         this.renderMining();
         if (this.miningInterval) clearInterval(this.miningInterval);
         if (this.uiUpdateInterval) clearInterval(this.uiUpdateInterval);
@@ -340,7 +340,11 @@ class App {
             this.pendingTonReward = 0;
             this._dirtyMining = true;
             
-            await this.saveUserData(true);
+            const saved = await this.saveUserData(true);
+            if (!saved) {
+                this.showNotification(this.t('save_error'), '', 'error');
+                return;
+            }
             
             this.updateLevelFromPower();
             this.renderMining();
@@ -448,7 +452,11 @@ class App {
             this.powerBalance += 10;
             this._dirtyPower = true;
             await this.updateLevelFromPower();
-            await this.saveUserData();
+            const saved = await this.saveUserData(true);
+            if (!saved) {
+                this.showNotification(this.t('save_error'), '', 'error');
+                return;
+            }
             await this.addReferralEarnings(this.tgUser.id, 10);
             this.renderMining();
             this.renderEarn();
@@ -511,10 +519,25 @@ class App {
         this.powerBalance += rewardPower;
         this._dirtyPower = true;
         
+        const saved = await this.saveUserData(true);
+        if (!saved) {
+            this.showNotification(this.t('save_error'), '', 'error');
+            this.userCompletedTasks.delete(taskId);
+            this.powerBalance -= rewardPower;
+            if (btnElement) {
+                btnElement.disabled = false;
+                btnElement.innerHTML = 'Start';
+                btnElement.classList.remove('check');
+                btnElement.classList.add('start');
+            }
+            this.isTaskRunning = false;
+            this.enableAllTaskButtons();
+            return false;
+        }
+        
         await this.addReferralEarnings(this.tgUser.id, rewardPower);
         
         await this.updateLevelFromPower();
-        await this.saveUserData();
         if (this.db) {
             await this.db.ref(`users/${this.tgUser.id}/completedTasks`).set(Array.from(this.userCompletedTasks));
             const taskRef = this.db.ref(`tasks/${taskId}/total`);
@@ -624,13 +647,21 @@ class App {
             this.powerBalance += promoData.reward;
             this._dirtyPower = true;
             await this.updateLevelFromPower();
-            await this.saveUserData();
+            const saved = await this.saveUserData(true);
+            if (!saved) {
+                this.showNotification(this.t('save_error'), '', 'error');
+                return false;
+            }
             await this.addReferralEarnings(this.tgUser.id, promoData.reward);
             this.showNotification('Code Applied!', `You received ${this.formatNumber(promoData.reward)} Power`, 'success');
         } else if (promoData.rewardType === 'ton') {
             this.tonBalance += promoData.reward;
             this._dirtyTon = true;
-            await this.saveUserData();
+            const saved = await this.saveUserData(true);
+            if (!saved) {
+                this.showNotification(this.t('save_error'), '', 'error');
+                return false;
+            }
             this.showNotification('Code Applied!', `You received ${promoData.reward} TON`, 'success');
         } else {
             this.showNotification('Error', 'Invalid reward type', 'error');
@@ -665,9 +696,16 @@ class App {
         const adWatched = await this.showInterstitialAd();
         if (!adWatched) return false;
         
+        const originalBalance = this.tonBalance;
         this.tonBalance -= amount;
         this._dirtyTon = true;
-        await this.saveUserData();
+        
+        const saved = await this.saveUserData(true);
+        if (!saved) {
+            this.tonBalance = originalBalance;
+            this.showNotification(this.t('save_error'), '', 'error');
+            return false;
+        }
         
         const withdrawal = {
             id: Date.now(),
@@ -686,7 +724,7 @@ class App {
                 console.error('Withdrawal save failed:', error);
                 this.tonBalance += amount;
                 this._dirtyTon = true;
-                await this.saveUserData();
+                await this.saveUserData(true);
                 this.showNotification('Error', 'Failed to submit withdrawal', 'error');
                 return false;
             }
@@ -863,8 +901,8 @@ class App {
     }
     
     async saveUserData(immediate = false) {
-        if (!this.db || !this.tgUser) return;
-        if (this.saveTimeout) clearTimeout(this.saveTimeout);
+        if (!this.db || !this.tgUser) return true;
+        if (this.saveTimeout && !immediate) clearTimeout(this.saveTimeout);
         
         const save = async () => {
             try {
@@ -878,22 +916,27 @@ class App {
                     updates.pendingTonReward = this.pendingTonReward;
                 }
                 
-                if (Object.keys(updates).length === 0) return;
+                if (Object.keys(updates).length === 0) return true;
                 
                 await this.db.ref(`users/${this.tgUser.id}`).update(updates);
                 
                 this._dirtyPower = false;
                 this._dirtyTon = false;
                 this._dirtyMining = false;
+                return true;
             } catch (error) {
                 console.warn('Failed to save user data:', error);
+                return false;
             }
         };
         
         if (immediate) {
-            await save();
+            return await save();
         } else {
-            this.saveTimeout = setTimeout(save, 10000);
+            this.saveTimeout = setTimeout(async () => {
+                await save();
+            }, 10000);
+            return true;
         }
     }
     
@@ -1040,8 +1083,10 @@ class App {
                     this._dirtyPower = true;
                     this.hasClaimedWelcome = true;
                     this.isVerified = true;
-                    await this.saveUserData(true);
-                    this.showNotification('Welcome Bonus', '1000 Power added to your balance', 'success');
+                    const saved = await this.saveUserData(true);
+                    if (saved) {
+                        this.showNotification('Welcome Bonus', '1000 Power added to your balance', 'success');
+                    }
                 } else {
                     this.hasClaimedWelcome = d.hasClaimedWelcome ?? false;
                     this.isVerified = d.isVerified ?? false;
@@ -1453,7 +1498,7 @@ class App {
             window.open(APP_CONFIG.SUPPORT_LINK, '_blank');
         });
         window.addEventListener('beforeunload', () => {
-            if (this.miningActive) this.saveUserData();
+            if (this.miningActive) this.saveUserData(true);
         });
         
         const langBtn = document.getElementById('lang-btn');
@@ -1612,15 +1657,15 @@ class App {
                 this.hasClaimedWelcome = true;
                 this.isVerified = true;
                 await this.updateLevelFromPower();
-                await this.saveUserData(true);
-                if (this.db) {
+                const saved = await this.saveUserData(true);
+                if (saved && this.db) {
                     await this.db.ref(`users/${this.tgUser.id}`).update({ 
                         hasClaimedWelcome: true, 
                         isVerified: true,
                         powerBalance: this.powerBalance 
                     });
+                    this.showNotification('Welcome!', `${APP_CONFIG.WELCOME_BONUS_POWER} Power Added`, 'success');
                 }
-                this.showNotification('Welcome!', `${APP_CONFIG.WELCOME_BONUS_POWER} Power Added`, 'success');
             } else {
                 this.hasClaimedWelcome = true;
                 this.isVerified = userSnapshot.val()?.isVerified || true;
