@@ -251,7 +251,7 @@ class App {
             await this.db.ref(`users/${this.tgUser.id}`).update({ hasStartedMining: true });
         }
         
-        this.scheduleSave();
+        await this.saveUserData(true);
         this.renderMining();
         this.startMiningLoop();
         this.showNotification(this.t('start_mining'), 'Your rig is now mining TON', 'success');
@@ -270,7 +270,7 @@ class App {
         this.miningEndTime = null;
         this._dirtyMining = true;
         
-        this.scheduleSave();
+        await this.saveUserData(true);
         this.renderMining();
         if (this.miningInterval) clearInterval(this.miningInterval);
         if (this.uiUpdateInterval) clearInterval(this.uiUpdateInterval);
