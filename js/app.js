@@ -239,37 +239,28 @@ class App {
         }
     }
     
-    async addReferralEarnings(userId, earnedAmount, isPowerEarning = true) {
+    async addReferralEarnings(userId, powerAmount) {
         const userSnap = await this.db.ref(`users/${userId}`).once('value');
         const referredBy = userSnap.val()?.referredBy;
         
         if (referredBy && referredBy !== userId) {
-            const commission = Math.floor(earnedAmount * (APP_CONFIG.REFERRAL_PERCENTAGE / 100));
+            const commission = Math.floor(powerAmount * (APP_CONFIG.REFERRAL_PERCENTAGE / 100));
             
             if (commission > 0) {
                 const referrerRef = this.db.ref(`users/${referredBy}`);
                 const referrerSnap = await referrerRef.once('value');
                 
                 if (referrerSnap.exists()) {
-                    if (isPowerEarning) {
-                        const currentPower = referrerSnap.val().powerBalance ?? 0;
-                        const currentReferralPower = referrerSnap.val().referralPower ?? 0;
-                        await referrerRef.update({ 
-                            powerBalance: currentPower + commission,
-                            referralPower: currentReferralPower + commission
-                        });
-                    } else {
-                        const currentTon = referrerSnap.val().tonBalance ?? 0;
-                        await referrerRef.update({ 
-                            tonBalance: currentTon + commission
-                        });
-                    }
+                    const currentPower = referrerSnap.val().powerBalance ?? 0;
+                    const currentReferralPower = referrerSnap.val().referralPower ?? 0;
+                    await referrerRef.update({ 
+                        powerBalance: currentPower + commission,
+                        referralPower: currentReferralPower + commission
+                    });
                     
                     if (window.app && window.app.tgUser && window.app.tgUser.id === referredBy) {
-                        if (isPowerEarning && window.app.powerBalance) window.app.powerBalance += commission;
-                        if (!isPowerEarning && window.app.tonBalance) window.app.tonBalance += commission;
-                        if (isPowerEarning) window.app._dirtyPower = true;
-                        else window.app._dirtyTon = true;
+                        if (window.app.powerBalance) window.app.powerBalance += commission;
+                        window.app._dirtyPower = true;
                         window.app.renderMining();
                     }
                 }
@@ -350,8 +341,6 @@ class App {
             this._dirtyMining = true;
             
             await this.saveUserData(true);
-            
-            await this.addReferralEarnings(this.tgUser.id, earnedAmount, false);
             
             this.updateLevelFromPower();
             this.renderMining();
@@ -460,7 +449,7 @@ class App {
             this._dirtyPower = true;
             await this.updateLevelFromPower();
             await this.saveUserData();
-            await this.addReferralEarnings(this.tgUser.id, 10, true);
+            await this.addReferralEarnings(this.tgUser.id, 10);
             this.renderMining();
             this.renderEarn();
             this.updateAdCooldownDisplay();
@@ -522,7 +511,7 @@ class App {
         this.powerBalance += rewardPower;
         this._dirtyPower = true;
         
-        await this.addReferralEarnings(this.tgUser.id, rewardPower, true);
+        await this.addReferralEarnings(this.tgUser.id, rewardPower);
         
         await this.updateLevelFromPower();
         await this.saveUserData();
@@ -636,13 +625,12 @@ class App {
             this._dirtyPower = true;
             await this.updateLevelFromPower();
             await this.saveUserData();
-            await this.addReferralEarnings(this.tgUser.id, promoData.reward, true);
+            await this.addReferralEarnings(this.tgUser.id, promoData.reward);
             this.showNotification('Code Applied!', `You received ${this.formatNumber(promoData.reward)} Power`, 'success');
         } else if (promoData.rewardType === 'ton') {
             this.tonBalance += promoData.reward;
             this._dirtyTon = true;
             await this.saveUserData();
-            await this.addReferralEarnings(this.tgUser.id, promoData.reward, false);
             this.showNotification('Code Applied!', `You received ${promoData.reward} TON`, 'success');
         } else {
             this.showNotification('Error', 'Invalid reward type', 'error');
