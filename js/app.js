@@ -193,6 +193,8 @@ class App {
         const levelBadge = document.getElementById('user-level-badge');
         if (levelSpan) levelSpan.innerText = this.userLevel;
         if (levelBadge) levelBadge.innerText = this.userLevel;
+        
+        localStorage.setItem(`user_level_${this.tgUser?.id}`, this.userLevel.toString());
     }
     
     getRequiredPowerForLevel(level) {
@@ -214,22 +216,23 @@ class App {
         const commission = Math.floor(powerAmount * (APP_CONFIG.REFERRAL_PERCENTAGE / 100));
         
         if (commission > 0) {
-            const referrerRef = this.db.ref(`users/${this.referredBy}`);
-            const referrerSnap = await referrerRef.once('value');
+            const referrerPowerRef = this.db.ref(`users/${this.referredBy}/powerBalance`);
+            const referrerPowerSnap = await referrerPowerRef.once('value');
+            const currentPower = referrerPowerSnap.val() ?? 0;
             
-            if (referrerSnap.exists()) {
-                const currentPower = referrerSnap.val().powerBalance ?? 0;
-                const currentReferralPower = referrerSnap.val().referralPower ?? 0;
-                await referrerRef.update({ 
-                    powerBalance: currentPower + commission,
-                    referralPower: currentReferralPower + commission
-                });
-                
-                if (window.app && window.app.tgUser && window.app.tgUser.id === this.referredBy) {
-                    if (window.app.powerBalance) window.app.powerBalance += commission;
-                    window.app._dirtyPower = true;
-                    window.app.scheduleSave();
-                }
+            const referrerReferralPowerRef = this.db.ref(`users/${this.referredBy}/referralPower`);
+            const referrerReferralPowerSnap = await referrerReferralPowerRef.once('value');
+            const currentReferralPower = referrerReferralPowerSnap.val() ?? 0;
+            
+            await this.db.ref(`users/${this.referredBy}`).update({ 
+                powerBalance: currentPower + commission,
+                referralPower: currentReferralPower + commission
+            });
+            
+            if (window.app && window.app.tgUser && window.app.tgUser.id === this.referredBy) {
+                if (window.app.powerBalance) window.app.powerBalance += commission;
+                window.app._dirtyPower = true;
+                window.app.scheduleSave();
             }
         }
     }
@@ -332,7 +335,7 @@ class App {
         
         this.miningInterval = setInterval(async () => {
             if (!this.miningActive) return;
-            const currentTime = Date.now() + this.serverTimeOffset;
+            const currentTime = await this.getServerTime(false);
             if (this.miningEndTime && currentTime >= this.miningEndTime) {
                 await this.stopMining();
             }
@@ -348,22 +351,24 @@ class App {
     updateMiningTimerDisplay() {
         if (!this.miningEndTime) return;
         
-        const currentTime = Date.now() + this.serverTimeOffset;
-        const remaining = Math.max(0, (this.miningEndTime - currentTime) / 1000);
-        
-        if (remaining <= 0 && this.miningActive) {
-            this.stopMining();
-            this.renderMining();
-            return;
-        }
-        
-        const hours = Math.floor(remaining / 3600);
-        const minutes = Math.floor((remaining % 3600) / 60);
-        const seconds = Math.floor(remaining % 60);
-        const timerEl = document.querySelector('.mining-timer');
-        if (timerEl) {
-            timerEl.innerHTML = `<i class="fas fa-hourglass-half"></i> ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
+        (async () => {
+            const currentTime = await this.getServerTime(false);
+            const remaining = Math.max(0, (this.miningEndTime - currentTime) / 1000);
+            
+            if (remaining <= 0 && this.miningActive) {
+                this.stopMining();
+                this.renderMining();
+                return;
+            }
+            
+            const hours = Math.floor(remaining / 3600);
+            const minutes = Math.floor((remaining % 3600) / 60);
+            const seconds = Math.floor(remaining % 60);
+            const timerEl = document.querySelector('.mining-timer');
+            if (timerEl) {
+                timerEl.innerHTML = `<i class="fas fa-hourglass-half"></i> ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        })();
     }
     
     updateAdCooldownDisplay() {
@@ -418,7 +423,6 @@ class App {
             this.renderMining();
             if (this._earnLoaded) {
                 await this.loadTasks();
-                await this.loadCompletedTasks();
                 this.renderEarn();
             }
             this.updateAdCooldownDisplay();
@@ -485,9 +489,11 @@ class App {
         await this.updateLevelFromPower();
         if (this.db) {
             await this.db.ref(`users/${this.tgUser.id}/completedTasks`).set(Array.from(this.userCompletedTasks));
-            const taskRef = this.db.ref(`tasks/${taskId}/total`);
-            const currentTotal = (await taskRef.once('value')).val() || 0;
-            await taskRef.set(currentTotal + 1);
+            localStorage.setItem(`completed_${this.tgUser.id}`, JSON.stringify(Array.from(this.userCompletedTasks)));
+            
+            const taskTotalRef = this.db.ref(`tasks/${taskId}/total`);
+            const currentTotal = (await taskTotalRef.once('value')).val() || 0;
+            await taskTotalRef.set(currentTotal + 1);
             
             if (this.cache.tasks) {
                 const cachedTask = this.cache.tasks.main?.find(t => t.id === taskId) || this.cache.tasks.partner?.find(t => t.id === taskId);
@@ -507,7 +513,6 @@ class App {
         this.renderMining();
         if (this._earnLoaded) {
             await this.loadTasks();
-            await this.loadCompletedTasks();
             this.renderEarn();
         }
         this.showNotification('Task Completed!', `${rewardPower} ${this.t('power')}`, 'success');
@@ -616,7 +621,6 @@ class App {
         this.renderMining();
         if (this._earnLoaded) {
             await this.loadTasks();
-            await this.loadCompletedTasks();
             this.renderEarn();
         }
         return true;
@@ -646,7 +650,7 @@ class App {
             amount: amount,
             wallet: wallet,
             status: 'pending',
-            timestamp: await this.getServerTime()
+            timestamp: await this.getServerTime(true)
         };
         
         if (this.db) {
@@ -700,7 +704,7 @@ class App {
         const cached = this.membershipCache.get(cacheKey);
         const now = Date.now();
         
-        if (cached && (now - cached.timestamp) < 300000) {
+        if (cached && (now - cached.timestamp) < 1800000) {
             return cached.isMember;
         }
         
@@ -728,7 +732,7 @@ class App {
     async getServerTime(forceSync = false) {
         const now = Date.now();
         
-        if (!forceSync && this.lastServerTimeSync && (now - this.lastServerTimeSync) < 300000) {
+        if (!forceSync && this.lastServerTimeSync && (now - this.lastServerTimeSync) < 3600000) {
             return now + this.serverTimeOffset;
         }
         
@@ -933,7 +937,7 @@ class App {
             firstName: this.tgUser.first_name || 'User',
             photoUrl: this.tgUser.photo_url || APP_CONFIG.DEFAULT_USER_AVATAR,
             referredBy: referredBy,
-            createdAt: await this.getServerTime(),
+            createdAt: await this.getServerTime(true),
             miningSessionHours: this.miningSessionHours,
             hasStartedMining: false,
             hasClaimedWelcome: false,
@@ -1021,8 +1025,8 @@ class App {
         }
         
         try {
-            const ref = this.db.ref(`users/${this.tgUser.id}`);
-            const snap = await ref.once('value');
+            const userRef = this.db.ref(`users/${this.tgUser.id}`);
+            const snap = await userRef.once('value');
             if (snap.exists()) {
                 const d = snap.val();
                 this.powerBalance = d.powerBalance ?? this.powerBalance;
@@ -1063,8 +1067,8 @@ class App {
                 localStorage.setItem(`user_${this.tgUser.id}`, JSON.stringify(userDataForCache));
             } else {
                 await this.forceCreateUserData();
-                const ref2 = this.db.ref(`users/${this.tgUser.id}`);
-                const snap2 = await ref2.once('value');
+                const userRef2 = this.db.ref(`users/${this.tgUser.id}`);
+                const snap2 = await userRef2.once('value');
                 if (snap2.exists()) {
                     this.referredBy = snap2.val().referredBy ?? null;
                 }
@@ -1087,13 +1091,22 @@ class App {
     }
     
     async loadCompletedTasks() {
+        const cached = localStorage.getItem(`completed_${this.tgUser.id}`);
+        if (cached && !this._forceRefreshCompleted) {
+            this.userCompletedTasks = new Set(JSON.parse(cached));
+            return;
+        }
+        
         if (!this.db) {
             this.userCompletedTasks = new Set();
             return;
         }
+        
         try {
             const snap = await this.db.ref(`users/${this.tgUser.id}/completedTasks`).once('value');
             this.userCompletedTasks = snap.exists() ? new Set(snap.val()) : new Set();
+            localStorage.setItem(`completed_${this.tgUser.id}`, JSON.stringify(Array.from(this.userCompletedTasks)));
+            this._forceRefreshCompleted = false;
         } catch (error) {
             console.warn('Failed to load completed tasks:', error);
             this.userCompletedTasks = new Set();
@@ -1130,12 +1143,13 @@ class App {
     async loadReferralStats() {
         if (!this.db) return;
         try {
-            const snap = await this.db.ref(`users/${this.tgUser.id}`).once('value');
-            if (snap.exists()) {
-                const d = snap.val();
-                this.totalReferrals = d.totalReferrals ?? 0;
-                this.referralPower = d.referralPower ?? 0;
-            }
+            const totalRef = this.db.ref(`users/${this.tgUser.id}/totalReferrals`);
+            const totalSnap = await totalRef.once('value');
+            this.totalReferrals = totalSnap.val() ?? 0;
+            
+            const powerRef = this.db.ref(`users/${this.tgUser.id}/referralPower`);
+            const powerSnap = await powerRef.once('value');
+            this.referralPower = powerSnap.val() ?? 0;
         } catch (error) {
             console.warn('Failed to load referral stats:', error);
         }
@@ -1149,7 +1163,7 @@ class App {
         }
         
         const now = Date.now();
-        if (this.cache.tasks && (now - this.cache.tasksTime) < 300000) {
+        if (this.cache.tasks && (now - this.cache.tasksTime) < 3600000) {
             this.mainTasks = this.cache.tasks.main || [];
             this.partnerTasks = this.cache.tasks.partner || [];
             return;
@@ -1186,10 +1200,8 @@ class App {
     }
     
     async loadEarnData() {
-        await Promise.all([
-            this.loadTasks(),
-            this.loadCompletedTasks()
-        ]);
+        await this.loadTasks();
+        await this.loadCompletedTasks();
     }
     
     renderMining() {
@@ -1605,8 +1617,9 @@ class App {
                 }
             }
             
-            const userSnapshot = await this.db.ref(`users/${this.tgUser.id}`).once('value');
-            const hasClaimedWelcomeFromDB = userSnapshot.val()?.hasClaimedWelcome;
+            const hasClaimedWelcomeRef = this.db.ref(`users/${this.tgUser.id}/hasClaimedWelcome`);
+            const hasClaimedWelcomeSnap = await hasClaimedWelcomeRef.once('value');
+            const hasClaimedWelcomeFromDB = hasClaimedWelcomeSnap.val();
             
             if (!hasClaimedWelcomeFromDB) {
                 this.powerBalance = (this.powerBalance || 0) + APP_CONFIG.WELCOME_BONUS_POWER;
