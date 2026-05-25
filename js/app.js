@@ -138,6 +138,7 @@ class App {
         this._earnLoaded = false;
         this._teamLoaded = false;
         this._withdrawLoaded = false;
+        this._withdrawLock = false;
     }
     
     t(key) {
@@ -627,6 +628,14 @@ class App {
     }
     
     async withdraw(amount, wallet) {
+    if (this._withdrawLock) {
+        this.showNotification('Please wait', 'You can withdraw again after 10 seconds', 'warning');
+        return false;
+    }
+    
+    this._withdrawLock = true;
+    setTimeout(() => { this._withdrawLock = false; }, 10000);
+        
         if (!wallet || wallet.length < 20) {
             this.showNotification('Error', 'Invalid wallet address', 'error');
             return false;
