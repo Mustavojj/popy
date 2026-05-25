@@ -109,7 +109,6 @@ class App {
         this.isTaskRunning = false;
         this.mainTasks = [];
         this.partnerTasks = [];
-        this.promoCodes = [];
         
         this.lastRewardAdTime = 0;
         this.lang = 'en';
@@ -132,9 +131,7 @@ class App {
         
         this.cache = {
             tasks: null,
-            tasksTime: 0,
-            promoCodes: null,
-            promosTime: 0
+            tasksTime: 0
         };
         
         this._userDataLoaded = false;
@@ -420,7 +417,8 @@ class App {
             await this.addReferralEarnings(this.tgUser.id, 10);
             this.renderMining();
             if (this._earnLoaded) {
-                this.loadEarnData();
+                await this.loadTasks();
+                await this.loadCompletedTasks();
                 this.renderEarn();
             }
             this.updateAdCooldownDisplay();
@@ -508,7 +506,8 @@ class App {
         
         this.renderMining();
         if (this._earnLoaded) {
-            this.loadEarnData();
+            await this.loadTasks();
+            await this.loadCompletedTasks();
             this.renderEarn();
         }
         this.showNotification('Task Completed!', `${rewardPower} ${this.t('power')}`, 'success');
@@ -566,6 +565,7 @@ class App {
             this.showNotification('Already Used', 'Code already redeemed', 'warning');
             return false;
         }
+        
         const codeSnap = await this.db.ref(`promoCodes/${code}`).once('value');
         if (!codeSnap.exists()) {
             this.showNotification('Invalid Code', 'Promo code not found', 'error');
@@ -613,16 +613,10 @@ class App {
         const promoRef = this.db.ref(`promoCodes/${code}/total`);
         await promoRef.set(totalUses + 1);
         
-        if (this.cache.promoCodes) {
-            const cachedPromo = this.cache.promoCodes.find(p => p.code === code);
-            if (cachedPromo) {
-                cachedPromo.total = totalUses + 1;
-            }
-        }
-        
         this.renderMining();
         if (this._earnLoaded) {
-            this.loadEarnData();
+            await this.loadTasks();
+            await this.loadCompletedTasks();
             this.renderEarn();
         }
         return true;
@@ -1147,31 +1141,6 @@ class App {
         }
     }
     
-    async loadPromoCodes() {
-        if (!this.db) return;
-        
-        const now = Date.now();
-        if (this.cache.promoCodes && (now - this.cache.promosTime) < 300000) {
-            this.promoCodes = this.cache.promoCodes;
-            return;
-        }
-        
-        try {
-            const snap = await this.db.ref('promoCodes').once('value');
-            this.promoCodes = [];
-            if (snap.exists()) {
-                snap.forEach(c => {
-                    this.promoCodes.push({ code: c.key, ...c.val() });
-                });
-            }
-            this.cache.promoCodes = this.promoCodes;
-            this.cache.promosTime = now;
-        } catch (error) {
-            console.warn('Failed to load promo codes:', error);
-            this.promoCodes = [];
-        }
-    }
-    
     async loadTasks() {
         if (!this.db) {
             this.mainTasks = [];
@@ -1219,7 +1188,6 @@ class App {
     async loadEarnData() {
         await Promise.all([
             this.loadTasks(),
-            this.loadPromoCodes(),
             this.loadCompletedTasks()
         ]);
     }
