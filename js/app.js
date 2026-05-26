@@ -1236,155 +1236,75 @@ class App {
         
         return true;
     }
-    
-    async completeDailyAdTask() {
-        if (this.dailyAdTaskCompleted) {
-            this.showNotification('Already Completed', 'Daily task already done today', 'warning');
-            return false;
-        }
-        
-        if (this.isDailyAdTaskRunning) {
-            this.showNotification('Busy', 'Please wait for current task', 'warning');
-            return false;
-        }
-        
-        this.isDailyAdTaskRunning = true;
-        
-        const taskContainer = document.querySelector('.daily-ad-task-container');
-        if (!taskContainer) {
-            this.isDailyAdTaskRunning = false;
-            return false;
-        }
-        
-        const rewardAmount = Math.floor(Math.random() * (50 - 10 + 1)) + 10;
-        this.dailyAdTaskReward = rewardAmount;
-        
-        taskContainer.innerHTML = `
-            <div class="daily-task-header">
-                <div class="daily-task-icon"><i class="fas fa-video"></i></div>
-                <div class="daily-task-info">
-                    <h4>${this.t('daily_ad_task')}</h4>
-                    <div class="daily-task-reward">+${rewardAmount} ${this.t('power')}</div>
-                </div>
-                <button class="task-btn start watch-ad-btn">${this.t('watch_ad_btn')}</button>
-            </div>
-        `;
-        
-        const watchBtn = taskContainer.querySelector('.watch-ad-btn');
-        watchBtn.addEventListener('click', async () => {
-            watchBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
-            watchBtn.disabled = true;
-            
-            try {
-                const adContainer = document.createElement('div');
-                adContainer.innerHTML = `
-                    <adsgram-task data-block-id='${APP_CONFIG.DAILY_AD_TASK_BLOCK_ID}' data-debug='true' class='daily-adsgram-task' style="display:none;">
-                        <p slot='reward' class='task__reward'>🪙 ${rewardAmount}</p>
-                        <div slot='button' class='task__button'>go</div>
-                        <div slot='claim' class='taskbutton taskbutton_claim'>claim</div>
-                        <div slot='done' class='taskbutton taskbutton_done'>done</div>
-                    </adsgram-task>
-                `;
-                document.body.appendChild(adContainer);
-                
-                const taskElement = adContainer.querySelector('.daily-adsgram-task');
-                
-                const rewardHandler = (event) => {
-                    this.showNotification('Reward Earned!', `+${rewardAmount} Power`, 'success');
-                    taskElement.removeEventListener('reward', rewardHandler);
-                    taskElement.removeEventListener('onError', errorHandler);
-                    taskElement.removeEventListener('onBannerNotFound', errorHandler);
-                    taskElement.removeEventListener('onTooLongSession', errorHandler);
-                    adContainer.remove();
-                    
-                    this.dailyAdTaskCompleted = true;
-                    this.lastDailyAdTask = Date.now();
-                    this.saveDailyTaskStatus();
-                    
-                    this.powerBalance += rewardAmount;
-                    this._dirtyPower = true;
-                    this.updateLevelFromPower();
-                    this.saveUserData(true);
-                    this.addReferralEarnings(this.tgUser.id, rewardAmount);
-                    
-                    taskContainer.innerHTML = `
-                        <div class="daily-task-header">
-                            <div class="daily-task-icon"><i class="fas fa-check-circle" style="color:#2ecc71"></i></div>
-                            <div class="daily-task-info">
-                                <h4>${this.t('daily_ad_task')}</h4>
-                                <div class="daily-task-reward">+${rewardAmount} ${this.t('power')}</div>
-                            </div>
-                            <button class="task-btn done" disabled>Done</button>
-                        </div>
-                    `;
-                    
-                    this.isDailyAdTaskRunning = false;
-                    this.renderEarn();
-                };
-                
-                const errorHandler = (event) => {
-                    this.showNotification('Ad Error', 'Please try again later', 'error');
-                    taskElement.removeEventListener('reward', rewardHandler);
-                    taskElement.removeEventListener('onError', errorHandler);
-                    taskElement.removeEventListener('onBannerNotFound', errorHandler);
-                    taskElement.removeEventListener('onTooLongSession', errorHandler);
-                    adContainer.remove();
-                    
-                    taskContainer.innerHTML = `
-                        <div class="daily-task-header">
-                            <div class="daily-task-icon"><i class="fas fa-video"></i></div>
-                            <div class="daily-task-info">
-                                <h4>${this.t('daily_ad_task')}</h4>
-                                <div class="daily-task-reward">+${rewardAmount} ${this.t('power')}</div>
-                            </div>
-                            <button class="task-btn start watch-ad-btn">${this.t('watch_ad_btn')}</button>
-                        </div>
-                    `;
-                    
-                    const newWatchBtn = taskContainer.querySelector('.watch-ad-btn');
-                    newWatchBtn.addEventListener('click', () => this.completeDailyAdTask());
-                    this.isDailyAdTaskRunning = false;
-                };
-                
-                taskElement.addEventListener('reward', rewardHandler);
-                taskElement.addEventListener('onError', errorHandler);
-                taskElement.addEventListener('onBannerNotFound', errorHandler);
-                taskElement.addEventListener('onTooLongSession', errorHandler);
-                
-                setTimeout(() => {
-                    const adIframe = adContainer.querySelector('iframe');
-                    if (adIframe) {
-                        adIframe.style.display = 'block';
-                        adIframe.style.position = 'fixed';
-                        adIframe.style.top = '0';
-                        adIframe.style.left = '0';
-                        adIframe.style.width = '100%';
-                        adIframe.style.height = '100%';
-                        adIframe.style.zIndex = '100000';
-                    }
-                }, 100);
-                
-            } catch (error) {
-                console.error('Ad error:', error);
-                this.showNotification('Ad Error', 'Please try again later', 'error');
-                taskContainer.innerHTML = `
-                    <div class="daily-task-header">
-                        <div class="daily-task-icon"><i class="fas fa-video"></i></div>
-                        <div class="daily-task-info">
-                            <h4>${this.t('daily_ad_task')}</h4>
-                            <div class="daily-task-reward">+${rewardAmount} ${this.t('power')}</div>
-                        </div>
-                        <button class="task-btn start watch-ad-btn">${this.t('watch_ad_btn')}</button>
-                    </div>
-                `;
-                const newWatchBtn = taskContainer.querySelector('.watch-ad-btn');
-                newWatchBtn.addEventListener('click', () => this.completeDailyAdTask());
-                this.isDailyAdTaskRunning = false;
-            }
-        });
-        
-        return true;
+
+
+
+async completeDailyAdTask() {
+    if (this.dailyAdTaskCompleted) {
+        this.showNotification('Already Completed', 'Daily task already done today', 'warning');
+        return false;
     }
+    
+    if (this.isDailyAdTaskRunning) {
+        this.showNotification('Busy', 'Please wait for current task', 'warning');
+        return false;
+    }
+    
+    this.isDailyAdTaskRunning = true;
+    
+    const taskContainer = document.querySelector('.daily-ad-task-container');
+    const watchBtn = document.querySelector('#daily-ad-task-btn');
+    
+    if (watchBtn) watchBtn.style.display = 'none';
+    
+    const rewardAmount = Math.floor(Math.random() * (50 - 10 + 1)) + 10;
+    
+    taskContainer.innerHTML = `
+        <div class="daily-task-header">
+            <div class="daily-task-icon"><i class="fas fa-video"></i></div>
+            <div class="daily-task-info">
+                <h4>${this.t('daily_ad_task')}</h4>
+                <div class="daily-task-reward" id="ad-reward-display">+${rewardAmount} ${this.t('power')}</div>
+            </div>
+            <adsgram-task id="daily-ads-task" data-block-id='${APP_CONFIG.DAILY_AD_TASK_BLOCK_ID}' data-debug='true' class="task-ad-component"></adsgram-task>
+        </div>
+    `;
+    
+    const adComponent = document.getElementById('daily-ads-task');
+    
+    const rewardHandler = () => {
+        this.showNotification('Reward Earned!', `+${rewardAmount} Power`, 'success');
+        
+        this.dailyAdTaskCompleted = true;
+        this.dailyAdTaskReward = rewardAmount;
+        this.saveDailyTaskStatus();
+        this.powerBalance += rewardAmount;
+        this._dirtyPower = true;
+        this.updateLevelFromPower();
+        this.saveUserData(true);
+        this.addReferralEarnings(this.tgUser.id, rewardAmount);
+        
+        adComponent.removeEventListener('reward', rewardHandler);
+        adComponent.removeEventListener('onError', errorHandler);
+        
+        this.renderEarn();
+        this.isDailyAdTaskRunning = false;
+    };
+    
+    const errorHandler = () => {
+        this.showNotification('Ad Error', 'Please try again later', 'error');
+        adComponent.removeEventListener('reward', rewardHandler);
+        adComponent.removeEventListener('onError', errorHandler);
+        this.renderEarn();
+        this.isDailyAdTaskRunning = false;
+    };
+    
+    adComponent.addEventListener('reward', rewardHandler);
+    adComponent.addEventListener('onError', errorHandler);
+    
+    return true;
+}
+
     
     async loadCompletedTasks() {
         const cached = localStorage.getItem(`completed_${this.tgUser.id}`);
