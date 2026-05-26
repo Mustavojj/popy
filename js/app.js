@@ -1560,7 +1560,7 @@ class App {
         const minutesRemaining = Math.floor((timeRemaining % 3600000) / 60000);
         
         const dailyCheckNewsBtnClass = this.dailyCheckNewsCompleted ? 'done' : 'start';
-        const dailyCheckNewsBtnText = this.dailyCheckNewsCompleted ? 'Done' : this.t('watch');
+        const dailyCheckNewsBtnText = this.dailyCheckNewsCompleted ? 'Done' : this.t('start');
         const dailyCheckNewsBtnDisabled = this.dailyCheckNewsCompleted;
         
         const dailyAdTaskBtnClass = this.dailyAdTaskCompleted ? 'done' : 'start';
