@@ -1541,17 +1541,6 @@ async completeDailyAdTask() {
                         <button class="task-btn ${dailyCheckNewsBtnClass}" id="daily-check-news-btn" ${dailyCheckNewsBtnDisabled ? 'disabled' : ''}>${dailyCheckNewsBtnText}</button>
                     </div>
                 </div>
-                <div class="daily-task-card daily-ad-task-container">
-                    <div class="daily-task-header">
-                        <div class="daily-task-icon"><i class="fas fa-video"></i></div>
-                        <div class="daily-task-info">
-                            <h4>${this.t('daily_ad_task')}</h4>
-                            <div class="daily-task-reward">10-50 ${this.t('power')}</div>
-                        </div>
-                        <button class="task-btn ${dailyAdTaskBtnClass}" id="daily-ad-task-btn" ${dailyAdTaskBtnDisabled ? 'disabled' : ''}>${dailyAdTaskBtnText}</button>
-                    </div>
-                </div>
-            </div>
             
             <div class="section-header">
                 <h3><i class="fas fa-star"></i> ${this.t('main_tasks')}</h3>
