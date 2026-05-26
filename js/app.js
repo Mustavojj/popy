@@ -1209,7 +1209,7 @@ class App {
                         this.lastDailyCheckNews = Date.now();
                         this.saveDailyTaskStatus();
                         
-                        const rewardPower = 50;
+                        const rewardPower = 10;
                         this.powerBalance += rewardPower;
                         this._dirtyPower = true;
                         await this.updateLevelFromPower();
