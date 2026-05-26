@@ -1616,7 +1616,7 @@ class App {
                         <div class="daily-task-icon"><i class="fas fa-newspaper"></i></div>
                         <div class="daily-task-info">
                             <h4>${this.t('daily_check_news')}</h4>
-                            <div class="daily-task-reward">+50 ${this.t('power')}</div>
+                            <div class="daily-task-reward">+10 ${this.t('power')}</div>
                         </div>
                         <button class="task-btn ${dailyCheckNewsBtnClass}" id="daily-check-news-btn" ${dailyCheckNewsBtnDisabled ? 'disabled' : ''}>${dailyCheckNewsBtnText}</button>
                     </div>
