@@ -576,94 +576,65 @@ class App {
         });
     }
 
-
 async applyPromoCode(code) {
-    if (!this.db) {
-        this.showNotification('Error', 'Database not connected', 'error');
-        return false;
-    }
-    
+    if (!this.db) return false;
     if (this.userCompletedPromoCodes.has(code)) {
         this.showNotification('Already Used', 'Code already redeemed', 'warning');
         return false;
     }
-    
-    localStorage.removeItem('promoCodes_cache');
-    localStorage.removeItem('promoCodes_cache_time');
-    
-    try {
-        const allCodesRef = this.db.ref('promoCodes');
-        const allCodesSnap = await allCodesRef.once('value');
-        
-        if (!allCodesSnap.exists()) {
-            this.showNotification('Debug', 'No promoCodes found in database at all!', 'error');
-            return false;
-        }
-        
-        const allCodes = allCodesSnap.val();
-        const codesList = Object.keys(allCodes).join(', ');
-        this.showNotification('Debug', `Available codes: ${codesList}`, 'info');
-        
-        const targetCodeSnap = await this.db.ref(`promoCodes/${code}`).once('value');
-        
-        if (!targetCodeSnap.exists()) {
-            this.showNotification('Debug', `Code "${code}" not found. Available: ${codesList}`, 'warning');
-            return false;
-        }
-        
-        const promoData = targetCodeSnap.val();
-        this.showNotification('Debug', `Found: ${promoData.reward} ${promoData.rewardType}`, 'success');
-        
-        const usedRef = this.db.ref(`usedPromoCodes/${this.tgUser.id}/${code}`);
-        const usedSnap = await usedRef.once('value');
-        if (usedSnap.exists()) {
-            this.showNotification('Already Used', 'Code already redeemed', 'warning');
-            return false;
-        }
-        
-        const totalUses = promoData.total || 0;
-        const maxUses = promoData.maxUses;
-        if (maxUses && totalUses >= maxUses) {
-            this.showNotification('Expired', 'Promo code has reached maximum uses', 'warning');
-            return false;
-        }
-        
-        const adWatched = await this.showInterstitialAd();
-        if (!adWatched) return false;
-        
-        await usedRef.set(true);
-        this.userCompletedPromoCodes.add(code);
-        
-        if (promoData.rewardType === 'power') {
-            this.powerBalance += promoData.reward;
-            this._dirtyPower = true;
-            await this.updateLevelFromPower();
-            await this.saveUserData();
-            await this.addReferralEarnings(this.tgUser.id, promoData.reward);
-            this.showNotification('Code Applied!', `You received ${this.formatNumber(promoData.reward)} Power`, 'success');
-        } else if (promoData.rewardType === 'ton') {
-            this.tonBalance += promoData.reward;
-            this._dirtyTon = true;
-            await this.saveUserData();
-            this.showNotification('Code Applied!', `You received ${promoData.reward} TON`, 'success');
-        } else {
-            this.showNotification('Error', 'Invalid reward type', 'error');
-            return false;
-        }
-        
-        const promoRef = this.db.ref(`promoCodes/${code}/total`);
-        await promoRef.set(totalUses + 1);
-        
-        this.renderMining();
-        this.renderEarn();
-        return true;
-        
-    } catch (error) {
-        this.showNotification('Error', `Failed: ${error.message}`, 'error');
+    const codeSnap = await this.db.ref(`promoCodes/${code}`).once('value');
+    if (!codeSnap.exists()) {
+        this.showNotification('Invalid Code', 'Promo code not found', 'error');
         return false;
     }
+    const promoData = codeSnap.val();
+    
+    const usedRef = this.db.ref(`usedPromoCodes/${this.tgUser.id}/${code}`);
+    const usedSnap = await usedRef.once('value');
+    if (usedSnap.exists()) {
+        this.showNotification('Already Used', 'Code already redeemed', 'warning');
+        return false;
+    }
+    
+    const totalUses = promoData.total || 0;
+    const maxUses = promoData.maxUses;
+    if (maxUses && totalUses >= maxUses) {
+        this.showNotification('Expired', 'Promo code has reached maximum uses', 'warning');
+        return false;
+    }
+    
+    const adWatched = await this.showInterstitialAd();
+    if (!adWatched) return false;
+    
+    await usedRef.set(true);
+    this.userCompletedPromoCodes.add(code);
+    
+    if (promoData.rewardType === 'power') {
+        this.powerBalance += promoData.reward;
+        this._dirtyPower = true;
+        await this.updateLevelFromPower();
+        await this.saveUserData();
+        await this.addReferralEarnings(this.tgUser.id, promoData.reward);
+        this.showNotification('Code Applied!', `You received ${this.formatNumber(promoData.reward)} Power`, 'success');
+    } else if (promoData.rewardType === 'ton') {
+        this.tonBalance += promoData.reward;
+        this._dirtyTon = true;
+        await this.saveUserData();
+        this.showNotification('Code Applied!', `You received ${promoData.reward} TON`, 'success');
+    } else {
+        this.showNotification('Error', 'Invalid reward type', 'error');
+        return false;
+    }
+    
+    const promoRef = this.db.ref(`promoCodes/${code}/total`);
+    await promoRef.set(totalUses + 1);
+    
+    this.renderMining();
+    this.renderEarn();
+    return true;
 }
-            
+
+    
     async withdraw(amount, wallet) {
         if (this._withdrawLock) {
             this.showNotification('Please wait', 'You can withdraw again after 10 seconds', 'warning');
