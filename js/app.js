@@ -997,31 +997,24 @@ async applyPromoCode(code) {
         if (photoImg) photoImg.src = this.tgUser.photo_url || APP_CONFIG.DEFAULT_USER_AVATAR;
     }
     
-    async initFirebase() {
-        let config = this.firebaseConfigCache;
-        
-        if (!config) {
-            const cachedConfig = localStorage.getItem('firebase_config');
-            const cachedTime = localStorage.getItem('firebase_config_time');
-            
-            if (cachedConfig && cachedTime && (Date.now() - parseInt(cachedTime)) < 86400000) {
-                config = JSON.parse(cachedConfig);
-            } else {
-                const res = await fetch('/api/firebase-config', { method: 'POST' });
-                const { encrypted } = await res.json();
-                config = JSON.parse(atob(encrypted));
-                localStorage.setItem('firebase_config', JSON.stringify(config));
-                localStorage.setItem('firebase_config_time', Date.now().toString());
-            }
-            this.firebaseConfigCache = config;
-        }
-        
-        let app;
-        try { app = firebase.initializeApp(config); } catch(e) { app = firebase.app(); }
-        this.db = app.database();
-        this.auth = app.auth();
-        await this.auth.signInAnonymously();
-    }
+async initFirebase() {
+    const config = {
+        apiKey: "AIzaSyCWnfPAgBHr1beeph4OxxmXokY45MgPsFM",
+        authDomain: "vevaia.firebaseapp.com",
+        databaseURL: "https://vevaia-default-rtdb.firebaseio.com",
+        projectId: "vevaia",
+        storageBucket: "vevaia.firebasestorage.app",
+        messagingSenderId: "284687408904",
+        appId: "1:284687408904:web:25e88c5066b5844aefd6bd",
+        measurementId: "G-LPRMK4JY0Z"
+    };
+    
+    let app;
+    try { app = firebase.initializeApp(config); } catch(e) { app = firebase.app(); }
+    this.db = app.database();
+    this.auth = app.auth();
+    await this.auth.signInAnonymously();
+}
     
     async loadUserData() {
         if (this._userDataLoaded) return;
