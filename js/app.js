@@ -254,6 +254,9 @@ class App {
     }
     
     async startMining() {
+        const adWatched = await this.showInterstitialAd();
+        if (!adWatched) return;
+        
         const serverTime = await this.getServerTime(true);
         
         this.miningActive = true;
@@ -294,56 +297,56 @@ class App {
     }
     
     async claimMiningRewards() {
-        if (this.miningActive) {
-            this.showNotification('Error', 'Complete mining session first!', 'error');
-            return;
-        }
-        if (this.pendingTonReward <= 0) {
-            this.showNotification('Error', 'No rewards to claim', 'error');
-            return;
-        }
-        
+    if (this.miningActive) {
+        this.showNotification('Error', 'Complete mining session first!', 'error');
+        return;
+    }
+    if (this.pendingTonReward <= 0) {
+        this.showNotification('Error', 'No rewards to claim', 'error');
+        return;
+    }
+    
+    const modal = document.getElementById('claim-modal');
+    const rewardEl = document.getElementById('claim-reward-amount');
+    rewardEl.innerText = this.pendingTonReward.toFixed(6) + ' TON';
+    modal.style.display = 'flex';
+    
+    const confirmBtn = document.getElementById('confirm-claim-btn');
+    const closeBtn = document.getElementById('close-claim-modal');
+    
+    const handleClaim = async () => {
         const adWatched = await this.showInterstitialAd();
         if (!adWatched) return;
         
-        const modal = document.getElementById('claim-modal');
-        const rewardEl = document.getElementById('claim-reward-amount');
-        rewardEl.innerText = this.pendingTonReward.toFixed(6) + ' TON';
-        modal.style.display = 'flex';
+        modal.style.display = 'none';
+        cleanup();
         
-        const confirmBtn = document.getElementById('confirm-claim-btn');
-        const closeBtn = document.getElementById('close-claim-modal');
+        const earnedAmount = this.pendingTonReward;
+        this.tonBalance += earnedAmount;
+        this._dirtyTon = true;
+        this.pendingTonReward = 0;
+        this._dirtyMining = true;
         
-        const handleClaim = async () => {
-            modal.style.display = 'none';
-            cleanup();
-            
-            const earnedAmount = this.pendingTonReward;
-            this.tonBalance += earnedAmount;
-            this._dirtyTon = true;
-            this.pendingTonReward = 0;
-            this._dirtyMining = true;
-            
-            await this.saveUserData(true);
-            
-            this.updateLevelFromPower();
-            this.renderMining();
-            this.showNotification('Rewards Claimed!', `${earnedAmount.toFixed(8)} TON added to balance`, 'success');
-        };
+        await this.saveUserData(true);
         
-        const handleClose = () => {
-            modal.style.display = 'none';
-            cleanup();
-        };
-        
-        const cleanup = () => {
-            confirmBtn.removeEventListener('click', handleClaim);
-            closeBtn.removeEventListener('click', handleClose);
-        };
-        
-        confirmBtn.addEventListener('click', handleClaim);
-        closeBtn.addEventListener('click', handleClose);
-    }
+        this.updateLevelFromPower();
+        this.renderMining();
+        this.showNotification('Rewards Claimed!', `${earnedAmount.toFixed(8)} TON added to balance`, 'success');
+    };
+    
+    const handleClose = () => {
+        modal.style.display = 'none';
+        cleanup();
+    };
+    
+    const cleanup = () => {
+        confirmBtn.removeEventListener('click', handleClaim);
+        closeBtn.removeEventListener('click', handleClose);
+    };
+    
+    confirmBtn.addEventListener('click', handleClaim);
+    closeBtn.addEventListener('click', handleClose);
+}
     
     startMiningLoop() {
         if (this.miningInterval) clearInterval(this.miningInterval);
