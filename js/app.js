@@ -583,14 +583,13 @@ class App {
             return false;
         }
         
-        const codesRef = this.db.ref('promoCodes');
-        const snapshot = await codesRef.orderByChild('code').equalTo(code).once('value');
+        const codeSnap = await this.db.ref(`promoCodes/${code}`).once('value');
         
-        if (!snapshot.exists()) {
+        if (!codeSnap.exists()) {
             this.showNotification('Invalid Code', 'Promo code not found', 'error');
             return false;
         }
-        
+
         let promoKey = null;
         let promoData = null;
         snapshot.forEach(child => {
