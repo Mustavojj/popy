@@ -584,8 +584,9 @@ class App {
         }
         
         const codeSnap = await this.db.ref(`promoCodes/${code}`).once('value');
+        const snapshot = await this.db.ref('promoCodes').orderByChild('code').equalTo(code.toUpperCase()).once('value');
         
-        if (!codeSnap.exists()) {
+        if (!snapshot.exists()) {
             this.showNotification('Invalid Code', 'Promo code not found', 'error');
             return false;
         }
