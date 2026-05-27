@@ -575,30 +575,43 @@ class App {
             }
         });
     }
-    
-    async applyPromoCode(code) {
-        if (!this.db) return false;
-        if (this.userCompletedPromoCodes.has(code)) {
-            this.showNotification('Already Used', 'Code already redeemed', 'warning');
-            return false;
-        }
-        
-        const codeSnap = await this.db.ref(`promoCodes/${code}`).once('value');
-        const snapshot = await this.db.ref('promoCodes').orderByChild('code').equalTo(code.toUpperCase()).once('value');
-        
-        if (!snapshot.exists()) {
-            this.showNotification('Invalid Code', 'Promo code not found', 'error');
-            return false;
-        }
 
-        let promoKey = null;
-        let promoData = null;
-        snapshot.forEach(child => {
-            promoKey = child.key;
-            promoData = child.val();
-        });
+
+async applyPromoCode(code) {
+    if (!this.db) {
+        this.showNotification('Error', 'Database not connected', 'error');
+        return false;
+    }
+    
+    if (this.userCompletedPromoCodes.has(code)) {
+        this.showNotification('Already Used', 'Code already redeemed', 'warning');
+        return false;
+    }
+    
+    try {
+        const allCodesRef = this.db.ref('promoCodes');
+        const allCodesSnap = await allCodesRef.once('value');
         
-        const usedRef = this.db.ref(`usedPromoCodes/${this.tgUser.id}/${promoKey}`);
+        if (!allCodesSnap.exists()) {
+            this.showNotification('Debug', 'No promoCodes found in database at all!', 'error');
+            return false;
+        }
+        
+        const allCodes = allCodesSnap.val();
+        const codesList = Object.keys(allCodes).join(', ');
+        this.showNotification('Debug', `Available codes: ${codesList}`, 'info');
+        
+        const targetCodeSnap = await this.db.ref(`promoCodes/${code}`).once('value');
+        
+        if (!targetCodeSnap.exists()) {
+            this.showNotification('Debug', `Code "${code}" not found. Available: ${codesList}`, 'warning');
+            return false;
+        }
+        
+        const promoData = targetCodeSnap.val();
+        this.showNotification('Debug', `Found: ${promoData.reward} ${promoData.rewardType}`, 'success');
+        
+        const usedRef = this.db.ref(`usedPromoCodes/${this.tgUser.id}/${code}`);
         const usedSnap = await usedRef.once('value');
         if (usedSnap.exists()) {
             this.showNotification('Already Used', 'Code already redeemed', 'warning');
@@ -616,36 +629,38 @@ class App {
         if (!adWatched) return false;
         
         await usedRef.set(true);
-        this.userCompletedPromoCodes.add(promoKey);
+        this.userCompletedPromoCodes.add(code);
         
         if (promoData.rewardType === 'power') {
             this.powerBalance += promoData.reward;
             this._dirtyPower = true;
             await this.updateLevelFromPower();
-            await this.saveUserData(true);
+            await this.saveUserData();
             await this.addReferralEarnings(this.tgUser.id, promoData.reward);
             this.showNotification('Code Applied!', `You received ${this.formatNumber(promoData.reward)} Power`, 'success');
         } else if (promoData.rewardType === 'ton') {
             this.tonBalance += promoData.reward;
             this._dirtyTon = true;
-            await this.saveUserData(true);
+            await this.saveUserData();
             this.showNotification('Code Applied!', `You received ${promoData.reward} TON`, 'success');
         } else {
             this.showNotification('Error', 'Invalid reward type', 'error');
             return false;
         }
         
-        const promoTotalRef = this.db.ref(`promoCodes/${promoKey}/total`);
-        await promoTotalRef.set(totalUses + 1);
+        const promoRef = this.db.ref(`promoCodes/${code}/total`);
+        await promoRef.set(totalUses + 1);
         
         this.renderMining();
-        if (this._earnLoaded) {
-            await this.loadTasks();
-            this.renderEarn();
-        }
+        this.renderEarn();
         return true;
+        
+    } catch (error) {
+        this.showNotification('Error', `Failed: ${error.message}`, 'error');
+        return false;
     }
-    
+}
+            
     async withdraw(amount, wallet) {
         if (this._withdrawLock) {
             this.showNotification('Please wait', 'You can withdraw again after 10 seconds', 'warning');
