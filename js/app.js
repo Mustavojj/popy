@@ -507,13 +507,16 @@ class App {
             await this.db.ref(`users/${this.tgUser.id}/completedTasks`).set(Array.from(this.userCompletedTasks));
             localStorage.setItem(`completed_${this.tgUser.id}`, JSON.stringify(Array.from(this.userCompletedTasks)));
             
-            if (taskId.startsWith('social_')) {
+            const isPartnerTask = this.partnerTasks.some(t => t.id === taskId);
+            const isMainTask = APP_CONFIG.MAIN_TASKS.some(t => t.id === taskId);
+            
+            if (isPartnerTask && !isMainTask) {
                 const taskTotalRef = this.db.ref(`tasks/${taskId}/total`);
                 const currentTotal = (await taskTotalRef.once('value')).val() || 0;
                 await taskTotalRef.set(currentTotal + 1);
                 
-                if (this.cache.tasks) {
-                    const cachedTask = this.cache.tasks.partner?.find(t => t.id === taskId);
+                if (this.cache.tasks && this.cache.tasks.partner) {
+                    const cachedTask = this.cache.tasks.partner.find(t => t.id === taskId);
                     if (cachedTask) {
                         cachedTask.total = currentTotal + 1;
                     }
@@ -589,14 +592,22 @@ class App {
             return false;
         }
         
-        const codeSnap = await this.db.ref(`promoCodes/${code}`).once('value');
-        if (!codeSnap.exists()) {
+        const codesRef = this.db.ref('promoCodes');
+        const snapshot = await codesRef.orderByChild('code').equalTo(code).once('value');
+        
+        if (!snapshot.exists()) {
             this.showNotification('Invalid Code', 'Promo code not found', 'error');
             return false;
         }
-        const promoData = codeSnap.val();
         
-        const usedRef = this.db.ref(`usedPromoCodes/${this.tgUser.id}/${code}`);
+        let promoKey = null;
+        let promoData = null;
+        snapshot.forEach(child => {
+            promoKey = child.key;
+            promoData = child.val();
+        });
+        
+        const usedRef = this.db.ref(`usedPromoCodes/${this.tgUser.id}/${promoKey}`);
         const usedSnap = await usedRef.once('value');
         if (usedSnap.exists()) {
             this.showNotification('Already Used', 'Code already redeemed', 'warning');
@@ -614,7 +625,7 @@ class App {
         if (!adWatched) return false;
         
         await usedRef.set(true);
-        this.userCompletedPromoCodes.add(code);
+        this.userCompletedPromoCodes.add(promoKey);
         
         if (promoData.rewardType === 'power') {
             this.powerBalance += promoData.reward;
@@ -633,8 +644,8 @@ class App {
             return false;
         }
         
-        const promoRef = this.db.ref(`promoCodes/${code}/total`);
-        await promoRef.set(totalUses + 1);
+        const promoTotalRef = this.db.ref(`promoCodes/${promoKey}/total`);
+        await promoTotalRef.set(totalUses + 1);
         
         this.renderMining();
         if (this._earnLoaded) {
@@ -789,19 +800,19 @@ class App {
         return `dev_${hexHash}`;
     }
     
-async checkDevice() {
-    this.deviceId = await this.generateUniqueDeviceId();
-    const savedDevice = localStorage.getItem('device_owner');
-    
-    if (savedDevice && savedDevice !== this.tgUser.id.toString()) {
-        this.showNotification('Device Locked', 'Multiple accounts not allowed', 'error');
-        setTimeout(() => window.Telegram?.WebApp?.close(), 3000);
-        throw new Error('Device already registered with different user');
+    async checkDevice() {
+        this.deviceId = await this.generateUniqueDeviceId();
+        const savedDevice = localStorage.getItem('device_owner');
+        
+        if (savedDevice && savedDevice !== this.tgUser.id.toString()) {
+            this.showNotification('Device Locked', 'Multiple accounts not allowed', 'error');
+            setTimeout(() => window.Telegram?.WebApp?.close(), 3000);
+            throw new Error('Device already registered with different user');
+        }
+        
+        localStorage.setItem('device_owner', this.tgUser.id);
+        return null;
     }
-    
-    localStorage.setItem('device_owner', this.tgUser.id);
-    return null;
-}
     
     vibrate(type) {
         if (!this.vibrationEnabled) return;
@@ -1206,75 +1217,72 @@ async checkDevice() {
         
         return true;
     }
-
-
-
-async completeDailyAdTask() {
-    if (this.dailyAdTaskCompleted) {
-        this.showNotification('Already Completed', 'Daily task already done today', 'warning');
-        return false;
-    }
     
-    if (this.isDailyAdTaskRunning) {
-        this.showNotification('Busy', 'Please wait for current task', 'warning');
-        return false;
-    }
-    
-    this.isDailyAdTaskRunning = true;
-    
-    const taskContainer = document.querySelector('.daily-ad-task-container');
-    const watchBtn = document.querySelector('#daily-ad-task-btn');
-    
-    if (watchBtn) watchBtn.style.display = 'none';
-    
-    const rewardAmount = Math.floor(Math.random() * (50 - 10 + 1)) + 10;
-    
-    taskContainer.innerHTML = `
-        <div class="daily-task-header">
-            <div class="daily-task-icon"><i class="fas fa-video"></i></div>
-            <div class="daily-task-info">
-                <h4>${this.t('daily_ad_task')}</h4>
-                <div class="daily-task-reward" id="ad-reward-display">+${rewardAmount} ${this.t('power')}</div>
+    async completeDailyAdTask() {
+        if (this.dailyAdTaskCompleted) {
+            this.showNotification('Already Completed', 'Daily task already done today', 'warning');
+            return false;
+        }
+        
+        if (this.isDailyAdTaskRunning) {
+            this.showNotification('Busy', 'Please wait for current task', 'warning');
+            return false;
+        }
+        
+        this.isDailyAdTaskRunning = true;
+        
+        const taskContainer = document.querySelector('.daily-ad-task-container');
+        const watchBtn = document.querySelector('#daily-ad-task-btn');
+        
+        if (watchBtn) watchBtn.style.display = 'none';
+        
+        const rewardAmount = Math.floor(Math.random() * (50 - 10 + 1)) + 10;
+        
+        taskContainer.innerHTML = `
+            <div class="daily-task-header">
+                <div class="daily-task-icon"><i class="fas fa-video"></i></div>
+                <div class="daily-task-info">
+                    <h4>${this.t('daily_ad_task')}</h4>
+                    <div class="daily-task-reward" id="ad-reward-display">+${rewardAmount} ${this.t('power')}</div>
+                </div>
+                <adsgram-task id="daily-ads-task" data-block-id='${APP_CONFIG.DAILY_AD_TASK_BLOCK_ID}' data-debug='true' class="task-ad-component"></adsgram-task>
             </div>
-            <adsgram-task id="daily-ads-task" data-block-id='${APP_CONFIG.DAILY_AD_TASK_BLOCK_ID}' data-debug='true' class="task-ad-component"></adsgram-task>
-        </div>
-    `;
-    
-    const adComponent = document.getElementById('daily-ads-task');
-    
-    const rewardHandler = () => {
-        this.showNotification('Reward Earned!', `+${rewardAmount} Power`, 'success');
+        `;
         
-        this.dailyAdTaskCompleted = true;
-        this.dailyAdTaskReward = rewardAmount;
-        this.saveDailyTaskStatus();
-        this.powerBalance += rewardAmount;
-        this._dirtyPower = true;
-        this.updateLevelFromPower();
-        this.saveUserData(true);
-        this.addReferralEarnings(this.tgUser.id, rewardAmount);
+        const adComponent = document.getElementById('daily-ads-task');
         
-        adComponent.removeEventListener('reward', rewardHandler);
-        adComponent.removeEventListener('onError', errorHandler);
+        const rewardHandler = () => {
+            this.showNotification('Reward Earned!', `+${rewardAmount} Power`, 'success');
+            
+            this.dailyAdTaskCompleted = true;
+            this.dailyAdTaskReward = rewardAmount;
+            this.saveDailyTaskStatus();
+            this.powerBalance += rewardAmount;
+            this._dirtyPower = true;
+            this.updateLevelFromPower();
+            this.saveUserData(true);
+            this.addReferralEarnings(this.tgUser.id, rewardAmount);
+            
+            adComponent.removeEventListener('reward', rewardHandler);
+            adComponent.removeEventListener('onError', errorHandler);
+            
+            this.renderEarn();
+            this.isDailyAdTaskRunning = false;
+        };
         
-        this.renderEarn();
-        this.isDailyAdTaskRunning = false;
-    };
-    
-    const errorHandler = () => {
-        this.showNotification('Ad Error', 'Please try again later', 'error');
-        adComponent.removeEventListener('reward', rewardHandler);
-        adComponent.removeEventListener('onError', errorHandler);
-        this.renderEarn();
-        this.isDailyAdTaskRunning = false;
-    };
-    
-    adComponent.addEventListener('reward', rewardHandler);
-    adComponent.addEventListener('onError', errorHandler);
-    
-    return true;
-}
-
+        const errorHandler = () => {
+            this.showNotification('Ad Error', 'Please try again later', 'error');
+            adComponent.removeEventListener('reward', rewardHandler);
+            adComponent.removeEventListener('onError', errorHandler);
+            this.renderEarn();
+            this.isDailyAdTaskRunning = false;
+        };
+        
+        adComponent.addEventListener('reward', rewardHandler);
+        adComponent.addEventListener('onError', errorHandler);
+        
+        return true;
+    }
     
     async loadCompletedTasks() {
         const cached = localStorage.getItem(`completed_${this.tgUser.id}`);
@@ -1453,10 +1461,6 @@ async completeDailyAdTask() {
         const dailyCheckNewsBtnText = this.dailyCheckNewsCompleted ? 'Done' : this.t('start');
         const dailyCheckNewsBtnDisabled = this.dailyCheckNewsCompleted;
         
-        const dailyAdTaskBtnClass = this.dailyAdTaskCompleted ? 'done' : 'start';
-        const dailyAdTaskBtnText = this.dailyAdTaskCompleted ? 'Done' : this.t('watch_ad_btn');
-        const dailyAdTaskBtnDisabled = this.dailyAdTaskCompleted;
-        
         const mainTasksHtml = APP_CONFIG.MAIN_TASKS.map(t => {
             const isCompleted = this.userCompletedTasks.has(t.id);
             const btnClass = isCompleted ? 'done' : 'start';
@@ -1511,6 +1515,7 @@ async completeDailyAdTask() {
                         <button class="task-btn ${dailyCheckNewsBtnClass}" id="daily-check-news-btn" ${dailyCheckNewsBtnDisabled ? 'disabled' : ''}>${dailyCheckNewsBtnText}</button>
                     </div>
                 </div>
+            </div>
             
             <div class="section-header">
                 <h3><i class="fas fa-star"></i> ${this.t('main_tasks')}</h3>
@@ -1548,12 +1553,6 @@ async completeDailyAdTask() {
         document.getElementById('daily-check-news-btn')?.addEventListener('click', (e) => {
             if (!this.dailyCheckNewsCompleted) {
                 this.completeDailyCheckNews(e.target);
-            }
-        });
-        
-        document.getElementById('daily-ad-task-btn')?.addEventListener('click', () => {
-            if (!this.dailyAdTaskCompleted) {
-                this.completeDailyAdTask();
             }
         });
         
