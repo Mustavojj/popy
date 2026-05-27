@@ -507,19 +507,10 @@ class App {
             await this.db.ref(`users/${this.tgUser.id}/completedTasks`).set(Array.from(this.userCompletedTasks));
             localStorage.setItem(`completed_${this.tgUser.id}`, JSON.stringify(Array.from(this.userCompletedTasks)));
             
-            const isPartnerTask = this.partnerTasks.some(t => t.id === taskId);
-            const isMainTask = APP_CONFIG.MAIN_TASKS.some(t => t.id === taskId);
-            
-            if (isPartnerTask && !isMainTask) {
-                const taskTotalRef = this.db.ref(`tasks/${taskId}/total`);
-                const currentTotal = (await taskTotalRef.once('value')).val() || 0;
-                await taskTotalRef.set(currentTotal + 1);
-                
                 if (this.cache.tasks && this.cache.tasks.partner) {
                     const cachedTask = this.cache.tasks.partner.find(t => t.id === taskId);
                     if (cachedTask) {
                         cachedTask.total = currentTotal + 1;
-                    }
                 }
             }
         }
