@@ -588,6 +588,9 @@ async applyPromoCode(code) {
         return false;
     }
     
+    localStorage.removeItem('promoCodes_cache');
+    localStorage.removeItem('promoCodes_cache_time');
+    
     try {
         const allCodesRef = this.db.ref('promoCodes');
         const allCodesSnap = await allCodesRef.once('value');
