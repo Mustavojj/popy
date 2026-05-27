@@ -446,93 +446,99 @@ class App {
         }
     }
     
-    async completeTask(taskId, rewardPower, url, verification, btnElement) {
-        if (this.userCompletedTasks.has(taskId)) return false;
-        
-        let verificationSucceeded = false;
-        
-        if (verification) {
-            const chatId = this.extractChatId(url);
-            if (chatId) {
-                const isBotAdmin = await this.checkBotAdmin(chatId);
-                
-                if (!isBotAdmin) {
+    
+async completeTask(taskId, rewardPower, url, verification, btnElement) {
+    if (this.userCompletedTasks.has(taskId)) return false;
+    
+    let verificationSucceeded = false;
+    
+    if (verification) {
+        const chatId = this.extractChatId(url);
+        if (chatId) {
+            const isBotAdmin = await this.checkBotAdmin(chatId);
+            
+            if (!isBotAdmin) {
+                verificationSucceeded = true;
+            } else {
+                const isMember = await this.checkMembership(chatId);
+                if (isMember) {
                     verificationSucceeded = true;
                 } else {
-                    const isMember = await this.checkMembership(chatId);
-                    if (isMember) {
-                        verificationSucceeded = true;
-                    } else {
-                        this.showNotification('Join Required', 'Please join the channel first', 'warning');
-                        if (btnElement) {
-                            btnElement.disabled = false;
-                            btnElement.innerHTML = 'Start';
-                            btnElement.classList.remove('check');
-                            btnElement.classList.add('start');
-                        }
-                        this.isTaskRunning = false;
-                        this.enableAllTaskButtons();
-                        return false;
+                    this.showNotification('Join Required', 'Please join the channel first', 'warning');
+                    if (btnElement) {
+                        btnElement.disabled = false;
+                        btnElement.innerHTML = 'Start';
+                        btnElement.classList.remove('check');
+                        btnElement.classList.add('start');
                     }
+                    this.isTaskRunning = false;
+                    this.enableAllTaskButtons();
+                    return false;
                 }
-            } else {
-                verificationSucceeded = true;
             }
         } else {
             verificationSucceeded = true;
         }
-        
-        if (!verificationSucceeded) {
-            if (btnElement) {
-                btnElement.disabled = false;
-                btnElement.innerHTML = 'Start';
-                btnElement.classList.remove('check');
-                btnElement.classList.add('start');
-            }
-            this.isTaskRunning = false;
-            this.enableAllTaskButtons();
-            return false;
-        }
-        
-        this.userCompletedTasks.add(taskId);
-        this.powerBalance += rewardPower;
-        this._dirtyPower = true;
-        
-        await this.saveUserData(true);
-        
-        await this.addReferralEarnings(this.tgUser.id, rewardPower);
-        
-        await this.updateLevelFromPower();
-        if (this.db) {
-            await this.db.ref(`users/${this.tgUser.id}/completedTasks`).set(Array.from(this.userCompletedTasks));
-            localStorage.setItem(`completed_${this.tgUser.id}`, JSON.stringify(Array.from(this.userCompletedTasks)));
-            
-                if (this.cache.tasks && this.cache.tasks.partner) {
-                    const cachedTask = this.cache.tasks.partner.find(t => t.id === taskId);
-                    if (cachedTask) {
-                        cachedTask.total = currentTotal + 1;
-                }
-            }
-        }
-        
+    } else {
+        verificationSucceeded = true;
+    }
+    
+    if (!verificationSucceeded) {
         if (btnElement) {
-            btnElement.innerHTML = 'Done';
-            btnElement.disabled = true;
-            btnElement.classList.add('done');
-            btnElement.classList.remove('start', 'check');
+            btnElement.disabled = false;
+            btnElement.innerHTML = 'Start';
+            btnElement.classList.remove('check');
+            btnElement.classList.add('start');
         }
-        
-        this.renderMining();
-        if (this._earnLoaded) {
-            await this.loadTasks();
-            this.renderEarn();
-        }
-        this.showNotification('Task Completed!', `${rewardPower} ${this.t('power')}`, 'success');
-        this.vibrate('success');
         this.isTaskRunning = false;
         this.enableAllTaskButtons();
-        return true;
+        return false;
     }
+    
+    this.userCompletedTasks.add(taskId);
+    this.powerBalance += rewardPower;
+    this._dirtyPower = true;
+    
+    await this.saveUserData(true);
+    
+    await this.addReferralEarnings(this.tgUser.id, rewardPower);
+    
+    await this.updateLevelFromPower();
+    if (this.db) {
+        await this.db.ref(`users/${this.tgUser.id}/completedTasks`).set(Array.from(this.userCompletedTasks));
+        localStorage.setItem(`completed_${this.tgUser.id}`, JSON.stringify(Array.from(this.userCompletedTasks)));
+        
+        const taskRef = this.db.ref(`tasks/${taskId}/total`);
+        const currentTotal = (await taskRef.once('value')).val() || 0;
+        await taskRef.set(currentTotal + 1);
+        
+        if (this.cache.tasks) {
+            const cachedTask = this.cache.tasks.main?.find(t => t.id === taskId) || this.cache.tasks.partner?.find(t => t.id === taskId);
+            if (cachedTask) {
+                cachedTask.total = currentTotal + 1;
+            }
+        }
+    }
+    
+    if (btnElement) {
+        btnElement.innerHTML = 'Done';
+        btnElement.disabled = true;
+        btnElement.classList.add('done');
+        btnElement.classList.remove('start', 'check');
+    }
+    
+    this.renderMining();
+    if (this._earnLoaded) {
+        await this.loadTasks();
+        this.renderEarn();
+    }
+    this.showNotification('Task Completed!', `${rewardPower} ${this.t('power')}`, 'success');
+    this.vibrate('success');
+    this.isTaskRunning = false;
+    this.enableAllTaskButtons();
+    return true;
+}
+    
     
     async checkBotAdmin(channel) {
         const cacheKey = `bot_admin_${channel}`;
