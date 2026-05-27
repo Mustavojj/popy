@@ -636,7 +636,8 @@ async applyPromoCode(code) {
     }
     
     const promoRef = this.db.ref(`promoCodes/${code}/total`);
-    await promoRef.set(total + 1);
+    const currentTotal = (await promoRef.once('value')).val() || 0;
+    await promoRef.set(currentTotal + 1);
     
     this.renderMining();
     this.renderEarn();
