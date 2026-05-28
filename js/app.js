@@ -434,7 +434,7 @@ class App {
         if (adWatched) {
             this.lastRewardAdTime = now;
             localStorage.setItem('last_reward_ad_time', now.toString());
-            this.powerBalance += 10;
+            this.powerBalance += 20;
             this._dirtyPower = true;
             await this.updateLevelFromPower();
             this.scheduleSave();
