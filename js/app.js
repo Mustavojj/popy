@@ -154,6 +154,10 @@ class App {
         this.dailyAdTaskCompleted = false;
         this.dailyAdTaskReward = 0;
         this.isDailyAdTaskRunning = false;
+    
+        window._lastServerTime = null;
+        window._lastSyncTime = 0;
+        window._serverTimePromise = null;
     }
     
     t(key) {
@@ -753,23 +757,32 @@ async applyPromoCode(code) {
         }
     }
     
+
+    
     async getServerTime(forceSync = false) {
-        const now = Date.now();
-        
-        if (!forceSync && this.lastServerTimeSync && (now - this.lastServerTimeSync) < 3600000) {
-            return now + this.serverTimeOffset;
-        }
-        
-        try {
-            const res = await fetch('/api/time');
-            const data = await res.json();
-            this.serverTimeOffset = data.serverTime - now;
-            this.lastServerTimeSync = now;
-            return data.serverTime;
-        } catch(e) {
-            return now + this.serverTimeOffset;
-        }
+    const now = Date.now();
+    
+    if (!forceSync && window._lastServerTime && (now - window._lastSyncTime) < 60000) {
+        const offset = window._lastServerTime - window._lastSyncTime;
+        return now + offset;
     }
+    
+    if (!window._serverTimePromise) {
+        window._serverTimePromise = (async () => {
+            try {
+                const res = await fetch('/api/current-time');
+                const data = await res.json();
+                window._lastServerTime = data.serverTime;
+                window._lastSyncTime = Date.now();
+                return data.serverTime;
+            } finally {
+                setTimeout(() => { window._serverTimePromise = null; }, 100);
+            }
+        })();
+    }
+    
+    return await window._serverTimePromise;
+}
     
     async generateUniqueDeviceId() {
         const userAgent = navigator.userAgent;
