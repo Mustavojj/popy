@@ -319,8 +319,6 @@ class App {
     const closeBtn = document.getElementById('close-claim-modal');
     
     const handleClaim = async () => {
-        const adWatched = await this.showInterstitialAd();
-        if (!adWatched) return;
         
         modal.style.display = 'none';
         cleanup();
