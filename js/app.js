@@ -1393,193 +1393,168 @@ class App {
         if (this.miningActive) this.updateMiningTimerDisplay();
         this.updateAdCooldownDisplay();
     }
+
+
+renderEarn() {
+    const el = document.getElementById('earn-page');
+    if (!el) return;
     
-    renderEarn() {
-        const el = document.getElementById('earn-page');
-        if (!el) return;
-        
-        const resetTime = this.getDailyResetTimeUTC();
-        const now = Date.now();
-        const timeRemaining = Math.max(0, resetTime - now);
-        const hoursRemaining = Math.floor(timeRemaining / 3600000);
-        const minutesRemaining = Math.floor((timeRemaining % 3600000) / 60000);
-        
-        const dailyCheckNewsBtnClass = this.dailyCheckNewsCompleted ? 'done' : 'start';
-        const dailyCheckNewsBtnText = this.dailyCheckNewsCompleted ? 'Done' : this.t('start');
-        const dailyCheckNewsBtnDisabled = this.dailyCheckNewsCompleted;
-        
-        const availableMainTasks = APP_CONFIG.MAIN_TASKS.filter(t => !this.userCompletedMainTasks.has(t.id));
-        const completedMainTasks = APP_CONFIG.MAIN_TASKS.filter(t => this.userCompletedMainTasks.has(t.id));
-        
-        const availableMainTasksHtml = availableMainTasks.length > 0 ? availableMainTasks.map(t => `
-            <div class="task-item">
-                <img class="task-img" src="${t.img}">
-                <div class="task-info">
-                    <h4>${t.name}</h4>
-                    <div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div>
-                </div>
-                <button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button>
+    const resetTime = this.getDailyResetTimeUTC();
+    const now = Date.now();
+    const timeRemaining = Math.max(0, resetTime - now);
+    const hoursRemaining = Math.floor(timeRemaining / 3600000);
+    const minutesRemaining = Math.floor((timeRemaining % 3600000) / 60000);
+    
+    const dailyCheckNewsBtnClass = this.dailyCheckNewsCompleted ? 'done' : 'Start';
+    const dailyCheckNewsBtnText = this.dailyCheckNewsCompleted ? 'Done' : this.t('Start');
+    const dailyCheckNewsBtnDisabled = this.dailyCheckNewsCompleted;
+    
+    const availableMainTasks = APP_CONFIG.MAIN_TASKS.filter(t => !this.userCompletedMainTasks.has(t.id));
+    
+    const availableMainTasksHtml = availableMainTasks.length > 0 ? availableMainTasks.map(t => `
+        <div class="task-item">
+            <img class="task-img" src="${t.img}">
+            <div class="task-info">
+                <h4>${t.name}</h4>
+                <div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div>
             </div>
-        `).join('') : '<div class="no-data"><i class="fas fa-check-circle"></i><p>' + this.t('all_tasks_completed') + '</p><small>' + this.t('check_later') + '</small></div>';
+            <button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button>
+        </div>
+    `).join('') : '<div class="no-data"><i class="fas fa-check-circle"></i><p>' + this.t('all_tasks_completed') + '</p><small>' + this.t('check_later') + '</small></div>';
+    
+    const availablePartnerTasks = this.partnerTasks.filter(t => !this.userCompletedTasks.has(t.id));
+    const partnerTasksHtml = availablePartnerTasks.length > 0 ? availablePartnerTasks.map(t => `
+        <div class="task-item">
+            <img class="task-img" src="${t.img}">
+            <div class="task-info">
+                <h4>${t.name}</h4>
+                <div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div>
+            </div>
+            <button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button>
+        </div>
+    `).join('') : '<div class="no-data"><i class="fas fa-globe"></i><p>' + this.t('no_tasks') + '</p><small>' + this.t('check_later') + '</small></div>';
+    
+    el.innerHTML = `
+        <div class="promo-card">
+            <div class="promo-header">
+                <div class="promo-title"><i class="fas fa-gift"></i> ${this.t('promo_code')}</div>
+                <button id="promo-info-btn" class="info-icon-btn"><i class="fas fa-question-circle"></i></button>
+            </div>
+            <div class="promo-input-group">
+                <input type="text" id="promo-input" class="form-input" placeholder="${this.t('enter_code')}" autocomplete="off">
+                <button id="promo-submit" class="promo-submit-btn" disabled>${this.t('claim')}</button>
+            </div>
+        </div>
         
-        const completedMainTasksHtml = completedMainTasks.length > 0 ? completedMainTasks.map(t => `
-            <div class="task-item completed-task">
-                <img class="task-img" src="${t.img}">
-                <div class="task-info">
-                    <h4>${t.name}</h4>
-                    <div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div>
-                </div>
-                <div class="task-completed-badge"><i class="fas fa-check-circle"></i> ${this.t('completed')}</div>
-            </div>
-        `).join('') : '';
+        <div class="section-header">
+            <h3><i class="fas fa-calendar-day"></i> ${this.t('daily_tasks')}</h3>
+            <p>${this.t('refresh_in')}: ${hoursRemaining.toString().padStart(2, '0')}:${minutesRemaining.toString().padStart(2, '0')}</p>
+        </div>
         
-        const availablePartnerTasks = this.partnerTasks.filter(t => !this.userCompletedTasks.has(t.id));
-        const partnerTasksHtml = availablePartnerTasks.length > 0 ? availablePartnerTasks.map(t => `
-            <div class="task-item">
-                <img class="task-img" src="${t.img}">
-                <div class="task-info">
-                    <h4>${t.name}</h4>
-                    <div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div>
-                </div>
-                <button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button>
-            </div>
-        `).join('') : '<div class="no-data"><i class="fas fa-globe"></i><p>' + this.t('no_tasks') + '</p><small>' + this.t('check_later') + '</small></div>';
-        
-        const completedPartnerTasks = this.partnerTasks.filter(t => this.userCompletedTasks.has(t.id));
-        const completedPartnerTasksHtml = completedPartnerTasks.length > 0 ? completedPartnerTasks.map(t => `
-            <div class="task-item completed-task">
-                <img class="task-img" src="${t.img}">
-                <div class="task-info">
-                    <h4>${t.name}</h4>
-                    <div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div>
-                </div>
-                <div class="task-completed-badge"><i class="fas fa-check-circle"></i> ${this.t('completed')}</div>
-            </div>
-        `).join('') : '';
-        
-        el.innerHTML = `
-            <div class="promo-card">
-                <div class="promo-header">
-                    <div class="promo-title"><i class="fas fa-gift"></i> ${this.t('promo_code')}</div>
-                    <button id="promo-info-btn" class="info-icon-btn"><i class="fas fa-question-circle"></i></button>
-                </div>
-                <div class="promo-input-group">
-                    <input type="text" id="promo-input" class="form-input" placeholder="${this.t('enter_code')}" autocomplete="off">
-                    <button id="promo-submit" class="promo-submit-btn" disabled>${this.t('claim')}</button>
-                </div>
-            </div>
-            
-            <div class="section-header">
-                <h3><i class="fas fa-calendar-day"></i> ${this.t('daily_tasks')}</h3>
-                <p>${this.t('refresh_in')}: ${hoursRemaining.toString().padStart(2, '0')}:${minutesRemaining.toString().padStart(2, '0')}</p>
-            </div>
-            
-            <div class="daily-tasks-container">
-                <div class="daily-task-card">
-                    <div class="daily-task-header">
-                        <div class="daily-task-icon"><i class="fas fa-newspaper"></i></div>
-                        <div class="daily-task-info">
-                            <h4>${this.t('daily_check_news')}</h4>
-                            <div class="daily-task-reward"><i class="fas fa-bolt"></i> 10 ${this.t('power')}</div>
-                        </div>
-                        <button class="task-btn ${dailyCheckNewsBtnClass}" id="daily-check-news-btn" ${dailyCheckNewsBtnDisabled ? 'disabled' : ''}>${dailyCheckNewsBtnText}</button>
+        <div class="daily-tasks-container">
+            <div class="daily-task-card">
+                <div class="daily-task-header">
+                    <div class="daily-task-icon"><i class="fas fa-newspaper"></i></div>
+                    <div class="daily-task-info">
+                        <h4>${this.t('daily_check_news')}</h4>
+                        <div class="daily-task-reward"><i class="fas fa-bolt"></i> 10 ${this.t('power')}</div>
                     </div>
+                    <button class="task-btn ${dailyCheckNewsBtnClass}" id="daily-check-news-btn" ${dailyCheckNewsBtnDisabled ? 'disabled' : ''}>${dailyCheckNewsBtnText}</button>
                 </div>
             </div>
-            
-            <div class="section-header">
-                <h3><i class="fas fa-star"></i> ${this.t('main_tasks')}</h3>
-                <p>${this.t('available_tasks')}: ${availableMainTasks.length}</p>
-            </div>
-            <div class="tasks-list" id="main-tasks-list">
-                ${availableMainTasksHtml}
-                ${completedMainTasksHtml ? `<div class="completed-section"><div class="completed-title"><i class="fas fa-check-circle"></i> ${this.t('completed_tasks')}</div>${completedMainTasksHtml}</div>` : ''}
-            </div>
-            
-            <div class="section-header">
-                <h3><i class="fas fa-globe"></i> ${this.t('partner_tasks')} <button id="tasks-info-btn" class="info-icon-btn"><i class="fas fa-question-circle"></i></button></h3>
-                <p>${this.t('available_tasks')}: ${availablePartnerTasks.length}</p>
-            </div>
-            <div class="tasks-list" id="partner-tasks-list">
-                ${partnerTasksHtml}
-                ${completedPartnerTasksHtml ? `<div class="completed-section"><div class="completed-title"><i class="fas fa-check-circle"></i> ${this.t('completed_tasks')}</div>${completedPartnerTasksHtml}</div>` : ''}
-            </div>
-        `;
+        </div>
         
-        const promoInput = document.getElementById('promo-input');
-        const promoSubmit = document.getElementById('promo-submit');
-        if (promoInput && promoSubmit) {
-            promoInput.addEventListener('input', () => {
-                promoSubmit.disabled = promoInput.value.trim() === '';
-                promoSubmit.classList.toggle('active', !promoSubmit.disabled);
-            });
-            promoSubmit.addEventListener('click', () => {
-                const code = promoInput.value.trim();
-                if (code) this.applyPromoCode(code);
-                promoInput.value = '';
-                promoSubmit.disabled = true;
-                promoSubmit.classList.remove('active');
-            });
-        }
+        <div class="section-header">
+            <h3><i class="fas fa-star"></i> ${this.t('main_tasks')}</h3>
+            <p>${this.t('available_tasks')}: ${availableMainTasks.length}</p>
+        </div>
+        <div class="tasks-list" id="main-tasks-list">
+            ${availableMainTasksHtml}
+        </div>
         
-        document.getElementById('tasks-info-btn')?.addEventListener('click', () => {
-            document.getElementById('tasks-info-modal').style.display = 'flex';
-            this.updateModalTranslations();
+        <div class="section-header">
+            <h3><i class="fas fa-globe"></i> ${this.t('partner_tasks')} <button id="tasks-info-btn" class="info-icon-btn"><i class="fas fa-question-circle"></i></button></h3>
+            <p>${this.t('available_tasks')}: ${availablePartnerTasks.length}</p>
+        </div>
+        <div class="tasks-list" id="partner-tasks-list">
+            ${partnerTasksHtml}
+        </div>
+    `;
+    
+    const promoInput = document.getElementById('promo-input');
+    const promoSubmit = document.getElementById('promo-submit');
+    if (promoInput && promoSubmit) {
+        promoInput.addEventListener('input', () => {
+            promoSubmit.disabled = promoInput.value.trim() === '';
+            promoSubmit.classList.toggle('active', !promoSubmit.disabled);
         });
-        
-        document.getElementById('promo-info-btn')?.addEventListener('click', () => {
-            document.getElementById('promo-info-modal').style.display = 'flex';
-            this.updateModalTranslations();
-        });
-        
-        document.getElementById('daily-check-news-btn')?.addEventListener('click', (e) => {
-            if (!this.dailyCheckNewsCompleted) {
-                this.completeDailyCheckNews(e.target);
-            }
-        });
-        
-        document.querySelectorAll('#main-tasks-list .task-btn.start, #partner-tasks-list .task-btn.start').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                if (this.isTaskRunning) {
-                    this.showNotification('Busy', 'Complete current task first', 'warning');
-                    return;
-                }
-                const id = btn.dataset.id;
-                const reward = parseInt(btn.dataset.reward);
-                const url = btn.dataset.url;
-                const verify = btn.dataset.verify === 'true';
-                const isMainTask = btn.closest('#main-tasks-list') !== null;
-                
-                window.open(url, '_blank');
-                this.isTaskRunning = true;
-                this.disableAllTaskButtons();
-                btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
-                btn.disabled = true;
-                
-                let seconds = APP_CONFIG.TASK_VERIFICATION_DELAY;
-                const interval = setInterval(() => {
-                    seconds--;
-                    if (seconds <= 0) {
-                        clearInterval(interval);
-                        btn.innerHTML = 'Claim';
-                        btn.disabled = false;
-                        btn.classList.remove('start');
-                        btn.classList.add('check');
-                        
-                        const newBtn = btn.cloneNode(true);
-                        btn.parentNode.replaceChild(newBtn, btn);
-                        
-                        newBtn.addEventListener('click', async (e) => {
-                            e.stopPropagation();
-                            newBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
-                            newBtn.disabled = true;
-                            await this.completeTask(id, reward, url, verify, newBtn, isMainTask);
-                        });
-                    }
-                }, 1000);
-            });
+        promoSubmit.addEventListener('click', () => {
+            const code = promoInput.value.trim();
+            if (code) this.applyPromoCode(code);
+            promoInput.value = '';
+            promoSubmit.disabled = true;
+            promoSubmit.classList.remove('active');
         });
     }
+    
+    document.getElementById('tasks-info-btn')?.addEventListener('click', () => {
+        document.getElementById('tasks-info-modal').style.display = 'flex';
+        this.updateModalTranslations();
+    });
+    
+    document.getElementById('promo-info-btn')?.addEventListener('click', () => {
+        document.getElementById('promo-info-modal').style.display = 'flex';
+        this.updateModalTranslations();
+    });
+    
+    document.getElementById('daily-check-news-btn')?.addEventListener('click', (e) => {
+        if (!this.dailyCheckNewsCompleted) {
+            this.completeDailyCheckNews(e.target);
+        }
+    });
+    
+    document.querySelectorAll('#main-tasks-list .task-btn.start, #partner-tasks-list .task-btn.start').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            if (this.isTaskRunning) {
+                this.showNotification('Busy', 'Complete current task first', 'warning');
+                return;
+            }
+            const id = btn.dataset.id;
+            const reward = parseInt(btn.dataset.reward);
+            const url = btn.dataset.url;
+            const verify = btn.dataset.verify === 'true';
+            const isMainTask = btn.closest('#main-tasks-list') !== null;
+            
+            window.open(url, '_blank');
+            this.isTaskRunning = true;
+            this.disableAllTaskButtons();
+            btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
+            btn.disabled = true;
+            
+            let seconds = APP_CONFIG.TASK_VERIFICATION_DELAY;
+            const interval = setInterval(() => {
+                seconds--;
+                if (seconds <= 0) {
+                    clearInterval(interval);
+                    btn.innerHTML = 'Claim';
+                    btn.disabled = false;
+                    btn.classList.remove('start');
+                    btn.classList.add('check');
+                    
+                    const newBtn = btn.cloneNode(true);
+                    btn.parentNode.replaceChild(newBtn, btn);
+                    
+                    newBtn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        newBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
+                        newBtn.disabled = true;
+                        await this.completeTask(id, reward, url, verify, newBtn, isMainTask);
+                    });
+                }
+            }, 1000);
+        });
+    });
+}
     
     renderTeam() {
         const el = document.getElementById('team-page');
