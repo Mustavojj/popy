@@ -1,3 +1,4 @@
+// app.js
 import { APP_CONFIG } from './data.js';
 
 const translations = {
@@ -19,8 +20,11 @@ const translations = {
         team: "Команда", copy_success: "Скопировано!", link_copied: "Ссылка скопирована", earn_more: "Заработай больше энергии",
         complete_tasks: "Выполнить задания", go: "ПЕРЕЙТИ", invite_frens: "Пригласить друзей", ad_reward: "Смотреть рекламу", loading: "Загрузка",
         ready: "Готово", mining_active: "МАЙНИНГ АКТИВЕН", team_earnings: "Зарабатывайте %from%% от дохода команды", save_error: "Ошибка сохранения данных! Попробуйте снова.",
-        daily_tasks: "Ежедневные задания", daily_check_news: "Проверка новостей", daily_ad_task: "Ежедневная реклама", refresh_in: "Обновление через",
-        watch_ad_btn: "СМОТРЕТЬ", claiming: "Получение..."
+        daily_tasks: "Ежедневные задания", daily_check_news: "Проверка новостей", refresh_in: "Обновление через",
+        watch_ad_btn: "СМОТРЕТЬ", claiming: "Получение...", promo_info_title: "Как получить промокоды?", promo_info_text: "Получайте промокоды в нашем новостном канале! Подпишитесь, чтобы не пропустить новые коды.",
+        get_promo_codes: "Получить промокоды", promo_from_news: "Промокоды в Telegram",
+        how_it_works: "Как это работает", step1: "1. Подпишитесь на наш новостной канал", step2: "2. Следите за новыми публикациями", step3: "3. Вводите промокоды и получайте награды",
+        available_tasks: "Доступные задания", completed_tasks: "Выполненные задания", no_tasks_available: "Нет доступных заданий"
     },
     en: {
         level: "Level", mining_rig: "Mining Rig Lv.", hourly: "8 Hours", daily: "Daily", monthly: "Monthly",
@@ -40,8 +44,11 @@ const translations = {
         team: "Team", copy_success: "Copied!", link_copied: "Link copied to clipboard", earn_more: "Earn More Power",
         complete_tasks: "Complete Tasks", go: "GO", invite_frens: "Invite Frens", ad_reward: "Watch AD", loading: "Loading",
         ready: "Ready", mining_active: "MINING ACTIVE", team_earnings: "Earn %from%% from team earnings", save_error: "Data save failed! Please try again.",
-        daily_tasks: "Daily Tasks", daily_check_news: "Daily Check News", daily_ad_task: "Daily AD Task", refresh_in: "Refresh in",
-        watch_ad_btn: "WATCH", claiming: "Claiming..."
+        daily_tasks: "Daily Tasks", daily_check_news: "Daily Check News", refresh_in: "Refresh in",
+        watch_ad_btn: "WATCH", claiming: "Claiming...", promo_info_title: "How to get Promo Codes?", promo_info_text: "Get promo codes from our news channel! Subscribe to never miss new codes.",
+        get_promo_codes: "Get Promo Codes", promo_from_news: "Promo Codes on Telegram",
+        how_it_works: "How it works", step1: "1. Subscribe to our news channel", step2: "2. Follow new posts", step3: "3. Enter promo codes and get rewards",
+        available_tasks: "Available Tasks", completed_tasks: "Completed Tasks", no_tasks_available: "No tasks available"
     },
     tr: {
         level: "Seviye", mining_rig: "Madenci Seviye", hourly: "8 saat", daily: "Günlük", monthly: "Aylık",
@@ -61,8 +68,11 @@ const translations = {
         team: "Takım", copy_success: "Kopyalandı!", link_copied: "Bağlantı panoya kopyalandı", earn_more: "Daha Fazla Güç Kazan",
         complete_tasks: "Görevleri Tamamla", go: "GİT", invite_frens: "Arkadaşları Davet Et", ad_reward: "Reklam İzle", loading: "Yükleniyor",
         ready: "Hazır", mining_active: "MADENCİLİK AKTİF", team_earnings: "Takım kazancından %from%% kazanın", save_error: "Veri kaydedilemedi! Lütfen tekrar deneyin.",
-        daily_tasks: "Günlük Görevler", daily_check_news: "Günlük Haber Kontrolü", daily_ad_task: "Günlük Reklam Görevi", refresh_in: "Yenileme süresi",
-        watch_ad_btn: "İZLE", claiming: "Alınıyor..."
+        daily_tasks: "Günlük Görevler", daily_check_news: "Günlük Haber Kontrolü", refresh_in: "Yenileme süresi",
+        watch_ad_btn: "İZLE", claiming: "Alınıyor...", promo_info_title: "Promosyon Kodları Nasıl Alınır?", promo_info_text: "Promosyon kodlarını haber kanalımızdan alın! Yeni kodları kaçırmamak için abone olun.",
+        get_promo_codes: "Promosyon Kodları Al", promo_from_news: "Telegram'da Promosyon Kodları",
+        how_it_works: "Nasıl çalışır", step1: "1. Haber kanalımıza abone olun", step2: "2. Yeni gönderileri takip edin", step3: "3. Promosyon kodlarını girin ve ödülleri alın",
+        available_tasks: "Mevcut Görevler", completed_tasks: "Tamamlanan Görevler", no_tasks_available: "Görev yok"
     },
     ar: {
         level: "مستوى", mining_rig: "جهاز التعدين مستوى", hourly: "كل 8 ساعات", daily: "يومي", monthly: "شهري",
@@ -82,8 +92,11 @@ const translations = {
         team: "الفريق", copy_success: "تم النسخ!", link_copied: "تم نسخ الرابط", earn_more: "احصل على طاقة أكثر",
         complete_tasks: "إكمال المهام", go: "اذهب", invite_frens: "دعوة الأصدقاء", ad_reward: "مشاهدة إعلان", loading: "جاري التحميل",
         ready: "جاهز", mining_active: "التعدين نشط", team_earnings: "اربح %from%% من أرباح الفريق", save_error: "فشل حفظ البيانات! حاول مرة أخرى.",
-        daily_tasks: "المهام اليومية", daily_check_news: "فحص الأخبار اليومي", daily_ad_task: "مهمة الإعلان اليومية", refresh_in: "تحديث خلال",
-        watch_ad_btn: "شاهد", claiming: "جاري الاستلام..."
+        daily_tasks: "المهام اليومية", daily_check_news: "فحص الأخبار اليومي", refresh_in: "تحديث خلال",
+        watch_ad_btn: "شاهد", claiming: "جاري الاستلام...", promo_info_title: "كيفية الحصول على الرموز الترويجية؟", promo_info_text: "احصل على الرموز الترويجية من قناة الأخبار الخاصة بنا! اشترك لعدم تفويت الرموز الجديدة.",
+        get_promo_codes: "الحصول على الرموز الترويجية", promo_from_news: "الرموز الترويجية على تيليغرام",
+        how_it_works: "كيف يعمل", step1: "1. اشترك في قناة الأخبار", step2: "2. تابع المنشورات الجديدة", step3: "3. أدخل الرموز الترويجية واحصل على المكافآت",
+        available_tasks: "المهام المتاحة", completed_tasks: "المهام المكتملة", no_tasks_available: "لا توجد مهام متاحة"
     }
 };
 
@@ -100,9 +113,9 @@ class App {
         this.powerBalance = 0;
         this.tonBalance = 0;
         this.userLevel = 1;
-        this.hasClaimedWelcome = false;
         this.hasStartedMining = false;
         this.userCompletedTasks = new Set();
+        this.userCompletedMainTasks = new Set();
         this.userCompletedPromoCodes = new Set();
         this.miningActive = false;
         this.miningStartTime = null;
@@ -110,7 +123,7 @@ class App {
         this.miningInterval = null;
         this.uiUpdateInterval = null;
         this.pendingTonReward = 0;
-        this.miningSessionHours = 8;
+        this.miningSessionHours = APP_CONFIG.MINING_SESSION_HOURS;
         this.withdrawals = [];
         this.totalReferrals = 0;
         this.referralPower = 0;
@@ -149,11 +162,7 @@ class App {
         this._withdrawLock = false;
         
         this.lastDailyCheckNews = 0;
-        this.lastDailyAdTask = 0;
         this.dailyCheckNewsCompleted = false;
-        this.dailyAdTaskCompleted = false;
-        this.dailyAdTaskReward = 0;
-        this.isDailyAdTaskRunning = false;
     
         window._lastServerTime = null;
         window._lastSyncTime = 0;
@@ -301,54 +310,53 @@ class App {
     }
     
     async claimMiningRewards() {
-    if (this.miningActive) {
-        this.showNotification('Error', 'Complete mining session first!', 'error');
-        return;
+        if (this.miningActive) {
+            this.showNotification('Error', 'Complete mining session first!', 'error');
+            return;
+        }
+        if (this.pendingTonReward <= 0) {
+            this.showNotification('Error', 'No rewards to claim', 'error');
+            return;
+        }
+        
+        const modal = document.getElementById('claim-modal');
+        const rewardEl = document.getElementById('claim-reward-amount');
+        rewardEl.innerText = this.pendingTonReward.toFixed(6) + ' TON';
+        modal.style.display = 'flex';
+        
+        const confirmBtn = document.getElementById('confirm-claim-btn');
+        const closeBtn = document.getElementById('close-claim-modal');
+        
+        const handleClaim = async () => {
+            modal.style.display = 'none';
+            cleanup();
+            
+            const earnedAmount = this.pendingTonReward;
+            this.tonBalance += earnedAmount;
+            this._dirtyTon = true;
+            this.pendingTonReward = 0;
+            this._dirtyMining = true;
+            
+            await this.saveUserData(true);
+            
+            this.updateLevelFromPower();
+            this.renderMining();
+            this.showNotification('Rewards Claimed!', `${earnedAmount.toFixed(8)} TON added to balance`, 'success');
+        };
+        
+        const handleClose = () => {
+            modal.style.display = 'none';
+            cleanup();
+        };
+        
+        const cleanup = () => {
+            confirmBtn.removeEventListener('click', handleClaim);
+            closeBtn.removeEventListener('click', handleClose);
+        };
+        
+        confirmBtn.addEventListener('click', handleClaim);
+        closeBtn.addEventListener('click', handleClose);
     }
-    if (this.pendingTonReward <= 0) {
-        this.showNotification('Error', 'No rewards to claim', 'error');
-        return;
-    }
-    
-    const modal = document.getElementById('claim-modal');
-    const rewardEl = document.getElementById('claim-reward-amount');
-    rewardEl.innerText = this.pendingTonReward.toFixed(6) + ' TON';
-    modal.style.display = 'flex';
-    
-    const confirmBtn = document.getElementById('confirm-claim-btn');
-    const closeBtn = document.getElementById('close-claim-modal');
-    
-    const handleClaim = async () => {
-        
-        modal.style.display = 'none';
-        cleanup();
-        
-        const earnedAmount = this.pendingTonReward;
-        this.tonBalance += earnedAmount;
-        this._dirtyTon = true;
-        this.pendingTonReward = 0;
-        this._dirtyMining = true;
-        
-        await this.saveUserData(true);
-        
-        this.updateLevelFromPower();
-        this.renderMining();
-        this.showNotification('Rewards Claimed!', `${earnedAmount.toFixed(8)} TON added to balance`, 'success');
-    };
-    
-    const handleClose = () => {
-        modal.style.display = 'none';
-        cleanup();
-    };
-    
-    const cleanup = () => {
-        confirmBtn.removeEventListener('click', handleClaim);
-        closeBtn.removeEventListener('click', handleClose);
-    };
-    
-    confirmBtn.addEventListener('click', handleClaim);
-    closeBtn.addEventListener('click', handleClose);
-}
     
     startMiningLoop() {
         if (this.miningInterval) clearInterval(this.miningInterval);
@@ -392,10 +400,11 @@ class App {
         })();
     }
     
-    updateAdCooldownDisplay() {
-        const now = Date.now();
+    async updateAdCooldownDisplay() {
+        const now = await this.getServerTime(true);
         const cooldownMs = APP_CONFIG.AD_COOLDOWN_HOURS * 3600000;
-        const remaining = Math.max(0, cooldownMs - (now - this.lastRewardAdTime));
+        const lastAdTime = this.lastRewardAdTime;
+        const remaining = Math.max(0, cooldownMs - (now - lastAdTime));
         
         const adBtn = document.getElementById('mining-reward-ad');
         
@@ -421,7 +430,7 @@ class App {
     }
     
     async watchRewardAd() {
-        const now = Date.now();
+        const now = await this.getServerTime(true);
         const cooldownMs = APP_CONFIG.AD_COOLDOWN_HOURS * 3600000;
         if (now - this.lastRewardAdTime < cooldownMs) {
             const remaining = Math.ceil((cooldownMs - (now - this.lastRewardAdTime)) / 1000);
@@ -432,8 +441,10 @@ class App {
             return;
         }
         
-        const adWatched = await this.showRewardAd();
-        if (adWatched) {
+        try {
+            const AdController = window.Adsgram.init({ blockId: APP_CONFIG.REWARD_AD_BLOCK_ID });
+            await AdController.show();
+            
             this.lastRewardAdTime = now;
             localStorage.setItem('last_reward_ad_time', now.toString());
             this.powerBalance += 20;
@@ -447,103 +458,113 @@ class App {
                 this.renderEarn();
             }
             this.updateAdCooldownDisplay();
-            this.showNotification('Reward Claimed!', '10 Power', 'success');
+            this.showNotification('Reward Claimed!', '20 Power', 'success');
+        } catch (result) {
+            this.showNotification('No Ads', 'No ads available at the moment', 'warning');
         }
     }
     
-    
-async completeTask(taskId, rewardPower, url, verification, btnElement) {
-    if (this.userCompletedTasks.has(taskId)) return false;
-    
-    let verificationSucceeded = false;
-    
-    if (verification) {
-        const chatId = this.extractChatId(url);
-        if (chatId) {
-            const isBotAdmin = await this.checkBotAdmin(chatId);
-            
-            if (!isBotAdmin) {
-                verificationSucceeded = true;
-            } else {
-                const isMember = await this.checkMembership(chatId);
-                if (isMember) {
+    async completeTask(taskId, rewardPower, url, verification, btnElement, isMainTask = false) {
+        if (this.userCompletedTasks.has(taskId)) return false;
+        
+        let verificationSucceeded = false;
+        
+        if (verification) {
+            const chatId = this.extractChatId(url);
+            if (chatId) {
+                const isBotAdmin = await this.checkBotAdmin(chatId);
+                
+                if (!isBotAdmin) {
                     verificationSucceeded = true;
                 } else {
-                    this.showNotification('Join Required', 'Please join the channel first', 'warning');
-                    if (btnElement) {
-                        btnElement.disabled = false;
-                        btnElement.innerHTML = 'Start';
-                        btnElement.classList.remove('check');
-                        btnElement.classList.add('start');
+                    const isMember = await this.checkMembership(chatId);
+                    if (isMember) {
+                        verificationSucceeded = true;
+                    } else {
+                        this.showNotification('Join Required', 'Please join the channel first', 'warning');
+                        if (btnElement) {
+                            btnElement.disabled = false;
+                            btnElement.innerHTML = 'Start';
+                            btnElement.classList.remove('check');
+                            btnElement.classList.add('start');
+                        }
+                        this.isTaskRunning = false;
+                        this.enableAllTaskButtons();
+                        return false;
                     }
-                    this.isTaskRunning = false;
-                    this.enableAllTaskButtons();
-                    return false;
                 }
+            } else {
+                verificationSucceeded = true;
             }
         } else {
             verificationSucceeded = true;
         }
-    } else {
-        verificationSucceeded = true;
-    }
-    
-    if (!verificationSucceeded) {
-        if (btnElement) {
-            btnElement.disabled = false;
-            btnElement.innerHTML = 'Start';
-            btnElement.classList.remove('check');
-            btnElement.classList.add('start');
+        
+        if (!verificationSucceeded) {
+            if (btnElement) {
+                btnElement.disabled = false;
+                btnElement.innerHTML = 'Start';
+                btnElement.classList.remove('check');
+                btnElement.classList.add('start');
+            }
+            this.isTaskRunning = false;
+            this.enableAllTaskButtons();
+            return false;
         }
-        this.isTaskRunning = false;
-        this.enableAllTaskButtons();
-        return false;
-    }
-    
-    this.userCompletedTasks.add(taskId);
-    this.powerBalance += rewardPower;
-    this._dirtyPower = true;
-    
-    await this.saveUserData(true);
-    
-    await this.addReferralEarnings(this.tgUser.id, rewardPower);
-    
-    await this.updateLevelFromPower();
-    if (this.db) {
-        await this.db.ref(`users/${this.tgUser.id}/completedTasks`).set(Array.from(this.userCompletedTasks));
-        localStorage.setItem(`completed_${this.tgUser.id}`, JSON.stringify(Array.from(this.userCompletedTasks)));
         
-        const taskRef = this.db.ref(`tasks/${taskId}/total`);
-        const currentTotal = (await taskRef.once('value')).val() || 0;
-        await taskRef.set(currentTotal + 1);
-        
-        if (this.cache.tasks) {
-            const cachedTask = this.cache.tasks.main?.find(t => t.id === taskId) || this.cache.tasks.partner?.find(t => t.id === taskId);
-            if (cachedTask) {
-                cachedTask.total = currentTotal + 1;
+        this.userCompletedTasks.add(taskId);
+        if (isMainTask) {
+            this.userCompletedMainTasks.add(taskId);
+            if (this.db) {
+                await this.db.ref(`users/${this.tgUser.id}/completedMainTasks`).set(Array.from(this.userCompletedMainTasks));
             }
         }
+        this.powerBalance += rewardPower;
+        this._dirtyPower = true;
+        
+        await this.saveUserData(true);
+        
+        await this.addReferralEarnings(this.tgUser.id, rewardPower);
+        
+        await this.updateLevelFromPower();
+        if (this.db) {
+            await this.db.ref(`users/${this.tgUser.id}/completedTasks`).set(Array.from(this.userCompletedTasks));
+            localStorage.setItem(`completed_${this.tgUser.id}`, JSON.stringify(Array.from(this.userCompletedTasks)));
+            
+            const taskRef = this.db.ref(`tasks/${taskId}/total`);
+            const currentTotal = (await taskRef.once('value')).val() || 0;
+            await taskRef.set(currentTotal + 1);
+            
+            if (this.cache.tasks) {
+                const cachedTask = this.cache.tasks.main?.find(t => t.id === taskId) || this.cache.tasks.partner?.find(t => t.id === taskId);
+                if (cachedTask) {
+                    cachedTask.total = currentTotal + 1;
+                }
+            }
+        }
+        
+        if (btnElement) {
+            if (isMainTask) {
+                btnElement.remove();
+            } else {
+                btnElement.innerHTML = 'Done';
+                btnElement.disabled = true;
+                btnElement.classList.add('done');
+                btnElement.classList.remove('start', 'check');
+            }
+        }
+        
+        this.renderMining();
+        if (this._earnLoaded) {
+            await this.loadTasks();
+            this.renderEarn();
+        }
+        this.showNotification('Task Completed!', `${rewardPower} ${this.t('power')}`, 'success');
+        this.vibrate('success');
+        this.isTaskRunning = false;
+        this.enableAllTaskButtons();
+        return true;
     }
-    
-    if (btnElement) {
-        btnElement.innerHTML = 'Done';
-        btnElement.disabled = true;
-        btnElement.classList.add('done');
-        btnElement.classList.remove('start', 'check');
-    }
-    
-    this.renderMining();
-    if (this._earnLoaded) {
-        await this.loadTasks();
-        this.renderEarn();
-    }
-    this.showNotification('Task Completed!', `${rewardPower} ${this.t('power')}`, 'success');
-    this.vibrate('success');
-    this.isTaskRunning = false;
-    this.enableAllTaskButtons();
-    return true;
-}
-    
     
     async checkBotAdmin(channel) {
         const cacheKey = `bot_admin_${channel}`;
@@ -587,65 +608,69 @@ async completeTask(taskId, rewardPower, url, verification, btnElement) {
         });
     }
 
-async applyPromoCode(code) {
-    if (!this.db) return false;
-    if (this.userCompletedPromoCodes.has(code)) {
-        this.showNotification('Already Used', 'Code already redeemed', 'warning');
-        return false;
+    async applyPromoCode(code) {
+        if (!this.db) return false;
+        if (this.userCompletedPromoCodes.has(code)) {
+            this.showNotification('Already Used', 'Code already redeemed', 'warning');
+            return false;
+        }
+        const codeSnap = await this.db.ref(`promoCodes/${code}`).once('value');
+        if (!codeSnap.exists()) {
+            this.showNotification('Invalid Code', 'Promo code not found', 'error');
+            return false;
+        }
+        const promoData = codeSnap.val();
+        
+        const usedRef = this.db.ref(`usedPromoCodes/${this.tgUser.id}/${code}`);
+        const usedSnap = await usedRef.once('value');
+        if (usedSnap.exists()) {
+            this.showNotification('Already Used', 'Code already redeemed', 'warning');
+            return false;
+        }
+        
+        const totalUses = promoData.total || 0;
+        const maxUses = promoData.maxUses;
+        if (maxUses && totalUses >= maxUses) {
+            this.showNotification('Expired', 'Promo code has reached maximum uses', 'warning');
+            return false;
+        }
+        
+        try {
+            const AdController = window.Adsgram.init({ blockId: APP_CONFIG.INTERSTITIAL_AD_BLOCK_ID });
+            await AdController.show();
+        } catch (result) {
+            this.showNotification('No Ads', 'No ads available at the moment', 'warning');
+            return false;
+        }
+        
+        await usedRef.set(true);
+        this.userCompletedPromoCodes.add(code);
+        
+        if (promoData.rewardType === 'power') {
+            this.powerBalance += promoData.reward;
+            this._dirtyPower = true;
+            await this.updateLevelFromPower();
+            await this.saveUserData();
+            await this.addReferralEarnings(this.tgUser.id, promoData.reward);
+            this.showNotification('Code Applied!', `You received ${this.formatNumber(promoData.reward)} Power`, 'success');
+        } else if (promoData.rewardType === 'ton') {
+            this.tonBalance += promoData.reward;
+            this._dirtyTon = true;
+            await this.saveUserData();
+            this.showNotification('Code Applied!', `You received ${promoData.reward} TON`, 'success');
+        } else {
+            this.showNotification('Error', 'Invalid reward type', 'error');
+            return false;
+        }
+        
+        const promoRef = this.db.ref(`promoCodes/${code}/total`);
+        const currentTotal = (await promoRef.once('value')).val() || 0;
+        await promoRef.set(currentTotal + 1);
+        
+        this.renderMining();
+        this.renderEarn();
+        return true;
     }
-    const codeSnap = await this.db.ref(`promoCodes/${code}`).once('value');
-    if (!codeSnap.exists()) {
-        this.showNotification('Invalid Code', 'Promo code not found', 'error');
-        return false;
-    }
-    const promoData = codeSnap.val();
-    
-    const usedRef = this.db.ref(`usedPromoCodes/${this.tgUser.id}/${code}`);
-    const usedSnap = await usedRef.once('value');
-    if (usedSnap.exists()) {
-        this.showNotification('Already Used', 'Code already redeemed', 'warning');
-        return false;
-    }
-    
-    const totalUses = promoData.total || 0;
-    const maxUses = promoData.maxUses;
-    if (maxUses && totalUses >= maxUses) {
-        this.showNotification('Expired', 'Promo code has reached maximum uses', 'warning');
-        return false;
-    }
-    
-    const adWatched = await this.showInterstitialAd();
-    if (!adWatched) return false;
-    
-    await usedRef.set(true);
-    this.userCompletedPromoCodes.add(code);
-    
-    if (promoData.rewardType === 'power') {
-        this.powerBalance += promoData.reward;
-        this._dirtyPower = true;
-        await this.updateLevelFromPower();
-        await this.saveUserData();
-        await this.addReferralEarnings(this.tgUser.id, promoData.reward);
-        this.showNotification('Code Applied!', `You received ${this.formatNumber(promoData.reward)} Power`, 'success');
-    } else if (promoData.rewardType === 'ton') {
-        this.tonBalance += promoData.reward;
-        this._dirtyTon = true;
-        await this.saveUserData();
-        this.showNotification('Code Applied!', `You received ${promoData.reward} TON`, 'success');
-    } else {
-        this.showNotification('Error', 'Invalid reward type', 'error');
-        return false;
-    }
-    
-    const promoRef = this.db.ref(`promoCodes/${code}/total`);
-    const currentTotal = (await promoRef.once('value')).val() || 0;
-    await promoRef.set(currentTotal + 1);
-    
-    this.renderMining();
-    this.renderEarn();
-    return true;
-}
-
     
     async withdraw(amount, wallet) {
         if (this._withdrawLock) {
@@ -665,8 +690,13 @@ async applyPromoCode(code) {
             return false;
         }
         
-        const adWatched = await this.showInterstitialAd();
-        if (!adWatched) return false;
+        try {
+            const AdController = window.Adsgram.init({ blockId: APP_CONFIG.INTERSTITIAL_AD_BLOCK_ID });
+            await AdController.show();
+        } catch (result) {
+            this.showNotification('No Ads', 'No ads available at the moment', 'warning');
+            return false;
+        }
         
         const originalBalance = this.tonBalance;
         this.tonBalance -= amount;
@@ -758,32 +788,30 @@ async applyPromoCode(code) {
         }
     }
     
-
-    
     async getServerTime(forceSync = false) {
-    const now = Date.now();
-    
-    if (!forceSync && window._lastServerTime && (now - window._lastSyncTime) < 60000) {
-        const offset = window._lastServerTime - window._lastSyncTime;
-        return now + offset;
+        const now = Date.now();
+        
+        if (!forceSync && window._lastServerTime && (now - window._lastSyncTime) < 60000) {
+            const offset = window._lastServerTime - window._lastSyncTime;
+            return now + offset;
+        }
+        
+        if (!window._serverTimePromise) {
+            window._serverTimePromise = (async () => {
+                try {
+                    const res = await fetch('/api/current-time');
+                    const data = await res.json();
+                    window._lastServerTime = data.serverTime;
+                    window._lastSyncTime = Date.now();
+                    return data.serverTime;
+                } finally {
+                    setTimeout(() => { window._serverTimePromise = null; }, 100);
+                }
+            })();
+        }
+        
+        return await window._serverTimePromise;
     }
-    
-    if (!window._serverTimePromise) {
-        window._serverTimePromise = (async () => {
-            try {
-                const res = await fetch('/api/current-time');
-                const data = await res.json();
-                window._lastServerTime = data.serverTime;
-                window._lastSyncTime = Date.now();
-                return data.serverTime;
-            } finally {
-                setTimeout(() => { window._serverTimePromise = null; }, 100);
-            }
-        })();
-    }
-    
-    return await window._serverTimePromise;
-}
     
     async generateUniqueDeviceId() {
         const userAgent = navigator.userAgent;
@@ -841,7 +869,7 @@ async applyPromoCode(code) {
             return true;
         } catch(e) {
             console.warn('Interstitial ad failed:', e);
-            return true;
+            return false;
         }
     }
     
@@ -852,7 +880,7 @@ async applyPromoCode(code) {
             return true;
         } catch(e) {
             console.warn('Reward ad failed:', e);
-            return true;
+            return false;
         }
     }
     
@@ -946,10 +974,7 @@ async applyPromoCode(code) {
             photoUrl: this.tgUser.photo_url || APP_CONFIG.DEFAULT_USER_AVATAR,
             referredBy: referredBy,
             createdAt: await this.getServerTime(true),
-            miningSessionHours: this.miningSessionHours,
-            hasStartedMining: false,
-            hasClaimedWelcome: false,
-            powerBalance: 0,
+            powerBalance: 1000,
             tonBalance: 0,
             level: 1
         };
@@ -969,10 +994,9 @@ async applyPromoCode(code) {
             }
         }
         
-        this.powerBalance = 0;
+        this.powerBalance = 1000;
         this.tonBalance = 0;
         this.userLevel = 1;
-        this.hasClaimedWelcome = false;
         this.hasStartedMining = false;
         this.miningActive = false;
         this.miningStartTime = null;
@@ -987,26 +1011,28 @@ async applyPromoCode(code) {
         if (levelBadge) levelBadge.innerText = this.userLevel;
         const photoImg = document.getElementById('user-photo');
         if (photoImg) photoImg.src = this.tgUser.photo_url || APP_CONFIG.DEFAULT_USER_AVATAR;
+        
+        this.showNotification('Welcome!', '1000 Power Added', 'success');
     }
     
-async initFirebase() {
-    const config = {
-        apiKey: "AIzaSyCWnfPAgBHr1beeph4OxxmXokY45MgPsFM",
-        authDomain: "vevaia.firebaseapp.com",
-        databaseURL: "https://vevaia-default-rtdb.firebaseio.com",
-        projectId: "vevaia",
-        storageBucket: "vevaia.firebasestorage.app",
-        messagingSenderId: "284687408904",
-        appId: "1:284687408904:web:25e88c5066b5844aefd6bd",
-        measurementId: "G-LPRMK4JY0Z"
-    };
-    
-    let app;
-    try { app = firebase.initializeApp(config); } catch(e) { app = firebase.app(); }
-    this.db = app.database();
-    this.auth = app.auth();
-    await this.auth.signInAnonymously();
-}
+    async initFirebase() {
+        const config = {
+            apiKey: "AIzaSyCWnfPAgBHr1beeph4OxxmXokY45MgPsFM",
+            authDomain: "vevaia.firebaseapp.com",
+            databaseURL: "https://vevaia-default-rtdb.firebaseio.com",
+            projectId: "vevaia",
+            storageBucket: "vevaia.firebasestorage.app",
+            messagingSenderId: "284687408904",
+            appId: "1:284687408904:web:25e88c5066b5844aefd6bd",
+            measurementId: "G-LPRMK4JY0Z"
+        };
+        
+        let app;
+        try { app = firebase.initializeApp(config); } catch(e) { app = firebase.app(); }
+        this.db = app.database();
+        this.auth = app.auth();
+        await this.auth.signInAnonymously();
+    }
     
     async loadUserData() {
         if (this._userDataLoaded) return;
@@ -1031,17 +1057,6 @@ async initFirebase() {
             if (snap.exists()) {
                 const d = snap.val();
                 this.powerBalance = d.powerBalance ?? this.powerBalance;
-                
-                if (this.powerBalance < 900 && !d.hasClaimedWelcome) {
-                    this.powerBalance += 1000;
-                    this._dirtyPower = true;
-                    this.hasClaimedWelcome = true;
-                    await this.saveUserData(true);
-                    this.showNotification('Welcome Bonus', '1000 Power added to your balance', 'success');
-                } else {
-                    this.hasClaimedWelcome = d.hasClaimedWelcome ?? false;
-                }
-                
                 this.tonBalance = d.tonBalance ?? this.tonBalance;
                 this.userLevel = d.level ?? this.userLevel;
                 this.hasStartedMining = d.hasStartedMining ?? false;
@@ -1049,7 +1064,6 @@ async initFirebase() {
                 this.miningStartTime = d.miningStartTime ?? this.miningStartTime;
                 this.miningEndTime = d.miningEndTime ?? this.miningEndTime;
                 this.pendingTonReward = d.pendingTonReward ?? this.pendingTonReward;
-                this.miningSessionHours = d.miningSessionHours ?? 8;
                 this.referredBy = d.referredBy ?? null;
                 this.totalReferrals = d.totalReferrals ?? this.totalReferrals;
                 this.referralPower = d.referralPower ?? this.referralPower;
@@ -1100,16 +1114,12 @@ async initFirebase() {
             const data = JSON.parse(stored);
             if (data.date === today) {
                 this.dailyCheckNewsCompleted = data.checkNewsCompleted || false;
-                this.dailyAdTaskCompleted = data.adTaskCompleted || false;
                 this.lastDailyCheckNews = data.lastCheckNews || 0;
-                this.lastDailyAdTask = data.lastAdTask || 0;
                 return;
             }
         }
         this.dailyCheckNewsCompleted = false;
-        this.dailyAdTaskCompleted = false;
         this.lastDailyCheckNews = 0;
-        this.lastDailyAdTask = 0;
     }
     
     saveDailyTaskStatus() {
@@ -1117,9 +1127,7 @@ async initFirebase() {
         const data = {
             date: today,
             checkNewsCompleted: this.dailyCheckNewsCompleted,
-            adTaskCompleted: this.dailyAdTaskCompleted,
-            lastCheckNews: this.lastDailyCheckNews,
-            lastAdTask: this.lastDailyAdTask
+            lastCheckNews: this.lastDailyCheckNews
         };
         localStorage.setItem(`daily_tasks_${this.tgUser?.id}`, JSON.stringify(data));
     }
@@ -1181,7 +1189,7 @@ async initFirebase() {
                     
                     if (isMember) {
                         this.dailyCheckNewsCompleted = true;
-                        this.lastDailyCheckNews = Date.now();
+                        this.lastDailyCheckNews = await this.getServerTime(true);
                         this.saveDailyTaskStatus();
                         
                         const rewardPower = 10;
@@ -1212,72 +1220,6 @@ async initFirebase() {
         return true;
     }
     
-    async completeDailyAdTask() {
-        if (this.dailyAdTaskCompleted) {
-            this.showNotification('Already Completed', 'Daily task already done today', 'warning');
-            return false;
-        }
-        
-        if (this.isDailyAdTaskRunning) {
-            this.showNotification('Busy', 'Please wait for current task', 'warning');
-            return false;
-        }
-        
-        this.isDailyAdTaskRunning = true;
-        
-        const taskContainer = document.querySelector('.daily-ad-task-container');
-        const watchBtn = document.querySelector('#daily-ad-task-btn');
-        
-        if (watchBtn) watchBtn.style.display = 'none';
-        
-        const rewardAmount = Math.floor(Math.random() * (50 - 10 + 1)) + 10;
-        
-        taskContainer.innerHTML = `
-            <div class="daily-task-header">
-                <div class="daily-task-icon"><i class="fas fa-video"></i></div>
-                <div class="daily-task-info">
-                    <h4>${this.t('daily_ad_task')}</h4>
-                    <div class="daily-task-reward" id="ad-reward-display">+${rewardAmount} ${this.t('power')}</div>
-                </div>
-                <adsgram-task id="daily-ads-task" data-block-id='${APP_CONFIG.DAILY_AD_TASK_BLOCK_ID}' data-debug='true' class="task-ad-component"></adsgram-task>
-            </div>
-        `;
-        
-        const adComponent = document.getElementById('daily-ads-task');
-        
-        const rewardHandler = () => {
-            this.showNotification('Reward Earned!', `+${rewardAmount} Power`, 'success');
-            
-            this.dailyAdTaskCompleted = true;
-            this.dailyAdTaskReward = rewardAmount;
-            this.saveDailyTaskStatus();
-            this.powerBalance += rewardAmount;
-            this._dirtyPower = true;
-            this.updateLevelFromPower();
-            this.saveUserData(true);
-            this.addReferralEarnings(this.tgUser.id, rewardAmount);
-            
-            adComponent.removeEventListener('reward', rewardHandler);
-            adComponent.removeEventListener('onError', errorHandler);
-            
-            this.renderEarn();
-            this.isDailyAdTaskRunning = false;
-        };
-        
-        const errorHandler = () => {
-            this.showNotification('Ad Error', 'Please try again later', 'error');
-            adComponent.removeEventListener('reward', rewardHandler);
-            adComponent.removeEventListener('onError', errorHandler);
-            this.renderEarn();
-            this.isDailyAdTaskRunning = false;
-        };
-        
-        adComponent.addEventListener('reward', rewardHandler);
-        adComponent.addEventListener('onError', errorHandler);
-        
-        return true;
-    }
-    
     async loadCompletedTasks() {
         const cached = localStorage.getItem(`completed_${this.tgUser.id}`);
         if (cached && !this._forceRefreshCompleted) {
@@ -1298,6 +1240,17 @@ async initFirebase() {
         } catch (error) {
             console.warn('Failed to load completed tasks:', error);
             this.userCompletedTasks = new Set();
+        }
+    }
+    
+    async loadCompletedMainTasks() {
+        if (!this.db) return;
+        try {
+            const snap = await this.db.ref(`users/${this.tgUser.id}/completedMainTasks`).once('value');
+            this.userCompletedMainTasks = snap.exists() ? new Set(snap.val()) : new Set();
+        } catch (error) {
+            console.warn('Failed to load completed main tasks:', error);
+            this.userCompletedMainTasks = new Set();
         }
     }
     
@@ -1385,6 +1338,7 @@ async initFirebase() {
     async loadEarnData() {
         await this.loadTasks();
         await this.loadCompletedTasks();
+        await this.loadCompletedMainTasks();
         await this.loadDailyTaskStatus();
     }
     
@@ -1421,7 +1375,7 @@ async initFirebase() {
             
             <div class="earn-more-title"><i class="fas fa-chart-line"></i> ${this.t('earn_more')}</div>
             <div class="earn-cards">
-                <div class="earn-card"><div class="earn-card-info"><h4>${this.t('watch_ad')}</h4><p>10 ${this.t('power')}</p></div><button id="mining-reward-ad" class="earn-card-btn">${this.t('watch')}</button></div>
+                <div class="earn-card"><div class="earn-card-info"><h4>${this.t('watch_ad')}</h4><p>20 ${this.t('power')}</p></div><button id="mining-reward-ad" class="earn-card-btn">${this.t('watch')}</button></div>
                 <div class="earn-card"><div class="earn-card-info"><h4>${this.t('complete_tasks')}</h4><p>${this.t('power_earnings')}</p></div><button id="go-tasks-btn" class="earn-card-btn">${this.t('go')}</button></div>
                 <div class="earn-card"><div class="earn-card-info"><h4>${this.t('invite_frens')}</h4><p>${this.t('power_earnings')}</p></div><button id="go-team-btn" class="earn-card-btn">${this.t('go')}</button></div>
             </div>
@@ -1455,22 +1409,30 @@ async initFirebase() {
         const dailyCheckNewsBtnText = this.dailyCheckNewsCompleted ? 'Done' : this.t('start');
         const dailyCheckNewsBtnDisabled = this.dailyCheckNewsCompleted;
         
-        const mainTasksHtml = APP_CONFIG.MAIN_TASKS.map(t => {
-            const isCompleted = this.userCompletedTasks.has(t.id);
-            const btnClass = isCompleted ? 'done' : 'start';
-            const btnText = isCompleted ? 'Done' : 'Start';
-            const btnDisabled = isCompleted;
-            return `
-                <div class="task-item">
-                    <img class="task-img" src="${t.img}">
-                    <div class="task-info">
-                        <h4>${t.name}</h4>
-                        <div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div>
-                    </div>
-                    <button class="task-btn ${btnClass}" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}" ${btnDisabled ? 'disabled' : ''}>${btnText}</button>
+        const availableMainTasks = APP_CONFIG.MAIN_TASKS.filter(t => !this.userCompletedMainTasks.has(t.id));
+        const completedMainTasks = APP_CONFIG.MAIN_TASKS.filter(t => this.userCompletedMainTasks.has(t.id));
+        
+        const availableMainTasksHtml = availableMainTasks.length > 0 ? availableMainTasks.map(t => `
+            <div class="task-item">
+                <img class="task-img" src="${t.img}">
+                <div class="task-info">
+                    <h4>${t.name}</h4>
+                    <div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div>
                 </div>
-            `;
-        }).join('');
+                <button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button>
+            </div>
+        `).join('') : '<div class="no-data"><i class="fas fa-check-circle"></i><p>' + this.t('all_tasks_completed') + '</p><small>' + this.t('check_later') + '</small></div>';
+        
+        const completedMainTasksHtml = completedMainTasks.length > 0 ? completedMainTasks.map(t => `
+            <div class="task-item completed-task">
+                <img class="task-img" src="${t.img}">
+                <div class="task-info">
+                    <h4>${t.name}</h4>
+                    <div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div>
+                </div>
+                <div class="task-completed-badge"><i class="fas fa-check-circle"></i> ${this.t('completed')}</div>
+            </div>
+        `).join('') : '';
         
         const availablePartnerTasks = this.partnerTasks.filter(t => !this.userCompletedTasks.has(t.id));
         const partnerTasksHtml = availablePartnerTasks.length > 0 ? availablePartnerTasks.map(t => `
@@ -1484,9 +1446,24 @@ async initFirebase() {
             </div>
         `).join('') : '<div class="no-data"><i class="fas fa-globe"></i><p>' + this.t('no_tasks') + '</p><small>' + this.t('check_later') + '</small></div>';
         
+        const completedPartnerTasks = this.partnerTasks.filter(t => this.userCompletedTasks.has(t.id));
+        const completedPartnerTasksHtml = completedPartnerTasks.length > 0 ? completedPartnerTasks.map(t => `
+            <div class="task-item completed-task">
+                <img class="task-img" src="${t.img}">
+                <div class="task-info">
+                    <h4>${t.name}</h4>
+                    <div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div>
+                </div>
+                <div class="task-completed-badge"><i class="fas fa-check-circle"></i> ${this.t('completed')}</div>
+            </div>
+        `).join('') : '';
+        
         el.innerHTML = `
             <div class="promo-card">
-                <div class="promo-title"><i class="fas fa-gift"></i> ${this.t('promo_code')}</div>
+                <div class="promo-header">
+                    <div class="promo-title"><i class="fas fa-gift"></i> ${this.t('promo_code')}</div>
+                    <button id="promo-info-btn" class="info-icon-btn"><i class="fas fa-question-circle"></i></button>
+                </div>
                 <div class="promo-input-group">
                     <input type="text" id="promo-input" class="form-input" placeholder="${this.t('enter_code')}" autocomplete="off">
                     <button id="promo-submit" class="promo-submit-btn" disabled>${this.t('claim')}</button>
@@ -1513,14 +1490,21 @@ async initFirebase() {
             
             <div class="section-header">
                 <h3><i class="fas fa-star"></i> ${this.t('main_tasks')}</h3>
+                <p>${this.t('available_tasks')}: ${availableMainTasks.length}</p>
             </div>
-            <div class="tasks-list" id="main-tasks-list">${mainTasksHtml}</div>
+            <div class="tasks-list" id="main-tasks-list">
+                ${availableMainTasksHtml}
+                ${completedMainTasksHtml ? `<div class="completed-section"><div class="completed-title"><i class="fas fa-check-circle"></i> ${this.t('completed_tasks')}</div>${completedMainTasksHtml}</div>` : ''}
+            </div>
             
             <div class="section-header">
-                <h3><i class="fas fa-globe"></i> ${this.t('partner_tasks')} <button id="tasks-info-btn" class="info-icon-btn" style="margin-left:8px;background:none;border:none;color:var(--primary);cursor:pointer"><i class="fas fa-question-circle"></i></button>
-                </h3>
+                <h3><i class="fas fa-globe"></i> ${this.t('partner_tasks')} <button id="tasks-info-btn" class="info-icon-btn"><i class="fas fa-question-circle"></i></button></h3>
+                <p>${this.t('available_tasks')}: ${availablePartnerTasks.length}</p>
             </div>
-            <div class="tasks-list" id="partner-tasks-list">${partnerTasksHtml}</div>
+            <div class="tasks-list" id="partner-tasks-list">
+                ${partnerTasksHtml}
+                ${completedPartnerTasksHtml ? `<div class="completed-section"><div class="completed-title"><i class="fas fa-check-circle"></i> ${this.t('completed_tasks')}</div>${completedPartnerTasksHtml}</div>` : ''}
+            </div>
         `;
         
         const promoInput = document.getElementById('promo-input');
@@ -1544,6 +1528,11 @@ async initFirebase() {
             this.updateModalTranslations();
         });
         
+        document.getElementById('promo-info-btn')?.addEventListener('click', () => {
+            document.getElementById('promo-info-modal').style.display = 'flex';
+            this.updateModalTranslations();
+        });
+        
         document.getElementById('daily-check-news-btn')?.addEventListener('click', (e) => {
             if (!this.dailyCheckNewsCompleted) {
                 this.completeDailyCheckNews(e.target);
@@ -1560,6 +1549,7 @@ async initFirebase() {
                 const reward = parseInt(btn.dataset.reward);
                 const url = btn.dataset.url;
                 const verify = btn.dataset.verify === 'true';
+                const isMainTask = btn.closest('#main-tasks-list') !== null;
                 
                 window.open(url, '_blank');
                 this.isTaskRunning = true;
@@ -1584,7 +1574,7 @@ async initFirebase() {
                             e.stopPropagation();
                             newBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
                             newBtn.disabled = true;
-                            await this.completeTask(id, reward, url, verify, newBtn);
+                            await this.completeTask(id, reward, url, verify, newBtn, isMainTask);
                         });
                     }
                 }, 1000);
@@ -1673,15 +1663,30 @@ async initFirebase() {
         const text2 = document.getElementById('partner-info-text2');
         const text3 = document.getElementById('partner-info-text3');
         const contactBtn = document.getElementById('contact-support-modal');
-        if (text1) text1.innerHTML = `<i class="fas fa-plus-circle" style="color:#6C63FF;margin-right:8px"></i> ${this.t('partner_text1')}`;
-        if (text2) text2.innerHTML = `<i class="fas fa-handshake" style="color:#6C63FF;margin-right:8px"></i> ${this.t('partner_text2')}`;
-        if (text3) text3.innerHTML = `<i class="fas fa-headset" style="color:#6C63FF;margin-right:8px"></i> ${this.t('partner_text3')}`;
+        if (text1) text1.innerHTML = `<i class="fas fa-plus-circle"></i> ${this.t('partner_text1')}`;
+        if (text2) text2.innerHTML = `<i class="fas fa-handshake"></i> ${this.t('partner_text2')}`;
+        if (text3) text3.innerHTML = `<i class="fas fa-headset"></i> ${this.t('partner_text3')}`;
         if (contactBtn) contactBtn.innerHTML = `<i class="fas fa-headset"></i> ${this.t('contact_support')}`;
         
         const claimTitle = document.getElementById('claim-title');
         if (claimTitle) claimTitle.innerHTML = `<i class="fas fa-gift"></i> ${this.t('claim_mining_title')}`;
         const claimBtn = document.getElementById('confirm-claim-btn');
         if (claimBtn) claimBtn.innerText = this.t('claim_btn');
+        
+        const promoTitle = document.querySelector('#promo-info-modal .modal-header h3');
+        if (promoTitle) promoTitle.innerHTML = `<i class="fas fa-ticket-alt"></i> ${this.t('promo_info_title')}`;
+        const promoText = document.getElementById('promo-info-text');
+        if (promoText) promoText.innerHTML = `<i class="fas fa-telegram"></i> ${this.t('promo_info_text')}`;
+        const getPromoBtn = document.getElementById('get-promo-codes-btn');
+        if (getPromoBtn) getPromoBtn.innerHTML = `<i class="fab fa-telegram"></i> ${this.t('get_promo_codes')}`;
+        const stepsTitle = document.getElementById('promo-steps-title');
+        if (stepsTitle) stepsTitle.innerText = this.t('how_it_works');
+        const step1 = document.getElementById('promo-step-1');
+        if (step1) step1.innerText = this.t('step1');
+        const step2 = document.getElementById('promo-step-2');
+        if (step2) step2.innerText = this.t('step2');
+        const step3 = document.getElementById('promo-step-3');
+        if (step3) step3.innerText = this.t('step3');
         
         document.getElementById('nav-mining').innerText = this.t('mining');
         document.getElementById('nav-earn').innerText = this.t('earn');
@@ -1698,8 +1703,14 @@ async initFirebase() {
         document.getElementById('close-tasks-info')?.addEventListener('click', () => {
             document.getElementById('tasks-info-modal').style.display = 'none';
         });
+        document.getElementById('close-promo-info')?.addEventListener('click', () => {
+            document.getElementById('promo-info-modal').style.display = 'none';
+        });
         document.getElementById('contact-support-modal')?.addEventListener('click', () => {
             window.open(APP_CONFIG.SUPPORT_LINK, '_blank');
+        });
+        document.getElementById('get-promo-codes-btn')?.addEventListener('click', () => {
+            window.open(APP_CONFIG.DAILY_CHECK_NEWS_LINK, '_blank');
         });
         
         document.addEventListener('visibilitychange', () => {
@@ -1878,27 +1889,6 @@ async initFirebase() {
                 }
             }
             
-            const hasClaimedWelcomeRef = this.db.ref(`users/${this.tgUser.id}/hasClaimedWelcome`);
-            const hasClaimedWelcomeSnap = await hasClaimedWelcomeRef.once('value');
-            const hasClaimedWelcomeFromDB = hasClaimedWelcomeSnap.val();
-            
-            if (!hasClaimedWelcomeFromDB) {
-                this.powerBalance = (this.powerBalance || 0) + APP_CONFIG.WELCOME_BONUS_POWER;
-                this._dirtyPower = true;
-                this.hasClaimedWelcome = true;
-                await this.updateLevelFromPower();
-                await this.saveUserData(true);
-                if (this.db) {
-                    await this.db.ref(`users/${this.tgUser.id}`).update({ 
-                        hasClaimedWelcome: true,
-                        powerBalance: this.powerBalance 
-                    });
-                    this.showNotification('Welcome!', `${APP_CONFIG.WELCOME_BONUS_POWER} Power Added`, 'success');
-                }
-            } else {
-                this.hasClaimedWelcome = true;
-            }
-            
             this.setupEventListeners();
             this.renderUI();
             this.setupNavigation();
@@ -1909,7 +1899,6 @@ async initFirebase() {
                 const now = Date.now();
                 if (now >= resetTime) {
                     this.dailyCheckNewsCompleted = false;
-                    this.dailyAdTaskCompleted = false;
                     this.saveDailyTaskStatus();
                     if (this._earnLoaded) this.renderEarn();
                 }
