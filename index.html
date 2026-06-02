@@ -1,3 +1,4 @@
+// index.html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -96,13 +97,65 @@
 </div>
 
 <div id="tasks-info-modal" class="modal" style="display:none;">
-    <div class="modal-content glass-modal">
-        <div class="modal-header"><h3><i class="fas fa-globe"></i> <span id="partner-info-title">Social Tasks</span></h3><button class="modal-close" id="close-tasks-info">&times;</button></div>
+    <div class="modal-content glass-modal modern-modal">
+        <div class="modal-header">
+            <h3><i class="fas fa-globe"></i> Social Tasks</h3>
+            <button class="modal-close" id="close-tasks-info">&times;</button>
+        </div>
         <div class="modal-body">
-            <p id="partner-info-text1"><i class="fas fa-plus-circle" style="color:#6C63FF;margin-right:8px"></i> You can add task by support</p>
-            <p id="partner-info-text2"><i class="fas fa-handshake" style="color:#6C63FF;margin-right:8px"></i> You can cooperate with us</p>
-            <p id="partner-info-text3"><i class="fas fa-headset" style="color:#6C63FF;margin-right:8px"></i> Contact support for details</p>
-            <button id="contact-support-modal" class="support-btn"><i class="fas fa-headset"></i> <span id="contact-support-btn">Contact Support</span></button>
+            <div class="info-card">
+                <div class="info-icon-wrapper"><i class="fas fa-plus-circle"></i></div>
+                <div class="info-text">
+                    <h4>Add Your Task</h4>
+                    <p id="partner-info-text1">You can add a task by contacting support</p>
+                </div>
+            </div>
+            <div class="info-card">
+                <div class="info-icon-wrapper"><i class="fas fa-handshake"></i></div>
+                <div class="info-text">
+                    <h4>Cooperate With Us</h4>
+                    <p id="partner-info-text2">You can cooperate with us for mutual benefits</p>
+                </div>
+            </div>
+            <div class="info-card">
+                <div class="info-icon-wrapper"><i class="fas fa-headset"></i></div>
+                <div class="info-text">
+                    <h4>Need Help?</h4>
+                    <p id="partner-info-text3">Contact our support team for any questions</p>
+                </div>
+            </div>
+            <button id="contact-support-modal" class="support-btn modern-support-btn"><i class="fas fa-headset"></i> Contact Support</button>
+        </div>
+    </div>
+</div>
+
+<div id="promo-info-modal" class="modal" style="display:none;">
+    <div class="modal-content glass-modal modern-modal">
+        <div class="modal-header">
+            <h3><i class="fas fa-ticket-alt"></i> How to Get Promo Codes?</h3>
+            <button class="modal-close" id="close-promo-info">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="promo-info-header">
+                <div class="promo-info-icon"><i class="fab fa-telegram"></i></div>
+                <p id="promo-info-text">Get promo codes from our news channel! Subscribe to never miss new codes.</p>
+            </div>
+            <div class="promo-steps">
+                <h4 id="promo-steps-title">How it works</h4>
+                <div class="step-item">
+                    <div class="step-number">1</div>
+                    <div class="step-text" id="promo-step-1">Subscribe to our news channel</div>
+                </div>
+                <div class="step-item">
+                    <div class="step-number">2</div>
+                    <div class="step-text" id="promo-step-2">Follow new posts</div>
+                </div>
+                <div class="step-item">
+                    <div class="step-number">3</div>
+                    <div class="step-text" id="promo-step-3">Enter promo codes and get rewards</div>
+                </div>
+            </div>
+            <button id="get-promo-codes-btn" class="support-btn modern-support-btn telegram-btn"><i class="fab fa-telegram"></i> Get Promo Codes</button>
         </div>
     </div>
 </div>
