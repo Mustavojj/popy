@@ -1473,7 +1473,7 @@ renderEarn() {
         </div>
         
         <div class="section-header">
-            <h3><i class="fas fa-globe"></i> ${this.t('partner_tasks')} <button id="tasks-info-btn" class="info-icon-btn"><i class="fas fa-question-circle"></i></button></h3>
+            <h3>  <i class="fas fa-globe"></i> ${this.t('partner_tasks')} <button id="tasks-info-btn" class="info-icon-btn"><i class="fas fa-question-circle"></i></button></h3>
             <p>${this.t('available_tasks')}: ${availablePartnerTasks.length}</p>
         </div>
         <div class="tasks-list" id="partner-tasks-list">
