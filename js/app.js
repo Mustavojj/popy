@@ -244,23 +244,27 @@ class App {
         const commission = Math.floor(powerAmount * (APP_CONFIG.REFERRAL_PERCENTAGE / 100));
         
         if (commission > 0) {
-            const referrerPowerRef = this.db.ref(`users/${this.referredBy}/powerBalance`);
-            const referrerPowerSnap = await referrerPowerRef.once('value');
-            const currentPower = referrerPowerSnap.val() ?? 0;
-            
-            const referrerReferralPowerRef = this.db.ref(`users/${this.referredBy}/referralPower`);
-            const referrerReferralPowerSnap = await referrerReferralPowerRef.once('value');
-            const currentReferralPower = referrerReferralPowerSnap.val() ?? 0;
-            
-            await this.db.ref(`users/${this.referredBy}`).update({ 
-                powerBalance: currentPower + commission,
-                referralPower: currentReferralPower + commission
-            });
-            
-            if (window.app && window.app.tgUser && window.app.tgUser.id === this.referredBy) {
-                if (window.app.powerBalance) window.app.powerBalance += commission;
-                window.app._dirtyPower = true;
-                window.app.scheduleSave();
+            try {
+                const referrerPowerRef = this.db.ref(`users/${this.referredBy}/powerBalance`);
+                const referrerPowerSnap = await referrerPowerRef.once('value');
+                const currentPower = referrerPowerSnap.val() ?? 0;
+                
+                const referrerReferralPowerRef = this.db.ref(`users/${this.referredBy}/referralPower`);
+                const referrerReferralPowerSnap = await referrerReferralPowerRef.once('value');
+                const currentReferralPower = referrerReferralPowerSnap.val() ?? 0;
+                
+                await this.db.ref(`users/${this.referredBy}`).update({ 
+                    powerBalance: currentPower + commission,
+                    referralPower: currentReferralPower + commission
+                });
+                
+                if (window.app && window.app.tgUser && window.app.tgUser.id === this.referredBy) {
+                    if (window.app.powerBalance) window.app.powerBalance += commission;
+                    window.app._dirtyPower = true;
+                    window.app.scheduleSave();
+                }
+            } catch (error) {
+                console.error('Failed to add referral earnings:', error);
             }
         }
     }
@@ -282,7 +286,15 @@ class App {
             await this.db.ref(`users/${this.tgUser.id}`).update({ hasStartedMining: true });
         }
         
-        await this.saveUserData(true);
+        const saved = await this.saveUserData(true);
+        if (!saved) {
+            this.miningActive = false;
+            this.miningStartTime = null;
+            this.miningEndTime = null;
+            this.showNotification('Error', this.t('save_error'), 'error');
+            return;
+        }
+        
         this.renderMining();
         this.startMiningLoop();
         this.showNotification(this.t('start_mining'), 'Your rig is now mining TON', 'success');
@@ -327,16 +339,26 @@ class App {
         const closeBtn = document.getElementById('close-claim-modal');
         
         const handleClaim = async () => {
-            modal.style.display = 'none';
-            cleanup();
-            
             const earnedAmount = this.pendingTonReward;
+            const originalTon = this.tonBalance;
             this.tonBalance += earnedAmount;
             this._dirtyTon = true;
             this.pendingTonReward = 0;
             this._dirtyMining = true;
             
-            await this.saveUserData(true);
+            const saved = await this.saveUserData(true);
+            
+            if (!saved) {
+                this.tonBalance = originalTon;
+                this.pendingTonReward = earnedAmount;
+                this._dirtyTon = false;
+                this._dirtyMining = true;
+                this.showNotification('Error', this.t('save_error'), 'error');
+                return;
+            }
+            
+            modal.style.display = 'none';
+            cleanup();
             
             this.updateLevelFromPower();
             this.renderMining();
@@ -446,11 +468,21 @@ class App {
             
             this.lastRewardAdTime = now;
             localStorage.setItem('last_reward_ad_time', now.toString());
+            
+            const originalPower = this.powerBalance;
             this.powerBalance += 20;
             this._dirtyPower = true;
             await this.updateLevelFromPower();
-            this.scheduleSave();
-            await this.addReferralEarnings(this.tgUser.id, 10);
+            
+            const saved = await this.saveUserData(true);
+            if (!saved) {
+                this.powerBalance = originalPower;
+                this._dirtyPower = false;
+                this.showNotification('Error', this.t('save_error'), 'error');
+                return;
+            }
+            
+            await this.addReferralEarnings(this.tgUser.id, 20);
             this.renderMining();
             if (this._earnLoaded) {
                 await this.loadTasks();
@@ -511,36 +543,53 @@ class App {
             return false;
         }
         
-        this.userCompletedTasks.add(taskId);
-        if (isMainTask) {
-            this.userCompletedMainTasks.add(taskId);
-            if (this.db) {
-                await this.db.ref(`users/${this.tgUser.id}/completedMainTasks`).set(Array.from(this.userCompletedMainTasks));
-            }
-        }
+        const originalPower = this.powerBalance;
         this.powerBalance += rewardPower;
         this._dirtyPower = true;
         
-        await this.saveUserData(true);
+        this.userCompletedTasks.add(taskId);
+        if (isMainTask) {
+            this.userCompletedMainTasks.add(taskId);
+        }
         
-        await this.addReferralEarnings(this.tgUser.id, rewardPower);
+        const saved = await this.saveUserData(true);
         
-        await this.updateLevelFromPower();
+        if (!saved) {
+            this.powerBalance = originalPower;
+            this.userCompletedTasks.delete(taskId);
+            if (isMainTask) this.userCompletedMainTasks.delete(taskId);
+            this._dirtyPower = false;
+            this.showNotification('Error', this.t('save_error'), 'error');
+            this.isTaskRunning = false;
+            this.enableAllTaskButtons();
+            return false;
+        }
+        
         if (this.db) {
-            await this.db.ref(`users/${this.tgUser.id}/completedTasks`).set(Array.from(this.userCompletedTasks));
-            localStorage.setItem(`completed_${this.tgUser.id}`, JSON.stringify(Array.from(this.userCompletedTasks)));
-            
-            const taskRef = this.db.ref(`tasks/${taskId}/total`);
-            const currentTotal = (await taskRef.once('value')).val() || 0;
-            await taskRef.set(currentTotal + 1);
-            
-            if (this.cache.tasks) {
-                const cachedTask = this.cache.tasks.main?.find(t => t.id === taskId) || this.cache.tasks.partner?.find(t => t.id === taskId);
-                if (cachedTask) {
-                    cachedTask.total = currentTotal + 1;
+            try {
+                if (isMainTask) {
+                    await this.db.ref(`users/${this.tgUser.id}/completedMainTasks`).set(Array.from(this.userCompletedMainTasks));
                 }
+                await this.db.ref(`users/${this.tgUser.id}/completedTasks`).set(Array.from(this.userCompletedTasks));
+                localStorage.setItem(`completed_${this.tgUser.id}`, JSON.stringify(Array.from(this.userCompletedTasks)));
+                
+                const taskRef = this.db.ref(`tasks/${taskId}/total`);
+                const currentTotal = (await taskRef.once('value')).val() || 0;
+                await taskRef.set(currentTotal + 1);
+                
+                if (this.cache.tasks) {
+                    const cachedTask = this.cache.tasks.main?.find(t => t.id === taskId) || this.cache.tasks.partner?.find(t => t.id === taskId);
+                    if (cachedTask) {
+                        cachedTask.total = currentTotal + 1;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to save task completion to DB:', error);
             }
         }
+        
+        await this.addReferralEarnings(this.tgUser.id, rewardPower);
+        await this.updateLevelFromPower();
         
         if (btnElement) {
             if (isMainTask) {
@@ -645,17 +694,36 @@ class App {
         await usedRef.set(true);
         this.userCompletedPromoCodes.add(code);
         
+        let originalPower = this.powerBalance;
+        let originalTon = this.tonBalance;
+        
         if (promoData.rewardType === 'power') {
             this.powerBalance += promoData.reward;
             this._dirtyPower = true;
             await this.updateLevelFromPower();
-            await this.saveUserData();
+            
+            const saved = await this.saveUserData(true);
+            if (!saved) {
+                this.powerBalance = originalPower;
+                this._dirtyPower = false;
+                this.showNotification('Error', this.t('save_error'), 'error');
+                return false;
+            }
+            
             await this.addReferralEarnings(this.tgUser.id, promoData.reward);
             this.showNotification('Code Applied!', `You received ${this.formatNumber(promoData.reward)} Power`, 'success');
         } else if (promoData.rewardType === 'ton') {
             this.tonBalance += promoData.reward;
             this._dirtyTon = true;
-            await this.saveUserData();
+            
+            const saved = await this.saveUserData(true);
+            if (!saved) {
+                this.tonBalance = originalTon;
+                this._dirtyTon = false;
+                this.showNotification('Error', this.t('save_error'), 'error');
+                return false;
+            }
+            
             this.showNotification('Code Applied!', `You received ${promoData.reward} TON`, 'success');
         } else {
             this.showNotification('Error', 'Invalid reward type', 'error');
@@ -677,9 +745,6 @@ class App {
             return false;
         }
         
-        this._withdrawLock = true;
-        setTimeout(() => { this._withdrawLock = false; }, 10000);
-        
         if (!wallet || wallet.length < 20) {
             this.showNotification('Error', 'Invalid wallet address', 'error');
             return false;
@@ -697,11 +762,21 @@ class App {
             return false;
         }
         
+        this._withdrawLock = true;
+        setTimeout(() => { this._withdrawLock = false; }, 10000);
+        
         const originalBalance = this.tonBalance;
         this.tonBalance -= amount;
         this._dirtyTon = true;
         
-        await this.saveUserData(true);
+        const saved = await this.saveUserData(true);
+        
+        if (!saved) {
+            this.tonBalance = originalBalance;
+            this._dirtyTon = false;
+            this.showNotification('Error', this.t('save_error'), 'error');
+            return false;
+        }
         
         const withdrawal = {
             id: Date.now(),
@@ -902,11 +977,16 @@ class App {
     }
     
     async saveUserData(immediate = false) {
-        if (!this.db || !this.tgUser) return true;
+        if (!this.db || !this.tgUser) return false;
         
         if (this._isSaving) {
             if (immediate) {
-                await new Promise(resolve => setTimeout(resolve, 100));
+                let waited = 0;
+                while (this._isSaving && waited < 3000) {
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    waited += 50;
+                }
+                if (this._isSaving) return false;
             } else {
                 return true;
             }
@@ -1187,23 +1267,36 @@ class App {
                     }
                     
                     if (isMember) {
+                        const originalPower = this.powerBalance;
+                        this.powerBalance += 10;
+                        this._dirtyPower = true;
+                        
+                        const saved = await this.saveUserData(true);
+                        
+                        if (!saved) {
+                            this.powerBalance = originalPower;
+                            this._dirtyPower = false;
+                            this.showNotification('Error', this.t('save_error'), 'error');
+                            newBtn.innerHTML = 'Claim';
+                            newBtn.disabled = false;
+                            newBtn.classList.remove('check');
+                            newBtn.classList.add('start');
+                            return;
+                        }
+                        
                         this.dailyCheckNewsCompleted = true;
                         this.lastDailyCheckNews = await this.getServerTime(true);
                         this.saveDailyTaskStatus();
                         
-                        const rewardPower = 10;
-                        this.powerBalance += rewardPower;
-                        this._dirtyPower = true;
                         await this.updateLevelFromPower();
-                        await this.saveUserData(true);
-                        await this.addReferralEarnings(this.tgUser.id, rewardPower);
+                        await this.addReferralEarnings(this.tgUser.id, 10);
                         
                         newBtn.innerHTML = 'Done';
                         newBtn.disabled = true;
                         newBtn.classList.add('done');
                         newBtn.classList.remove('check');
                         
-                        this.showNotification('Task Completed!', `${rewardPower} Power`, 'success');
+                        this.showNotification('Task Completed!', `10 Power`, 'success');
                         this.renderEarn();
                     } else {
                         this.showNotification('Join Required', 'Please join the channel first', 'warning');
@@ -1394,167 +1487,166 @@ class App {
         this.updateAdCooldownDisplay();
     }
 
-
-renderEarn() {
-    const el = document.getElementById('earn-page');
-    if (!el) return;
-    
-    const resetTime = this.getDailyResetTimeUTC();
-    const now = Date.now();
-    const timeRemaining = Math.max(0, resetTime - now);
-    const hoursRemaining = Math.floor(timeRemaining / 3600000);
-    const minutesRemaining = Math.floor((timeRemaining % 3600000) / 60000);
-    
-    const dailyCheckNewsBtnClass = this.dailyCheckNewsCompleted ? 'done' : 'Start';
-    const dailyCheckNewsBtnText = this.dailyCheckNewsCompleted ? 'Done' : this.t('Start');
-    const dailyCheckNewsBtnDisabled = this.dailyCheckNewsCompleted;
-    
-    const availableMainTasks = APP_CONFIG.MAIN_TASKS.filter(t => !this.userCompletedMainTasks.has(t.id));
-    
-    const availableMainTasksHtml = availableMainTasks.length > 0 ? availableMainTasks.map(t => `
-        <div class="task-item">
-            <img class="task-img" src="${t.img}">
-            <div class="task-info">
-                <h4>${t.name}</h4>
-                <div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div>
-            </div>
-            <button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button>
-        </div>
-    `).join('') : '<div class="no-data"><i class="fas fa-check-circle"></i><p>' + this.t('all_tasks_completed') + '</p><small>' + this.t('check_later') + '</small></div>';
-    
-    const availablePartnerTasks = this.partnerTasks.filter(t => !this.userCompletedTasks.has(t.id));
-    const partnerTasksHtml = availablePartnerTasks.length > 0 ? availablePartnerTasks.map(t => `
-        <div class="task-item">
-            <img class="task-img" src="${t.img}">
-            <div class="task-info">
-                <h4>${t.name}</h4>
-                <div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div>
-            </div>
-            <button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button>
-        </div>
-    `).join('') : '<div class="no-data"><i class="fas fa-globe"></i><p>' + this.t('no_tasks') + '</p><small>' + this.t('check_later') + '</small></div>';
-    
-    el.innerHTML = `
-        <div class="promo-card">
-            <div class="promo-header">
-                <div class="promo-title"><i class="fas fa-gift"></i> ${this.t('promo_code')}</div>
-                <button id="promo-info-btn" class="info-icon-btn"><i class="fas fa-question-circle"></i></button>
-            </div>
-            <div class="promo-input-group">
-                <input type="text" id="promo-input" class="form-input" placeholder="${this.t('enter_code')}" autocomplete="off">
-                <button id="promo-submit" class="promo-submit-btn" disabled>${this.t('claim')}</button>
-            </div>
-        </div>
+    renderEarn() {
+        const el = document.getElementById('earn-page');
+        if (!el) return;
         
-        <div class="section-header">
-            <h3><i class="fas fa-calendar-day"></i> ${this.t('daily_tasks')}</h3>
-            <p>${this.t('refresh_in')}: ${hoursRemaining.toString().padStart(2, '0')}:${minutesRemaining.toString().padStart(2, '0')}</p>
-        </div>
+        const resetTime = this.getDailyResetTimeUTC();
+        const now = Date.now();
+        const timeRemaining = Math.max(0, resetTime - now);
+        const hoursRemaining = Math.floor(timeRemaining / 3600000);
+        const minutesRemaining = Math.floor((timeRemaining % 3600000) / 60000);
         
-        <div class="daily-tasks-container">
-            <div class="daily-task-card">
-                <div class="daily-task-header">
-                    <div class="daily-task-icon"><i class="fas fa-newspaper"></i></div>
-                    <div class="daily-task-info">
-                        <h4>${this.t('daily_check_news')}</h4>
-                        <div class="daily-task-reward"><i class="fas fa-bolt"></i> 10 ${this.t('power')}</div>
-                    </div>
-                    <button class="task-btn ${dailyCheckNewsBtnClass}" id="daily-check-news-btn" ${dailyCheckNewsBtnDisabled ? 'disabled' : ''}>${dailyCheckNewsBtnText}</button>
+        const dailyCheckNewsBtnClass = this.dailyCheckNewsCompleted ? 'done' : 'start';
+        const dailyCheckNewsBtnText = this.dailyCheckNewsCompleted ? 'Done' : this.t('start');
+        const dailyCheckNewsBtnDisabled = this.dailyCheckNewsCompleted;
+        
+        const availableMainTasks = APP_CONFIG.MAIN_TASKS.filter(t => !this.userCompletedMainTasks.has(t.id));
+        
+        const availableMainTasksHtml = availableMainTasks.length > 0 ? availableMainTasks.map(t => `
+            <div class="task-item">
+                <img class="task-img" src="${t.img}">
+                <div class="task-info">
+                    <h4>${t.name}</h4>
+                    <div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div>
+                </div>
+                <button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button>
+            </div>
+        `).join('') : '<div class="no-data"><i class="fas fa-check-circle"></i><p>' + this.t('all_tasks_completed') + '</p><small>' + this.t('check_later') + '</small></div>';
+        
+        const availablePartnerTasks = this.partnerTasks.filter(t => !this.userCompletedTasks.has(t.id));
+        const partnerTasksHtml = availablePartnerTasks.length > 0 ? availablePartnerTasks.map(t => `
+            <div class="task-item">
+                <img class="task-img" src="${t.img}">
+                <div class="task-info">
+                    <h4>${t.name}</h4>
+                    <div class="task-reward"><i class="fas fa-bolt"></i> ${t.reward} ${this.t('power')}</div>
+                </div>
+                <button class="task-btn start" data-id="${t.id}" data-reward="${t.reward}" data-url="${t.url}" data-verify="${t.verify}">Start</button>
+            </div>
+        `).join('') : '<div class="no-data"><i class="fas fa-globe"></i><p>' + this.t('no_tasks') + '</p><small>' + this.t('check_later') + '</small></div>';
+        
+        el.innerHTML = `
+            <div class="promo-card">
+                <div class="promo-header">
+                    <div class="promo-title"><i class="fas fa-gift"></i> ${this.t('promo_code')}</div>
+                    <button id="promo-info-btn" class="info-icon-btn"><i class="fas fa-question-circle"></i></button>
+                </div>
+                <div class="promo-input-group">
+                    <input type="text" id="promo-input" class="form-input" placeholder="${this.t('enter_code')}" autocomplete="off">
+                    <button id="promo-submit" class="promo-submit-btn" disabled>${this.t('claim')}</button>
                 </div>
             </div>
-        </div>
+            
+            <div class="section-header">
+                <h3><i class="fas fa-calendar-day"></i> ${this.t('daily_tasks')}</h3>
+                <p>${this.t('refresh_in')}: ${hoursRemaining.toString().padStart(2, '0')}:${minutesRemaining.toString().padStart(2, '0')}</p>
+            </div>
+            
+            <div class="daily-tasks-container">
+                <div class="daily-task-card">
+                    <div class="daily-task-header">
+                        <div class="daily-task-icon"><i class="fas fa-newspaper"></i></div>
+                        <div class="daily-task-info">
+                            <h4>${this.t('daily_check_news')}</h4>
+                            <div class="daily-task-reward"><i class="fas fa-bolt"></i> 10 ${this.t('power')}</div>
+                        </div>
+                        <button class="task-btn ${dailyCheckNewsBtnClass}" id="daily-check-news-btn" ${dailyCheckNewsBtnDisabled ? 'disabled' : ''}>${dailyCheckNewsBtnText}</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section-header">
+                <h3><i class="fas fa-star"></i> ${this.t('main_tasks')}</h3>
+                <p>${this.t('available_tasks')}: ${availableMainTasks.length}</p>
+            </div>
+            <div class="tasks-list" id="main-tasks-list">
+                ${availableMainTasksHtml}
+            </div>
+            
+            <div class="section-header">
+                <h3><i class="fas fa-globe"></i> ${this.t('partner_tasks')} <button id="tasks-info-btn" class="info-icon-btn"><i class="fas fa-question-circle"></i></button></h3>
+                <p>${this.t('available_tasks')}: ${availablePartnerTasks.length}</p>
+            </div>
+            <div class="tasks-list" id="partner-tasks-list">
+                ${partnerTasksHtml}
+            </div>
+        `;
         
-        <div class="section-header">
-            <h3><i class="fas fa-star"></i> ${this.t('main_tasks')}</h3>
-            <p>${this.t('available_tasks')}: ${availableMainTasks.length}</p>
-        </div>
-        <div class="tasks-list" id="main-tasks-list">
-            ${availableMainTasksHtml}
-        </div>
+        const promoInput = document.getElementById('promo-input');
+        const promoSubmit = document.getElementById('promo-submit');
+        if (promoInput && promoSubmit) {
+            promoInput.addEventListener('input', () => {
+                promoSubmit.disabled = promoInput.value.trim() === '';
+                promoSubmit.classList.toggle('active', !promoSubmit.disabled);
+            });
+            promoSubmit.addEventListener('click', () => {
+                const code = promoInput.value.trim();
+                if (code) this.applyPromoCode(code);
+                promoInput.value = '';
+                promoSubmit.disabled = true;
+                promoSubmit.classList.remove('active');
+            });
+        }
         
-        <div class="section-header">
-            <h3>  <i class="fas fa-globe"></i> ${this.t('partner_tasks')} <button id="tasks-info-btn" class="info-icon-btn"><i class="fas fa-question-circle"></i></button></h3>
-            <p>${this.t('available_tasks')}: ${availablePartnerTasks.length}</p>
-        </div>
-        <div class="tasks-list" id="partner-tasks-list">
-            ${partnerTasksHtml}
-        </div>
-    `;
-    
-    const promoInput = document.getElementById('promo-input');
-    const promoSubmit = document.getElementById('promo-submit');
-    if (promoInput && promoSubmit) {
-        promoInput.addEventListener('input', () => {
-            promoSubmit.disabled = promoInput.value.trim() === '';
-            promoSubmit.classList.toggle('active', !promoSubmit.disabled);
+        document.getElementById('tasks-info-btn')?.addEventListener('click', () => {
+            document.getElementById('tasks-info-modal').style.display = 'flex';
+            this.updateModalTranslations();
         });
-        promoSubmit.addEventListener('click', () => {
-            const code = promoInput.value.trim();
-            if (code) this.applyPromoCode(code);
-            promoInput.value = '';
-            promoSubmit.disabled = true;
-            promoSubmit.classList.remove('active');
+        
+        document.getElementById('promo-info-btn')?.addEventListener('click', () => {
+            document.getElementById('promo-info-modal').style.display = 'flex';
+            this.updateModalTranslations();
+        });
+        
+        document.getElementById('daily-check-news-btn')?.addEventListener('click', (e) => {
+            if (!this.dailyCheckNewsCompleted) {
+                this.completeDailyCheckNews(e.target);
+            }
+        });
+        
+        document.querySelectorAll('#main-tasks-list .task-btn.start, #partner-tasks-list .task-btn.start').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                if (this.isTaskRunning) {
+                    this.showNotification('Busy', 'Complete current task first', 'warning');
+                    return;
+                }
+                const id = btn.dataset.id;
+                const reward = parseInt(btn.dataset.reward);
+                const url = btn.dataset.url;
+                const verify = btn.dataset.verify === 'true';
+                const isMainTask = btn.closest('#main-tasks-list') !== null;
+                
+                window.open(url, '_blank');
+                this.isTaskRunning = true;
+                this.disableAllTaskButtons();
+                btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
+                btn.disabled = true;
+                
+                let seconds = APP_CONFIG.TASK_VERIFICATION_DELAY;
+                const interval = setInterval(() => {
+                    seconds--;
+                    if (seconds <= 0) {
+                        clearInterval(interval);
+                        btn.innerHTML = 'Claim';
+                        btn.disabled = false;
+                        btn.classList.remove('start');
+                        btn.classList.add('check');
+                        
+                        const newBtn = btn.cloneNode(true);
+                        btn.parentNode.replaceChild(newBtn, btn);
+                        
+                        newBtn.addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            newBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
+                            newBtn.disabled = true;
+                            await this.completeTask(id, reward, url, verify, newBtn, isMainTask);
+                        });
+                    }
+                }, 1000);
+            });
         });
     }
-    
-    document.getElementById('tasks-info-btn')?.addEventListener('click', () => {
-        document.getElementById('tasks-info-modal').style.display = 'flex';
-        this.updateModalTranslations();
-    });
-    
-    document.getElementById('promo-info-btn')?.addEventListener('click', () => {
-        document.getElementById('promo-info-modal').style.display = 'flex';
-        this.updateModalTranslations();
-    });
-    
-    document.getElementById('daily-check-news-btn')?.addEventListener('click', (e) => {
-        if (!this.dailyCheckNewsCompleted) {
-            this.completeDailyCheckNews(e.target);
-        }
-    });
-    
-    document.querySelectorAll('#main-tasks-list .task-btn.start, #partner-tasks-list .task-btn.start').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            if (this.isTaskRunning) {
-                this.showNotification('Busy', 'Complete current task first', 'warning');
-                return;
-            }
-            const id = btn.dataset.id;
-            const reward = parseInt(btn.dataset.reward);
-            const url = btn.dataset.url;
-            const verify = btn.dataset.verify === 'true';
-            const isMainTask = btn.closest('#main-tasks-list') !== null;
-            
-            window.open(url, '_blank');
-            this.isTaskRunning = true;
-            this.disableAllTaskButtons();
-            btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
-            btn.disabled = true;
-            
-            let seconds = APP_CONFIG.TASK_VERIFICATION_DELAY;
-            const interval = setInterval(() => {
-                seconds--;
-                if (seconds <= 0) {
-                    clearInterval(interval);
-                    btn.innerHTML = 'Claim';
-                    btn.disabled = false;
-                    btn.classList.remove('start');
-                    btn.classList.add('check');
-                    
-                    const newBtn = btn.cloneNode(true);
-                    btn.parentNode.replaceChild(newBtn, btn);
-                    
-                    newBtn.addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        newBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i>';
-                        newBtn.disabled = true;
-                        await this.completeTask(id, reward, url, verify, newBtn, isMainTask);
-                    });
-                }
-            }, 1000);
-        });
-    });
-}
     
     renderTeam() {
         const el = document.getElementById('team-page');
