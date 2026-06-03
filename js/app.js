@@ -137,11 +137,8 @@ class App {
         this.vibrationEnabled = true;
         this.loadSettings();
         this.referredBy = null;
-        this.timeOffset = 0;
-        this.lastServerTimeSync = 0;
+        
         this.serverTimeOffset = 0;
-        this.firebaseConfigCache = null;
-        this.membershipCache = new Map();
         
         this._dirtyPower = false;
         this._dirtyTon = false;
@@ -162,10 +159,6 @@ class App {
         
         this.lastDailyCheckNews = 0;
         this.dailyCheckNewsCompleted = false;
-    
-        window._lastServerTime = null;
-        window._lastSyncTime = 0;
-        window._serverTimePromise = null;
     }
     
     t(key) {
@@ -269,11 +262,32 @@ class App {
         }
     }
     
+    async getRealServerTime() {
+        try {
+            const res = await fetch('/api/current-time');
+            const data = await res.json();
+            return data.serverTime;
+        } catch (error) {
+            console.warn('Failed to get server time:', error);
+            return Date.now();
+        }
+    }
+    
+    async syncServerTime() {
+        const serverTime = await this.getRealServerTime();
+        this.serverTimeOffset = serverTime - Date.now();
+        return serverTime;
+    }
+    
+    getCurrentTime() {
+        return Date.now() + this.serverTimeOffset;
+    }
+    
     async startMining() {
         const adWatched = await this.showInterstitialAd();
         if (!adWatched) return;
         
-        const serverTime = await this.getServerTime(true);
+        const serverTime = await this.syncServerTime();
         
         this.miningActive = true;
         this.miningStartTime = serverTime;
@@ -303,8 +317,8 @@ class App {
     async stopMining() {
         if (!this.miningActive) return;
         
-        const currentServerTime = await this.getServerTime(true);
-        const elapsedSeconds = (currentServerTime - this.miningStartTime) / 1000;
+        const currentTime = this.getCurrentTime();
+        const elapsedSeconds = (currentTime - this.miningStartTime) / 1000;
         const elapsedHours = Math.min(elapsedSeconds / 3600, this.miningSessionHours);
         
         this.pendingTonReward = this.calculateRewardForHours(elapsedHours);
@@ -329,6 +343,8 @@ class App {
             this.showNotification('Error', 'No rewards to claim', 'error');
             return;
         }
+        
+        await this.syncServerTime();
         
         const modal = document.getElementById('claim-modal');
         const rewardEl = document.getElementById('claim-reward-amount');
@@ -385,7 +401,7 @@ class App {
         
         this.miningInterval = setInterval(async () => {
             if (!this.miningActive) return;
-            const currentTime = await this.getServerTime(false);
+            const currentTime = this.getCurrentTime();
             if (this.miningEndTime && currentTime >= this.miningEndTime) {
                 await this.stopMining();
             }
@@ -401,31 +417,29 @@ class App {
     updateMiningTimerDisplay() {
         if (!this.miningEndTime) return;
         
-        (async () => {
-            const currentTime = await this.getServerTime(false);
-            const remaining = Math.max(0, (this.miningEndTime - currentTime) / 1000);
-            
-            if (remaining <= 0 && this.miningActive) {
-                this.stopMining();
-                this.renderMining();
-                return;
-            }
-            
-            const hours = Math.floor(remaining / 3600);
-            const minutes = Math.floor((remaining % 3600) / 60);
-            const seconds = Math.floor(remaining % 60);
-            const timerEl = document.querySelector('.mining-timer');
-            if (timerEl) {
-                timerEl.innerHTML = `<i class="fas fa-hourglass-half"></i> ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            }
-        })();
+        const currentTime = this.getCurrentTime();
+        const remaining = Math.max(0, (this.miningEndTime - currentTime) / 1000);
+        
+        if (remaining <= 0 && this.miningActive) {
+            this.stopMining();
+            this.renderMining();
+            return;
+        }
+        
+        const hours = Math.floor(remaining / 3600);
+        const minutes = Math.floor((remaining % 3600) / 60);
+        const seconds = Math.floor(remaining % 60);
+        const timerEl = document.querySelector('.mining-timer');
+        if (timerEl) {
+            timerEl.innerHTML = `<i class="fas fa-hourglass-half"></i> ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
     }
     
     async updateAdCooldownDisplay() {
-        const now = await this.getServerTime(true);
+        const currentTime = this.getCurrentTime();
         const cooldownMs = APP_CONFIG.AD_COOLDOWN_HOURS * 3600000;
         const lastAdTime = this.lastRewardAdTime;
-        const remaining = Math.max(0, cooldownMs - (now - lastAdTime));
+        const remaining = Math.max(0, cooldownMs - (currentTime - lastAdTime));
         
         const adBtn = document.getElementById('mining-reward-ad');
         
@@ -451,10 +465,11 @@ class App {
     }
     
     async watchRewardAd() {
-        const now = await this.getServerTime(true);
+        await this.syncServerTime();
+        const currentTime = this.getCurrentTime();
         const cooldownMs = APP_CONFIG.AD_COOLDOWN_HOURS * 3600000;
-        if (now - this.lastRewardAdTime < cooldownMs) {
-            const remaining = Math.ceil((cooldownMs - (now - this.lastRewardAdTime)) / 1000);
+        if (currentTime - this.lastRewardAdTime < cooldownMs) {
+            const remaining = Math.ceil((cooldownMs - (currentTime - this.lastRewardAdTime)) / 1000);
             const hours = Math.floor(remaining / 3600);
             const minutes = Math.floor((remaining % 3600) / 60);
             const seconds = remaining % 60;
@@ -466,8 +481,9 @@ class App {
             const AdController = window.Adsgram.init({ blockId: APP_CONFIG.REWARD_AD_BLOCK_ID });
             await AdController.show();
             
-            this.lastRewardAdTime = now;
-            localStorage.setItem('last_reward_ad_time', now.toString());
+            const adTime = this.getCurrentTime();
+            this.lastRewardAdTime = adTime;
+            localStorage.setItem('last_reward_ad_time', adTime.toString());
             
             const originalPower = this.powerBalance;
             this.powerBalance += 20;
@@ -495,6 +511,15 @@ class App {
         }
     }
     
+    resetTaskButton(btnElement, type, text) {
+        if (btnElement && btnElement.parentNode) {
+            btnElement.innerHTML = text;
+            btnElement.disabled = false;
+            btnElement.classList.remove('check', 'start', 'done');
+            btnElement.classList.add(type);
+        }
+    }
+    
     async completeTask(taskId, rewardPower, url, verification, btnElement, isMainTask = false) {
         if (this.userCompletedTasks.has(taskId)) return false;
         
@@ -504,7 +529,6 @@ class App {
             const chatId = this.extractChatId(url);
             if (chatId) {
                 const isBotAdmin = await this.checkBotAdmin(chatId);
-                
                 if (!isBotAdmin) {
                     verificationSucceeded = true;
                 } else {
@@ -513,12 +537,7 @@ class App {
                         verificationSucceeded = true;
                     } else {
                         this.showNotification('Join Required', 'Please join the channel first', 'warning');
-                        if (btnElement) {
-                            btnElement.disabled = false;
-                            btnElement.innerHTML = 'Start';
-                            btnElement.classList.remove('check');
-                            btnElement.classList.add('start');
-                        }
+                        this.resetTaskButton(btnElement, 'start', 'Start');
                         this.isTaskRunning = false;
                         this.enableAllTaskButtons();
                         return false;
@@ -532,42 +551,35 @@ class App {
         }
         
         if (!verificationSucceeded) {
-            if (btnElement) {
-                btnElement.disabled = false;
-                btnElement.innerHTML = 'Start';
-                btnElement.classList.remove('check');
-                btnElement.classList.add('start');
-            }
+            this.resetTaskButton(btnElement, 'start', 'Start');
             this.isTaskRunning = false;
             this.enableAllTaskButtons();
             return false;
         }
-        
-        const originalPower = this.powerBalance;
-        this.powerBalance += rewardPower;
-        this._dirtyPower = true;
         
         this.userCompletedTasks.add(taskId);
         if (isMainTask) {
             this.userCompletedMainTasks.add(taskId);
         }
         
-        const saved = await this.saveUserData(true);
+        const originalPower = this.powerBalance;
+        this.powerBalance += rewardPower;
+        this._dirtyPower = true;
+        
+        const timeoutPromise = new Promise((resolve) => {
+            setTimeout(() => resolve(false), 10000);
+        });
+        
+        const savePromise = this.saveUserData(true);
+        const saved = await Promise.race([savePromise, timeoutPromise]);
         
         if (!saved) {
-            this.powerBalance = originalPower;
             this.userCompletedTasks.delete(taskId);
             if (isMainTask) this.userCompletedMainTasks.delete(taskId);
+            this.powerBalance = originalPower;
             this._dirtyPower = false;
             this.showNotification('Error', this.t('save_error'), 'error');
-            
-            if (btnElement) {
-                btnElement.disabled = false;
-                btnElement.innerHTML = 'Claim';
-                btnElement.classList.remove('check');
-                btnElement.classList.add('start');
-            }
-            
+            this.resetTaskButton(btnElement, 'claim', 'Claim');
             this.isTaskRunning = false;
             this.enableAllTaskButtons();
             return false;
@@ -580,17 +592,6 @@ class App {
                 }
                 await this.db.ref(`users/${this.tgUser.id}/completedTasks`).set(Array.from(this.userCompletedTasks));
                 localStorage.setItem(`completed_${this.tgUser.id}`, JSON.stringify(Array.from(this.userCompletedTasks)));
-                
-                const taskRef = this.db.ref(`tasks/${taskId}/total`);
-                const currentTotal = (await taskRef.once('value')).val() || 0;
-                await taskRef.set(currentTotal + 1);
-                
-                if (this.cache.tasks) {
-                    const cachedTask = this.cache.tasks.main?.find(t => t.id === taskId) || this.cache.tasks.partner?.find(t => t.id === taskId);
-                    if (cachedTask) {
-                        cachedTask.total = currentTotal + 1;
-                    }
-                }
             } catch (error) {
                 console.error('Failed to save task completion to DB:', error);
             }
@@ -598,23 +599,13 @@ class App {
         
         await this.addReferralEarnings(this.tgUser.id, rewardPower);
         await this.updateLevelFromPower();
-        
-        if (btnElement) {
-            if (isMainTask) {
-                btnElement.remove();
-            } else {
-                btnElement.innerHTML = 'Done';
-                btnElement.disabled = true;
-                btnElement.classList.add('done');
-                btnElement.classList.remove('start', 'check');
-            }
-        }
-        
         this.renderMining();
+        
         if (this._earnLoaded) {
             await this.loadTasks();
             this.renderEarn();
         }
+        
         this.showNotification('Task Completed!', `${rewardPower} ${this.t('power')}`, 'success');
         this.vibrate('success');
         this.isTaskRunning = false;
@@ -791,7 +782,7 @@ class App {
             amount: amount,
             wallet: wallet,
             status: 'pending',
-            timestamp: await this.getServerTime(true)
+            timestamp: this.getCurrentTime()
         };
         
         if (this.db) {
@@ -868,31 +859,6 @@ class App {
         } catch(e) {
             return false;
         }
-    }
-    
-    async getServerTime(forceSync = false) {
-        const now = Date.now();
-        
-        if (!forceSync && window._lastServerTime && (now - window._lastSyncTime) < 60000) {
-            const offset = window._lastServerTime - window._lastSyncTime;
-            return now + offset;
-        }
-        
-        if (!window._serverTimePromise) {
-            window._serverTimePromise = (async () => {
-                try {
-                    const res = await fetch('/api/current-time');
-                    const data = await res.json();
-                    window._lastServerTime = data.serverTime;
-                    window._lastSyncTime = Date.now();
-                    return data.serverTime;
-                } finally {
-                    setTimeout(() => { window._serverTimePromise = null; }, 100);
-                }
-            })();
-        }
-        
-        return await window._serverTimePromise;
     }
     
     async generateUniqueDeviceId() {
@@ -1060,7 +1026,7 @@ class App {
             firstName: this.tgUser.first_name || 'User',
             photoUrl: this.tgUser.photo_url || APP_CONFIG.DEFAULT_USER_AVATAR,
             referredBy: referredBy,
-            createdAt: await this.getServerTime(true),
+            createdAt: await this.syncServerTime(),
             powerBalance: 1000,
             tonBalance: 0,
             level: 1
@@ -1293,7 +1259,7 @@ class App {
                         }
                         
                         this.dailyCheckNewsCompleted = true;
-                        this.lastDailyCheckNews = await this.getServerTime(true);
+                        this.lastDailyCheckNews = this.getCurrentTime();
                         this.saveDailyTaskStatus();
                         
                         await this.updateLevelFromPower();
@@ -1752,7 +1718,7 @@ class App {
         const promoText = document.getElementById('promo-info-text');
         if (promoText) promoText.innerHTML = `<i class="fas fa-telegram"></i> ${this.t('promo_info_text')}`;
         const getPromoBtn = document.getElementById('get-promo-codes-btn');
-        if (getPromoBtn) getPromoBtn.innerHTML = `<i class="fas fa-telegram"></i> ${this.t('get_promo_codes')}`;
+        if (getPromoBtn) getPromoBtn.innerHTML = `<i class="fas fa-hand-holding-heart"></i> ${this.t('get_promo_codes')}`;
         const stepsTitle = document.getElementById('promo-steps-title');
         if (stepsTitle) stepsTitle.innerText = this.t('how_it_works');
         const step1 = document.getElementById('promo-step-1');
@@ -1938,7 +1904,7 @@ class App {
             await this.updateFirebaseUid();
             
             updateProgress(70);
-            await this.getServerTime(true);
+            await this.syncServerTime();
             
             updateProgress(80);
             await this.loadUserData();
@@ -1948,9 +1914,9 @@ class App {
             if (savedAdTime) this.lastRewardAdTime = parseInt(savedAdTime);
             
             if (this.miningActive && this.miningEndTime) {
-                const serverTime = await this.getServerTime(true);
-                if (serverTime >= this.miningEndTime) {
-                    const elapsedSeconds = (serverTime - this.miningStartTime) / 1000;
+                const currentTime = this.getCurrentTime();
+                if (currentTime >= this.miningEndTime) {
+                    const elapsedSeconds = (currentTime - this.miningStartTime) / 1000;
                     const elapsedHours = elapsedSeconds / 3600;
                     this.pendingTonReward = this.calculateRewardForHours(Math.min(elapsedHours, this.miningSessionHours));
                     this.miningActive = false;
