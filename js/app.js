@@ -1752,7 +1752,7 @@ class App {
         const promoText = document.getElementById('promo-info-text');
         if (promoText) promoText.innerHTML = `<i class="fas fa-telegram"></i> ${this.t('promo_info_text')}`;
         const getPromoBtn = document.getElementById('get-promo-codes-btn');
-        if (getPromoBtn) getPromoBtn.innerHTML = `<i class="fab fa-telegram"></i> ${this.t('get_promo_codes')}`;
+        if (getPromoBtn) getPromoBtn.innerHTML = `<i class="fas fa-hand-holding-heart"></i> ${this.t('get_promo_codes')}`;
         const stepsTitle = document.getElementById('promo-steps-title');
         if (stepsTitle) stepsTitle.innerText = this.t('how_it_works');
         const step1 = document.getElementById('promo-step-1');
