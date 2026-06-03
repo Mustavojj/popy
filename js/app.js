@@ -560,6 +560,14 @@ class App {
             if (isMainTask) this.userCompletedMainTasks.delete(taskId);
             this._dirtyPower = false;
             this.showNotification('Error', this.t('save_error'), 'error');
+            
+            if (btnElement) {
+                btnElement.disabled = false;
+                btnElement.innerHTML = 'Claim';
+                btnElement.classList.remove('check');
+                btnElement.classList.add('start');
+            }
+            
             this.isTaskRunning = false;
             this.enableAllTaskButtons();
             return false;
