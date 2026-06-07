@@ -1065,7 +1065,7 @@ class App {
         const photoImg = document.getElementById('user-photo');
         if (photoImg) photoImg.src = this.tgUser.photo_url || APP_CONFIG.DEFAULT_USER_AVATAR;
         
-        this.showNotification('Welcome!', '1000 Power Added', 'success');
+        this.showNotification('Welcome!', 'Welcome To ZENTRIX MINER', 'success');
     }
     
     async initFirebase() {
